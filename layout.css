@@ -63,7 +63,7 @@ p textarea {
   color: #080808;
   font-size: 20px;
   padding: 10px 14px;
-  position: absolute;
+  position: relative;
   top: 0;
 }
 

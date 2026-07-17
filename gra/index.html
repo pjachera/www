@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Bajkowa gra — rzucanie siekierą w stylu Angry Birds" />
+  <title>SiekieroLas — rzucanie siekierą</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Lilita+One&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="game.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <a class="back" href="../index.html">← Łapsze</a>
+      <h1 class="brand">SiekieroLas</h1>
+      <div class="hud">
+        <span id="score">0</span>
+        <span class="sep">·</span>
+        <span id="levelLabel">Poziom 1</span>
+        <span class="sep">·</span>
+        <span id="axesLeft" title="Pozostałe siekiery">🪓 ×3</span>
+      </div>
+    </header>
+
+    <main class="stage-wrap">
+      <canvas id="game" width="1280" height="720" aria-label="Pole gry SiekieroLas"></canvas>
+
+      <div id="overlay" class="overlay">
+        <div class="panel">
+          <p class="eyebrow">Bajkowy las</p>
+          <h2 id="overlayTitle">SiekieroLas</h2>
+          <p id="overlayText">Przeciągnij siekierę w lewo i puść — leć jak w Angry Birds! Traf w grzybki i tarczę.</p>
+          <button id="startBtn" class="cta" type="button">Rzuć siekierą!</button>
+          <p class="hint">Mysz lub palec · ciągnij i puszczaj</p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="credits">
+      Tła: CraftPix (OpenGameArt) · Siekiera kreskówkowa: victordelima · Grafiki bajkowe: wygenerowane na potrzeby gry
+    </footer>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

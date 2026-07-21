@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="description" content="Bajkowa gra — rzucanie siekierą w stylu Angry Birds" />
-  <title>SiekieroLas — rzucanie siekierą</title>
+  <meta name="description" content="SiekieroLas — bajkowe rzucanie siekierą" />
+  <title>SiekieroLas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Lilita+One&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Lilita+One&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="game.css" />
 </head>
 <body>
@@ -15,33 +15,28 @@
     <header class="topbar">
       <a class="back" href="../index.html">← Łapsze</a>
       <h1 class="brand">SiekieroLas</h1>
-      <div class="hud">
+      <div class="hud" aria-live="polite">
         <span id="score">0</span>
         <span class="sep">·</span>
-        <span id="levelLabel">Poziom 1</span>
+        <span id="levelLabel">1/4</span>
         <span class="sep">·</span>
-        <span id="axesLeft" title="Pozostałe siekiery">🪓 ×3</span>
+        <span id="axesLeft">🪓 4</span>
       </div>
     </header>
 
     <main class="stage-wrap">
-      <canvas id="game" width="1280" height="720" aria-label="Pole gry SiekieroLas"></canvas>
-      <p id="tip" class="tip hidden" aria-live="polite"></p>
+      <canvas id="game" width="1280" height="720" aria-label="SiekieroLas"></canvas>
+      <div id="toast" class="toast hidden"></div>
 
       <div id="overlay" class="overlay">
         <div class="panel">
           <p class="eyebrow">Bajkowy las</p>
           <h2 id="overlayTitle">SiekieroLas</h2>
-          <p id="overlayText">Przeciągnij siekierę w LEWO (jak proca) i puść. Traf grzybki i tarczę!</p>
-          <button id="startBtn" class="cta" type="button">Rzuć siekierą!</button>
-          <p class="hint">Kliknij przy drwalu → ciągnij w lewo → puść</p>
+          <p id="overlayText">Jak Angry Birds: przeciągnij siekierę w LEWO i puść. Zniszcz grzybki! Tarcza = bonus.</p>
+          <button id="startBtn" class="cta" type="button">Start</button>
         </div>
       </div>
     </main>
-
-    <footer class="credits">
-      Tła: CraftPix (OpenGameArt) · Siekiera kreskówkowa: victordelima · Grafiki bajkowe: wygenerowane na potrzeby gry
-    </footer>
   </div>
   <script src="game.js"></script>
 </body>

@@ -124,6 +124,35 @@ html, body {
   cursor: grabbing;
 }
 
+.tip {
+  position: absolute;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 4;
+  max-width: min(92%, 560px);
+  text-align: center;
+  font-weight: 600;
+  font-size: clamp(0.85rem, 2.2vw, 1.05rem);
+  color: var(--ink);
+  background: rgba(255, 246, 224, 0.92);
+  border: 2px solid rgba(42, 26, 14, 0.2);
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
+  box-shadow: 0 8px 22px rgba(42, 26, 14, 0.18);
+  pointer-events: none;
+  animation: tipIn 0.35s ease-out;
+}
+
+.tip.hidden {
+  display: none;
+}
+
+@keyframes tipIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 .overlay {
   position: absolute;
   inset: 0;

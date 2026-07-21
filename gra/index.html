@@ -9,13 +9,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Lilita+One&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="game.css" />
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
 </head>
 <body>
   <div id="app">
     <header class="topbar">
       <a class="back" href="../index.html">← Łapsze</a>
       <h1 class="brand">SiekieroLas</h1>
-      <div class="hud" aria-live="polite">
+      <div class="hud">
         <span id="score">0</span>
         <span class="sep">·</span>
         <span id="levelLabel">1/4</span>
@@ -23,55 +24,19 @@
         <span id="axesLeft">🪓 5</span>
       </div>
     </header>
-
     <main class="stage-wrap">
-      <canvas id="game" width="1280" height="720" aria-label="SiekieroLas"></canvas>
-
-      <!-- INLINE SVG — zero PNG, zero białego tła -->
-      <div id="axeSprite" class="axe-sprite hidden" aria-hidden="true">
-        <svg viewBox="0 0 140 80" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-          <!-- trzonek -->
-          <path d="M8 34 h70 a6 6 0 0 1 6 6 v4 a6 6 0 0 1 -6 6 H8 a5 5 0 0 1 -5 -5 v-6 a5 5 0 0 1 5 -5 z" fill="#6B3F1A"/>
-          <path d="M10 35 h68 v4 H10 z" fill="#9A6230"/>
-          <!-- oplot -->
-          <rect x="6" y="30" width="26" height="22" rx="4" fill="#2A1810"/>
-          <path d="M12 31 v20 M18 31 v20 M24 31 v20" stroke="#1A0E08" stroke-width="1.6"/>
-          <!-- tuleja -->
-          <rect x="72" y="28" width="14" height="26" rx="2" fill="#4A5160"/>
-          <rect x="74" y="30" width="4" height="22" fill="#7A8494"/>
-          <!-- głownia siekiery (klasyczny kształt) -->
-          <path d="M82 12
-                   L118 22
-                   L130 40
-                   L118 58
-                   L82 68
-                   L92 40 Z" fill="#2F3642"/>
-          <path d="M88 20
-                   L112 28
-                   L120 40
-                   L112 52
-                   L88 60
-                   L96 40 Z" fill="#556070"/>
-          <!-- krawędź ostrza -->
-          <path d="M118 22 L130 40 L118 58" stroke="#E8B020" stroke-width="3" stroke-linecap="round" fill="none"/>
-          <!-- nit -->
-          <circle cx="88" cy="40" r="4" fill="#C9A227"/>
-          <circle cx="88" cy="40" r="1.8" fill="#F0D56A"/>
-        </svg>
-      </div>
-
+      <div id="game"></div>
       <div id="toast" class="toast hidden"></div>
-
       <div id="overlay" class="overlay">
         <div class="panel">
-          <p class="eyebrow">Bajkowy las</p>
+          <p class="eyebrow">Phaser · fizyka</p>
           <h2 id="overlayTitle">SiekieroLas</h2>
-          <p id="overlayText">Przeciągnij siekierę w LEWO i puść. Zniszcz grzybki! Tarcza = bonus.</p>
+          <p id="overlayText">Przeciągnij siekierę w LEWO (jak proca) i puść. Zniszcz grzybki!</p>
           <button id="startBtn" class="cta" type="button">Start</button>
         </div>
       </div>
     </main>
   </div>
-  <script src="game.js?v=9"></script>
+  <script src="game.js?v=14"></script>
 </body>
 </html>

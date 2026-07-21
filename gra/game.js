@@ -26,8 +26,8 @@
   };
 
   const MAX_PULL = 160;
-  const GRAVITY = 1320;
-  const DRAG = 0.9992;
+  const GRAVITY = 980;
+  const DRAG = 0.9994;
 
   const imgs = {};
   const ASSETS = {
@@ -35,7 +35,6 @@
     bgAlt: "assets/bg-alt.jpg",
     bgNight: "assets/bg-night.jpg",
     hero: "assets/hero.png",
-    axe: "assets/axe.png",
     target: "assets/target.png",
     mushroom: "assets/mushroom.png",
   };
@@ -46,10 +45,10 @@
       bg: "bg",
       axes: 5,
       mushrooms: [
-        { x: 780, y: GROUND - 8, r: 50 },
-        { x: 920, y: GROUND - 8, r: 50 },
+        { x: 720, y: GROUND - 8, r: 56 },
+        { x: 880, y: GROUND - 8, r: 56 },
       ],
-      targets: [{ x: 1100, y: GROUND - 8, r: 64 }],
+      targets: [{ x: 1060, y: GROUND - 8, r: 66 }],
     },
     {
       name: "Pagórek",
@@ -210,7 +209,7 @@
       vy: 0,
       ang: -0.35,
       spin: 0,
-      r: 26,
+      r: 34,
       flying: false,
       stuck: false,
     };
@@ -226,12 +225,16 @@
   }
 
   function nearSling(p) {
-    return p.x < W * 0.45 && p.y > GROUND - 220 && p.y < GROUND + 30;
+    // prawie cała lewa połowa — łatwo złapać
+    return p.x < W * 0.55 && p.y > 80 && p.y < GROUND + 40;
   }
 
   function startAim(p) {
     if (state !== "ready" || !axe || axe.flying) return;
-    if (!nearSling(p)) return;
+    if (!nearSling(p)) {
+      // i tak pozwól zacząć od procy, jeśli klik w canvas
+      if (p.x > W * 0.55) return;
+    }
     ensureAudio();
     aim.on = true;
     canvas.classList.add("dragging");
@@ -244,19 +247,19 @@
     if (!aim.on || !axe) return;
     let dx = p.x - SLING.rest.x;
     let dy = p.y - SLING.rest.y;
+    // wymuś ciągnięcie w lewo (Angry Birds)
+    if (dx > -8) dx = -8 - Math.abs(dy) * 0.15;
     const len = Math.hypot(dx, dy) || 1;
     const cap = Math.min(len, MAX_PULL);
     dx = (dx / len) * cap;
     dy = (dy / len) * cap;
-    // tylko w lewo / lekko w górę-dół (jak Angry Birds)
-    if (dx > 20) dx = 20;
-    if (dy < -110) dy = -110;
-    if (dy > 90) dy = 90;
+    if (dy < -120) dy = -120;
+    if (dy > 100) dy = 100;
     aim.dx = dx;
     aim.dy = dy;
     axe.x = SLING.rest.x + dx;
     axe.y = SLING.rest.y + dy;
-    axe.ang = Math.atan2(-(dy || 0.01), Math.max(0.2, -dx)) - 0.2;
+    axe.ang = Math.atan2(-dy, -dx) - 0.15;
   }
 
   function release() {
@@ -264,19 +267,26 @@
     aim.on = false;
     canvas.classList.remove("dragging");
     const pull = Math.min(Math.hypot(aim.dx, aim.dy) / MAX_PULL, 1);
-    if (pull < 0.1) {
+    if (pull < 0.08) {
       spawnAxe();
       state = "ready";
       toast("Ciągnij mocniej w lewo");
       return;
     }
-    const power = 980 + pull * 1320;
-    axe.vx = (-aim.dx / MAX_PULL) * power;
-    axe.vy = (-aim.dy / MAX_PULL) * power;
-    // lekki łuk w górę — łatwiej trafić
-    axe.vy -= 120 + pull * 180;
-    if (axe.vx < 220) axe.vx = 220 + pull * 480;
-    axe.spin = 12 + pull * 16;
+    // prędkość zależna od siły ciągnięcia
+    const power = 900 + pull * 900;
+    // wektor przeciwny do ciągu
+    let vx = (-aim.dx / MAX_PULL) * power;
+    let vy = (-aim.dy / MAX_PULL) * power;
+    // zawsze solidny lot w prawo + łuk (nawet przy ciągu w dół)
+    vx = Math.max(420, vx);
+    // mocny bias w górę — ciągniesz w dół jak w Angry Birds → leci w górę
+    vy = Math.min(vy, -180) - pull * 160;
+    // nie za stromo w niebo
+    if (vy < -720) vy = -720;
+    axe.vx = vx;
+    axe.vy = vy;
+    axe.spin = 10 + pull * 14;
     axe.flying = true;
     axesLeft -= 1;
     hud();
@@ -499,9 +509,11 @@
     const pull = Math.min(Math.hypot(aim.dx, aim.dy) / MAX_PULL, 1);
     let x = axe.x;
     let y = axe.y;
-    let vx = (-aim.dx / MAX_PULL) * (980 + pull * 1320);
-    let vy = (-aim.dy / MAX_PULL) * (980 + pull * 1320) - (120 + pull * 180);
-    if (vx < 220) vx = 220 + pull * 480;
+    const power = 900 + pull * 900;
+    let vx = Math.max(420, (-aim.dx / MAX_PULL) * power);
+    let vy = (-aim.dy / MAX_PULL) * power;
+    vy = Math.min(vy, -180) - pull * 160;
+    if (vy < -720) vy = -720;
     ctx.fillStyle = `rgba(255,244,220,${0.25 + pull * 0.55})`;
     for (let i = 0; i < 22; i++) {
       vx *= DRAG;
@@ -591,10 +603,51 @@
     ctx.save();
     ctx.translate(axe.x, axe.y);
     ctx.rotate(axe.ang);
-    if (imgs.axe) {
-      const s = 78;
-      ctx.drawImage(imgs.axe, -s * 0.55, -s * 0.35, s, s * 0.55);
-    }
+    ctx.scale(1.7, 1.7);
+
+    // trzonek
+    ctx.fillStyle = "#5c3416";
+    ctx.fillRect(-34, -4.5, 40, 9);
+    ctx.fillStyle = "#7a4a24";
+    ctx.fillRect(-34, -4.5, 40, 3);
+
+    // oplot
+    ctx.fillStyle = "#24150c";
+    ctx.fillRect(-34, -6.5, 14, 13);
+
+    // tuleja
+    ctx.fillStyle = "#3e4450";
+    ctx.fillRect(2, -8, 8, 16);
+
+    // głownia siekiery (szeroka, CIEMNA)
+    ctx.fillStyle = "#2f3540";
+    ctx.beginPath();
+    ctx.moveTo(6, -18);
+    ctx.quadraticCurveTo(28, -16, 34, 0);
+    ctx.quadraticCurveTo(28, 16, 6, 18);
+    ctx.lineTo(12, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // refleks ciemnoszary
+    ctx.fillStyle = "#505868";
+    ctx.beginPath();
+    ctx.moveTo(10, -10);
+    ctx.quadraticCurveTo(22, -8, 26, 0);
+    ctx.quadraticCurveTo(22, 8, 10, 10);
+    ctx.lineTo(14, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // ostrze (cienka jasna krawędź, nie biały fill)
+    ctx.strokeStyle = "#c4a035";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(6, -18);
+    ctx.quadraticCurveTo(28, -16, 34, 0);
+    ctx.quadraticCurveTo(28, 16, 6, 18);
+    ctx.stroke();
+
     ctx.restore();
   }
 
@@ -711,12 +764,23 @@
     requestAnimationFrame(loop);
   }
 
-  canvas.addEventListener("mousedown", (e) => startAim(pointer(e)));
-  window.addEventListener("mousemove", (e) => { if (aim.on) moveAim(pointer(e)); });
-  window.addEventListener("mouseup", () => { if (aim.on) release(); });
-  canvas.addEventListener("touchstart", (e) => { e.preventDefault(); startAim(pointer(e)); }, { passive: false });
-  canvas.addEventListener("touchmove", (e) => { e.preventDefault(); if (aim.on) moveAim(pointer(e)); }, { passive: false });
-  canvas.addEventListener("touchend", (e) => { e.preventDefault(); if (aim.on) release(); }, { passive: false });
+  canvas.addEventListener("pointerdown", (e) => {
+    canvas.setPointerCapture(e.pointerId);
+    startAim(pointer(e));
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (aim.on) moveAim(pointer(e));
+  });
+  canvas.addEventListener("pointerup", (e) => {
+    if (aim.on) release();
+    try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+  });
+  canvas.addEventListener("pointercancel", () => {
+    if (aim.on) release();
+  });
+  // touch: nie scrolluj strony podczas gry
+  canvas.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
+  canvas.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
 
   loadAll()
     .then(() => {
@@ -724,7 +788,7 @@
       draw();
       showOverlay(
         "SiekieroLas",
-        "Jak Angry Birds: przeciągnij siekierę w LEWO i puść. Zniszcz wszystkie grzybki! Tarcza daje bonus.",
+        "Przeciągnij siekierę w LEWO i puść. Zniszcz grzybki! Tarcza = bonus.",
         "Start"
       );
       bindStart(() => {

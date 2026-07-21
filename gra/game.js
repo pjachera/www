@@ -11,6 +11,7 @@
   const levelLabel = document.getElementById("levelLabel");
   const axesLeftEl = document.getElementById("axesLeft");
   const toastEl = document.getElementById("toast");
+  const axeEl = document.getElementById("axeSprite");
 
   const W = canvas.width;
   const H = canvas.height;
@@ -172,6 +173,7 @@
     overlay.classList.remove("hidden");
     state = "overlay";
     toast("");
+    syncAxeSprite();
   }
   function hideOverlay() {
     overlay.classList.add("hidden");
@@ -598,57 +600,23 @@
     }
   }
 
+  function syncAxeSprite() {
+    if (!axeEl) return;
+    if (!axe || state === "boot" || state === "overlay") {
+      axeEl.classList.add("hidden");
+      return;
+    }
+    axeEl.classList.remove("hidden");
+    const px = (axe.x / W) * 100;
+    const py = (axe.y / H) * 100;
+    const deg = (axe.ang * 180) / Math.PI;
+    axeEl.style.left = `${px}%`;
+    axeEl.style.top = `${py}%`;
+    axeEl.style.transform = `rotate(${deg}deg)`;
+  }
+
   function drawAxe() {
-    if (!axe) return;
-    ctx.save();
-    ctx.translate(axe.x, axe.y);
-    ctx.rotate(axe.ang);
-    ctx.scale(1.7, 1.7);
-
-    // trzonek
-    ctx.fillStyle = "#5c3416";
-    ctx.fillRect(-34, -4.5, 40, 9);
-    ctx.fillStyle = "#7a4a24";
-    ctx.fillRect(-34, -4.5, 40, 3);
-
-    // oplot
-    ctx.fillStyle = "#24150c";
-    ctx.fillRect(-34, -6.5, 14, 13);
-
-    // tuleja
-    ctx.fillStyle = "#3e4450";
-    ctx.fillRect(2, -8, 8, 16);
-
-    // głownia siekiery (szeroka, CIEMNA)
-    ctx.fillStyle = "#2f3540";
-    ctx.beginPath();
-    ctx.moveTo(6, -18);
-    ctx.quadraticCurveTo(28, -16, 34, 0);
-    ctx.quadraticCurveTo(28, 16, 6, 18);
-    ctx.lineTo(12, 0);
-    ctx.closePath();
-    ctx.fill();
-
-    // refleks ciemnoszary
-    ctx.fillStyle = "#505868";
-    ctx.beginPath();
-    ctx.moveTo(10, -10);
-    ctx.quadraticCurveTo(22, -8, 26, 0);
-    ctx.quadraticCurveTo(22, 8, 10, 10);
-    ctx.lineTo(14, 0);
-    ctx.closePath();
-    ctx.fill();
-
-    // ostrze (cienka jasna krawędź, nie biały fill)
-    ctx.strokeStyle = "#c4a035";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(6, -18);
-    ctx.quadraticCurveTo(28, -16, 34, 0);
-    ctx.quadraticCurveTo(28, 16, 6, 18);
-    ctx.stroke();
-
-    ctx.restore();
+    syncAxeSprite();
   }
 
   function drawMushrooms() {

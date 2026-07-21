@@ -10,707 +10,677 @@
   const scoreEl = document.getElementById("score");
   const levelLabel = document.getElementById("levelLabel");
   const axesLeftEl = document.getElementById("axesLeft");
+  const toastEl = document.getElementById("toast");
+  const axeEl = document.getElementById("axeSprite");
 
   const W = canvas.width;
   const H = canvas.height;
-  const GROUND_Y = H * 0.82;
-  const ORIGIN = { x: 170, y: GROUND_Y - 70 };
-  const MAX_PULL = 140;
-  const GRAVITY = 1650;
-  const AIR = 0.998;
+  const GROUND = H * 0.78;
+
+  // Proca (slingshot) — punkty zakotwiczenia
+  const SLING = {
+    baseX: 175,
+    baseY: GROUND - 8,
+    left: { x: 152, y: GROUND - 130 },
+    right: { x: 198, y: GROUND - 130 },
+    rest: { x: 185, y: GROUND - 108 },
+  };
+
+  const MAX_PULL = 160;
+  const GRAVITY = 980;
+  const DRAG = 0.9994;
 
   const imgs = {};
   const ASSETS = {
-    bg: "assets/bg.png",
-    bgAlt: "assets/bg-alt.png",
-    bgNight: "assets/bg-night.png",
-    trees: "assets/trees.png",
-    bushes: "assets/bushes.png",
-    castle: "assets/castle.png",
+    bg: "assets/bg.jpg",
+    bgAlt: "assets/bg-alt.jpg",
+    bgNight: "assets/bg-night.jpg",
     hero: "assets/hero.png",
-    axe: "assets/axe.png",
     target: "assets/target.png",
     mushroom: "assets/mushroom.png",
   };
 
   const LEVELS = [
     {
-      name: "Polana grzybków",
+      name: "Polana",
       bg: "bg",
-      axes: 3,
+      axes: 5,
       mushrooms: [
-        { x: 880, y: GROUND_Y - 55, r: 48 },
-        { x: 1020, y: GROUND_Y - 55, r: 48 },
+        { x: 720, y: GROUND - 8, r: 56 },
+        { x: 880, y: GROUND - 8, r: 56 },
       ],
-      targets: [{ x: 1140, y: GROUND_Y - 95, r: 70 }],
+      targets: [{ x: 1060, y: GROUND - 8, r: 66 }],
     },
     {
-      name: "Wieża w lesie",
+      name: "Pagórek",
       bg: "bgAlt",
-      axes: 3,
+      axes: 5,
       mushrooms: [
-        { x: 820, y: GROUND_Y - 55, r: 48 },
-        { x: 940, y: GROUND_Y - 120, r: 44 },
-        { x: 1060, y: GROUND_Y - 55, r: 48 },
+        { x: 720, y: GROUND - 8, r: 48 },
+        { x: 860, y: GROUND - 55, r: 46 },
+        { x: 980, y: GROUND - 8, r: 48 },
       ],
-      targets: [{ x: 1180, y: GROUND_Y - 110, r: 68 }],
+      targets: [{ x: 1140, y: GROUND - 8, r: 60 }],
     },
     {
-      name: "Nocna tarcza",
+      name: "Zmierzch",
       bg: "bgNight",
-      axes: 4,
+      axes: 6,
       mushrooms: [
-        { x: 760, y: GROUND_Y - 55, r: 46 },
-        { x: 900, y: GROUND_Y - 55, r: 46 },
-        { x: 980, y: GROUND_Y - 150, r: 42 },
-        { x: 1080, y: GROUND_Y - 55, r: 48 },
+        { x: 700, y: GROUND - 8, r: 46 },
+        { x: 820, y: GROUND - 8, r: 46 },
+        { x: 920, y: GROUND - 80, r: 44 },
+        { x: 1040, y: GROUND - 8, r: 48 },
       ],
       targets: [
-        { x: 1180, y: GROUND_Y - 100, r: 66 },
-        { x: 1040, y: GROUND_Y - 250, r: 50 },
+        { x: 1160, y: GROUND - 8, r: 58 },
+        { x: 1000, y: GROUND - 190, r: 50 },
       ],
     },
     {
-      name: "Królewski rzut",
+      name: "Finał",
       bg: "bg",
-      axes: 4,
+      axes: 6,
       mushrooms: [
-        { x: 700, y: GROUND_Y - 55, r: 44 },
-        { x: 820, y: GROUND_Y - 55, r: 44 },
-        { x: 900, y: GROUND_Y - 130, r: 40 },
-        { x: 1000, y: GROUND_Y - 55, r: 46 },
-        { x: 1100, y: GROUND_Y - 160, r: 42 },
+        { x: 660, y: GROUND - 8, r: 44 },
+        { x: 780, y: GROUND - 8, r: 44 },
+        { x: 880, y: GROUND - 70, r: 42 },
+        { x: 980, y: GROUND - 8, r: 46 },
+        { x: 1080, y: GROUND - 95, r: 42 },
       ],
-      targets: [{ x: 1200, y: GROUND_Y - 105, r: 64 }],
+      targets: [{ x: 1190, y: GROUND - 8, r: 56 }],
     },
   ];
 
-  let state = "boot"; // boot | ready | aim | fly | settle | overlay
+  let state = "boot";
   let levelIndex = 0;
   let score = 0;
-  let axesLeft = 3;
+  let axesLeft = 4;
   let mushrooms = [];
   let targets = [];
   let particles = [];
-  let floatTexts = [];
+  let texts = [];
+  let clouds = [];
   let axe = null;
-  let aim = { pulling: false, dx: 0, dy: 0 };
+  let aim = { on: false, dx: 0, dy: 0 };
   let lastTs = 0;
   let shake = 0;
-  let wind = [];
-  let heroBob = 0;
+  let t = 0;
+  let toastTimer = 0;
+  let settleTimer = 0;
 
   function loadImage(src) {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
-      img.onerror = reject;
+      img.onerror = () => reject(new Error(src));
       img.src = src;
     });
   }
 
   async function loadAll() {
-    const entries = Object.entries(ASSETS);
     await Promise.all(
-      entries.map(async ([key, src]) => {
-        imgs[key] = await loadImage(src);
+      Object.entries(ASSETS).map(async ([k, src]) => {
+        imgs[k] = await loadImage(src);
       })
     );
   }
 
-  // --- Audio (procedural) ---
   let audioCtx = null;
   function ensureAudio() {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === "suspended") audioCtx.resume();
   }
-
-  function blip(freq, dur, type = "sine", gain = 0.08) {
+  function tone(freq, dur, type = "triangle", vol = 0.07) {
     if (!audioCtx) return;
-    const t = audioCtx.currentTime;
+    const now = audioCtx.currentTime;
     const o = audioCtx.createOscillator();
     const g = audioCtx.createGain();
     o.type = type;
-    o.frequency.setValueAtTime(freq, t);
-    o.frequency.exponentialRampToValueAtTime(Math.max(40, freq * 0.5), t + dur);
-    g.gain.setValueAtTime(gain, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.frequency.setValueAtTime(freq, now);
+    o.frequency.exponentialRampToValueAtTime(Math.max(50, freq * 0.55), now + dur);
+    g.gain.setValueAtTime(vol, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + dur);
     o.connect(g);
     g.connect(audioCtx.destination);
-    o.start(t);
-    o.stop(t + dur + 0.02);
+    o.start(now);
+    o.stop(now + dur + 0.02);
+  }
+  const sfx = {
+    throw: () => { tone(170, 0.16, "triangle", 0.07); tone(80, 0.22, "sawtooth", 0.025); },
+    hit: () => { tone(300, 0.12, "square", 0.05); tone(150, 0.18, "triangle", 0.04); },
+    bull: () => { tone(520, 0.14); tone(740, 0.2); },
+    miss: () => tone(100, 0.28, "sine", 0.035),
+    win: () => [523, 659, 784].forEach((f, i) => setTimeout(() => tone(f, 0.22), i * 110)),
+  };
+
+  function toast(msg, sec = 3.2) {
+    toastEl.textContent = msg;
+    toastEl.classList.toggle("hidden", !msg);
+    toastTimer = msg ? sec : 0;
   }
 
-  function sfxThrow() {
-    blip(180, 0.18, "triangle", 0.07);
-    blip(90, 0.25, "sawtooth", 0.03);
+  function hud() {
+    scoreEl.textContent = String(score);
+    levelLabel.textContent = `${levelIndex + 1}/${LEVELS.length}`;
+    axesLeftEl.textContent = `🪓 ${axesLeft}`;
   }
-  function sfxHit() {
-    blip(320, 0.12, "square", 0.06);
-    blip(140, 0.2, "triangle", 0.05);
+
+  function showOverlay(title, text, btn) {
+    overlayTitle.textContent = title;
+    overlayText.textContent = text;
+    startBtn.textContent = btn;
+    overlay.classList.remove("hidden");
+    state = "overlay";
+    toast("");
+    syncAxeSprite();
   }
-  function sfxBull() {
-    blip(440, 0.15, "sine", 0.07);
-    blip(660, 0.22, "triangle", 0.05);
+  function hideOverlay() {
+    overlay.classList.add("hidden");
   }
-  function sfxMiss() {
-    blip(110, 0.3, "sine", 0.04);
-  }
-  function sfxWin() {
-    [523, 659, 784].forEach((f, i) => {
-      setTimeout(() => blip(f, 0.25, "triangle", 0.06), i * 120);
-    });
+
+  function bindStart(fn) {
+    startBtn.onclick = (e) => {
+      e.preventDefault();
+      ensureAudio();
+      fn();
+    };
   }
 
   function resetLevel() {
     const L = LEVELS[levelIndex];
     axesLeft = L.axes;
-    mushrooms = L.mushrooms.map((m) => ({
-      ...m,
-      alive: true,
-      wobble: Math.random() * Math.PI * 2,
-      scale: 1,
-    }));
-    targets = L.targets.map((t) => ({
-      ...t,
-      hits: 0,
-      maxHits: 1,
-      pulse: 0,
-    }));
+    mushrooms = L.mushrooms.map((m) => ({ ...m, alive: true, wob: Math.random() * 6, scale: 1 }));
+    targets = L.targets.map((t) => ({ ...t, hits: 0, pulse: 0 }));
     particles = [];
-    floatTexts = [];
+    texts = [];
     axe = null;
-    aim = { pulling: false, dx: 0, dy: 0 };
-    updateHud();
+    aim = { on: false, dx: 0, dy: 0 };
+    settleTimer = 0;
+    hud();
     state = "ready";
+    spawnAxe();
+    toast("Ciągnij siekierę w LEWO, potem puść", 2.8);
   }
 
-  function updateHud() {
-    scoreEl.textContent = String(score);
-    levelLabel.textContent = `Poziom ${levelIndex + 1}`;
-    axesLeftEl.textContent = `🪓 ×${axesLeft}`;
-  }
-
-  function showOverlay(title, text, btnLabel) {
-    overlayTitle.textContent = title;
-    overlayText.textContent = text;
-    startBtn.textContent = btnLabel;
-    overlay.classList.remove("hidden");
-    state = "overlay";
-  }
-
-  function hideOverlay() {
-    overlay.classList.add("hidden");
-  }
-
-  function spawnAxeReady() {
+  function spawnAxe() {
     axe = {
-      x: ORIGIN.x,
-      y: ORIGIN.y,
+      x: SLING.rest.x,
+      y: SLING.rest.y,
       vx: 0,
       vy: 0,
-      angle: -0.4,
+      ang: -0.35,
       spin: 0,
-      stuck: false,
+      r: 34,
       flying: false,
-      radius: 28,
+      stuck: false,
     };
   }
 
-  function pointerPos(e) {
+  function pointer(e) {
     const rect = canvas.getBoundingClientRect();
-    const scaleX = W / rect.width;
-    const scaleY = H / rect.height;
     const src = e.touches ? e.touches[0] || e.changedTouches[0] : e;
     return {
-      x: (src.clientX - rect.left) * scaleX,
-      y: (src.clientY - rect.top) * scaleY,
+      x: ((src.clientX - rect.left) / rect.width) * W,
+      y: ((src.clientY - rect.top) / rect.height) * H,
     };
   }
 
-  function startPull(p) {
+  function nearSling(p) {
+    // prawie cała lewa połowa — łatwo złapać
+    return p.x < W * 0.55 && p.y > 80 && p.y < GROUND + 40;
+  }
+
+  function startAim(p) {
     if (state !== "ready" || !axe || axe.flying) return;
-    const dx = p.x - ORIGIN.x;
-    const dy = p.y - ORIGIN.y;
-    if (Math.hypot(dx, dy) > 120) return;
+    if (!nearSling(p)) {
+      // i tak pozwól zacząć od procy, jeśli klik w canvas
+      if (p.x > W * 0.55) return;
+    }
     ensureAudio();
-    aim.pulling = true;
+    aim.on = true;
     canvas.classList.add("dragging");
     state = "aim";
-    updateAim(p);
+    toast("Puść, żeby rzucić!");
+    moveAim(p);
   }
 
-  function updateAim(p) {
-    if (!aim.pulling || !axe) return;
-    let dx = p.x - ORIGIN.x;
-    let dy = p.y - ORIGIN.y;
-    // pull mostly left / down-left
+  function moveAim(p) {
+    if (!aim.on || !axe) return;
+    let dx = p.x - SLING.rest.x;
+    let dy = p.y - SLING.rest.y;
+    // wymuś ciągnięcie w lewo (Angry Birds)
+    if (dx > -8) dx = -8 - Math.abs(dy) * 0.15;
     const len = Math.hypot(dx, dy) || 1;
-    const capped = Math.min(len, MAX_PULL);
-    dx = (dx / len) * capped;
-    dy = (dy / len) * capped;
-    // bias: allow pull to the left side of origin
-    if (dx > 40) dx = 40;
+    const cap = Math.min(len, MAX_PULL);
+    dx = (dx / len) * cap;
+    dy = (dy / len) * cap;
+    if (dy < -120) dy = -120;
+    if (dy > 100) dy = 100;
     aim.dx = dx;
     aim.dy = dy;
-    axe.x = ORIGIN.x + dx;
-    axe.y = ORIGIN.y + dy;
-    axe.angle = Math.atan2(-dy, -dx) + Math.PI * 0.15;
+    axe.x = SLING.rest.x + dx;
+    axe.y = SLING.rest.y + dy;
+    axe.ang = Math.atan2(-dy, -dx) - 0.15;
   }
 
-  function releaseThrow() {
-    if (!aim.pulling || !axe) return;
-    aim.pulling = false;
+  function release() {
+    if (!aim.on || !axe) return;
+    aim.on = false;
     canvas.classList.remove("dragging");
-    const power = Math.min(Math.hypot(aim.dx, aim.dy) / MAX_PULL, 1);
-    if (power < 0.12) {
-      axe.x = ORIGIN.x;
-      axe.y = ORIGIN.y;
+    const pull = Math.min(Math.hypot(aim.dx, aim.dy) / MAX_PULL, 1);
+    if (pull < 0.08) {
+      spawnAxe();
       state = "ready";
+      toast("Ciągnij mocniej w lewo");
       return;
     }
-    // velocity opposite to pull (Angry Birds style)
-    const speed = 980 + power * 1280;
-    axe.vx = (-aim.dx / MAX_PULL) * speed;
-    axe.vy = (-aim.dy / MAX_PULL) * speed;
-    axe.spin = (axe.vx > 0 ? 1 : -1) * (10 + power * 14);
+    // prędkość zależna od siły ciągnięcia
+    const power = 900 + pull * 900;
+    // wektor przeciwny do ciągu
+    let vx = (-aim.dx / MAX_PULL) * power;
+    let vy = (-aim.dy / MAX_PULL) * power;
+    // zawsze solidny lot w prawo + łuk (nawet przy ciągu w dół)
+    vx = Math.max(420, vx);
+    // mocny bias w górę — ciągniesz w dół jak w Angry Birds → leci w górę
+    vy = Math.min(vy, -180) - pull * 160;
+    // nie za stromo w niebo
+    if (vy < -720) vy = -720;
+    axe.vx = vx;
+    axe.vy = vy;
+    axe.spin = 10 + pull * 14;
     axe.flying = true;
     axesLeft -= 1;
-    updateHud();
-    sfxThrow();
+    hud();
+    sfx.throw();
     state = "fly";
+    toast("");
   }
 
-  function burst(x, y, color, n = 14) {
+  function burst(x, y, color, n = 16) {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
-      const s = 80 + Math.random() * 220;
+      const s = 90 + Math.random() * 240;
       particles.push({
-        x,
-        y,
+        x, y,
         vx: Math.cos(a) * s,
-        vy: Math.sin(a) * s - 80,
-        life: 0.5 + Math.random() * 0.5,
+        vy: Math.sin(a) * s - 60,
+        life: 0.45 + Math.random() * 0.55,
         age: 0,
         color,
-        size: 3 + Math.random() * 5,
+        size: 2.5 + Math.random() * 5,
       });
     }
   }
 
-  function floatScore(x, y, text) {
-    floatTexts.push({ x, y, text, age: 0, life: 1.1 });
+  function popText(x, y, text) {
+    texts.push({ x, y, text, age: 0, life: 1.1 });
   }
 
-  function hitMushroom(m) {
+  function hitShroom(m) {
     m.alive = false;
-    m.scale = 1.2;
+    m.scale = 1.25;
     score += 100;
-    shake = 8;
-    burst(m.x, m.y - 20, "#e85a4f", 18);
-    burst(m.x, m.y - 10, "#f4d35e", 10);
-    floatScore(m.x, m.y - 60, "+100");
-    sfxHit();
-    updateHud();
+    shake = 7;
+    burst(m.x, m.y - 40, "#e85a4f", 18);
+    burst(m.x, m.y - 30, "#f4d35e", 10);
+    popText(m.x, m.y - 90, "+100");
+    sfx.hit();
+    hud();
   }
 
-  function hitTarget(t, axeObj) {
-    t.hits += 1;
-    t.pulse = 1;
-    const dist = Math.hypot(axeObj.x - t.x, axeObj.y - (t.y - 20));
-    const ratio = dist / t.r;
-    let pts = 50;
-    let label = "+50";
-    if (ratio < 0.22) {
-      pts = 300;
-      label = "BULLSEYE! +300";
-      sfxBull();
-    } else if (ratio < 0.45) {
-      pts = 150;
-      label = "+150";
-      sfxHit();
-    } else {
-      sfxHit();
-    }
+  function hitTarget(tg) {
+    tg.hits = 1;
+    tg.pulse = 1;
+    const d = Math.hypot(axe.x - tg.x, axe.y - (tg.y - tg.r * 0.7));
+    const ratio = d / tg.r;
+    let pts = 75;
+    let label = "+75";
+    if (ratio < 0.28) { pts = 300; label = "BULLSEYE +300"; sfx.bull(); }
+    else if (ratio < 0.55) { pts = 150; label = "+150"; sfx.hit(); }
+    else sfx.hit();
     score += pts;
-    shake = 10;
-    burst(axeObj.x, axeObj.y, "#f4d35e", 20);
-    floatScore(t.x, t.y - 80, label);
-    axeObj.stuck = true;
-    axeObj.flying = false;
-    axeObj.vx = 0;
-    axeObj.vy = 0;
-    axeObj.spin = 0;
-    updateHud();
+    shake = 9;
+    burst(axe.x, axe.y, "#f0b429", 24);
+    popText(tg.x, tg.y - tg.r - 40, label);
+    // po trafieniu tarczy siekiera NIE blokuje poziomu — odbija się lekko
+    axe.vx *= -0.15;
+    axe.vy = -Math.abs(axe.vy) * 0.25 - 80;
+    axe.spin *= 0.4;
+    // nie kończ rzutu od razu — pozwól jeszcze zlecieć
+    hud();
   }
 
-  function allCleared() {
-    const shroomsDone = mushrooms.every((m) => !m.alive);
-    const targetsDone = targets.every((t) => t.hits >= t.maxHits);
-    return shroomsDone && targetsDone;
+  function cleared() {
+    // jak Angry Birds: wyczyść przeciwników (grzybki); tarcza = bonus
+    return mushrooms.every((m) => !m.alive);
   }
 
-  function afterThrowSettle() {
-    if (allCleared()) {
-      sfxWin();
+  function endThrow() {
+    if (cleared()) {
+      sfx.win();
       if (levelIndex >= LEVELS.length - 1) {
-        showOverlay(
-          "Wygrana!",
-          `Wyczyściłeś cały las! Wynik: ${score} pkt.`,
-          "Zagraj od nowa"
-        );
-        bindStart(() => {
-          score = 0;
-          levelIndex = 0;
-          hideOverlay();
-          resetLevel();
-          spawnAxeReady();
-        });
+        showOverlay("Wygrana!", `Cały las oczyszczony! Wynik: ${score}`, "Od nowa");
+        bindStart(() => { score = 0; levelIndex = 0; hideOverlay(); resetLevel(); });
       } else {
-        showOverlay(
-          `Poziom ${levelIndex + 1} ukończony!`,
-          `„${LEVELS[levelIndex].name}” zaliczony. Wynik: ${score}`,
-          "Następny poziom"
-        );
-        bindStart(() => {
-          levelIndex += 1;
-          hideOverlay();
-          resetLevel();
-          spawnAxeReady();
-        });
+        showOverlay(`Poziom ${levelIndex + 1} ✓`, `„${LEVELS[levelIndex].name}” — ${score} pkt`, "Dalej");
+        bindStart(() => { levelIndex += 1; hideOverlay(); resetLevel(); });
       }
       return;
     }
     if (axesLeft <= 0) {
-      sfxMiss();
-      showOverlay(
-        "Koniec siekier",
-        `Spróbuj jeszcze raz. Wynik: ${score}`,
-        "Ponów poziom"
-      );
-      bindStart(() => {
-        hideOverlay();
-        resetLevel();
-        spawnAxeReady();
-      });
+      sfx.miss();
+      showOverlay("Koniec siekier", `Wynik: ${score}. Spróbuj ponownie.`, "Ponów");
+      bindStart(() => { hideOverlay(); resetLevel(); });
       return;
     }
-    spawnAxeReady();
+    spawnAxe();
     state = "ready";
+    toast("Znowu: ciągnij i puść", 2.4);
   }
 
   function update(dt) {
-    heroBob += dt * 2.2;
-    shake = Math.max(0, shake - dt * 30);
+    t += dt;
+    shake = Math.max(0, shake - dt * 28);
+    if (toastTimer > 0) {
+      toastTimer -= dt;
+      if (toastTimer <= 0) toast("");
+    }
+
+    // clouds
+    if (clouds.length < 5 && Math.random() < 0.01) {
+      clouds.push({
+        x: -80,
+        y: 40 + Math.random() * 120,
+        s: 0.5 + Math.random() * 0.7,
+        v: 12 + Math.random() * 18,
+      });
+    }
+    for (const c of clouds) c.x += c.v * dt;
+    clouds = clouds.filter((c) => c.x < W + 120);
 
     for (const m of mushrooms) {
-      if (m.alive) m.wobble += dt * 2.5;
-      else m.scale = Math.max(0, m.scale - dt * 2.5);
+      if (m.alive) m.wob += dt * 2.2;
+      else m.scale = Math.max(0, m.scale - dt * 2.4);
     }
-    for (const t of targets) {
-      t.pulse = Math.max(0, t.pulse - dt * 2.5);
-    }
+    for (const tg of targets) tg.pulse = Math.max(0, tg.pulse - dt * 2.2);
 
     for (const p of particles) {
       p.age += dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vy += 600 * dt;
+      p.vy += 650 * dt;
     }
     particles = particles.filter((p) => p.age < p.life);
 
-    for (const f of floatTexts) {
-      f.age += dt;
-      f.y -= 40 * dt;
+    for (const tx of texts) {
+      tx.age += dt;
+      tx.y -= 48 * dt;
     }
-    floatTexts = floatTexts.filter((f) => f.age < f.life);
+    texts = texts.filter((tx) => tx.age < tx.life);
 
-    // ambient wind motes
-    if (wind.length < 18 && Math.random() < 0.08) {
-      wind.push({
-        x: Math.random() * W,
-        y: 80 + Math.random() * (GROUND_Y - 160),
-        vx: 20 + Math.random() * 40,
-        size: 1.5 + Math.random() * 2.5,
-        a: 0.15 + Math.random() * 0.25,
-      });
+    if (settleTimer > 0) {
+      settleTimer -= dt;
+      if (settleTimer <= 0) endThrow();
+      return;
     }
-    for (const w of wind) {
-      w.x += w.vx * dt;
-      w.y += Math.sin(w.x * 0.01) * 8 * dt;
-    }
-    wind = wind.filter((w) => w.x < W + 20);
 
     if (state !== "fly" || !axe || !axe.flying) return;
 
-    axe.vx *= AIR;
+    axe.vx *= DRAG;
     axe.vy += GRAVITY * dt;
     axe.x += axe.vx * dt;
     axe.y += axe.vy * dt;
-    axe.angle += axe.spin * dt;
+    axe.ang += axe.spin * dt;
 
-    // ground
-    if (axe.y + axe.radius > GROUND_Y) {
-      axe.y = GROUND_Y - axe.radius;
+    if (axe.y + axe.r > GROUND) {
+      axe.y = GROUND - axe.r;
       axe.flying = false;
-      axe.vx *= 0.3;
-      axe.vy = 0;
-      axe.spin *= 0.2;
       burst(axe.x, axe.y, "#c4a574", 8);
-      sfxMiss();
+      sfx.miss();
       state = "settle";
-      setTimeout(afterThrowSettle, 550);
+      settleTimer = 0.55;
       return;
     }
-
-    // out of bounds
-    if (axe.x > W + 80 || axe.x < -120 || axe.y < -120) {
+    if (axe.x > W + 100 || axe.x < -120 || axe.y < -120) {
       axe.flying = false;
       state = "settle";
-      setTimeout(afterThrowSettle, 400);
+      settleTimer = 0.4;
       return;
     }
 
-    // collisions — mushrooms
     for (const m of mushrooms) {
       if (!m.alive) continue;
-      const dx = axe.x - m.x;
-      const dy = axe.y - (m.y - 10);
-      if (Math.hypot(dx, dy) < axe.radius + m.r * 0.7) {
-        hitMushroom(m);
-        axe.vx *= 0.55;
-        axe.vy *= 0.4;
-        axe.spin *= 0.6;
+      const cy = m.y - m.r * 0.85;
+      if (Math.hypot(axe.x - m.x, axe.y - cy) < axe.r + m.r * 0.9) {
+        hitShroom(m);
+        axe.vx *= 0.5;
+        axe.vy *= 0.35;
+        axe.spin *= 0.5;
       }
     }
 
-    // collisions — targets
-    for (const t of targets) {
-      if (t.hits >= t.maxHits) continue;
-      const cx = t.x;
-      const cy = t.y - 18;
-      const dx = axe.x - cx;
-      const dy = axe.y - cy;
-      if (Math.hypot(dx, dy) < axe.radius + t.r * 0.72) {
-        hitTarget(t, axe);
-        state = "settle";
-        setTimeout(afterThrowSettle, 700);
-        return;
+    for (const tg of targets) {
+      if (tg.hits) continue;
+      const cy = tg.y - tg.r * 0.85;
+      if (Math.hypot(axe.x - tg.x, axe.y - cy) < axe.r + tg.r * 0.9) {
+        hitTarget(tg);
+        // tarcza = bonus; siekiera odbija się i leci dalej/w dół
       }
     }
   }
 
-  function drawBackground() {
-    const L = LEVELS[levelIndex];
-    const bg = imgs[L.bg] || imgs.bg;
+  function drawSling() {
+    const L = SLING.left;
+    const R = SLING.right;
+    // słupki
+    ctx.strokeStyle = "#5a3318";
+    ctx.lineWidth = 10;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(SLING.baseX - 18, SLING.baseY);
+    ctx.lineTo(L.x, L.y);
+    ctx.moveTo(SLING.baseX + 18, SLING.baseY);
+    ctx.lineTo(R.x, R.y);
+    ctx.stroke();
+    ctx.strokeStyle = "#8a5a2b";
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    // guma
+    const ax = axe ? axe.x : SLING.rest.x;
+    const ay = axe ? axe.y : SLING.rest.y;
+    if (state === "aim" || state === "ready") {
+      ctx.strokeStyle = "rgba(70, 30, 20, 0.85)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(L.x, L.y);
+      ctx.lineTo(ax, ay);
+      ctx.lineTo(R.x, R.y);
+      ctx.stroke();
+      // woreczek
+      ctx.fillStyle = "rgba(90, 45, 25, 0.9)";
+      ctx.beginPath();
+      ctx.arc(ax, ay, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawTrajectory() {
+    if (state !== "aim" || !axe) return;
+    const pull = Math.min(Math.hypot(aim.dx, aim.dy) / MAX_PULL, 1);
+    let x = axe.x;
+    let y = axe.y;
+    const power = 900 + pull * 900;
+    let vx = Math.max(420, (-aim.dx / MAX_PULL) * power);
+    let vy = (-aim.dy / MAX_PULL) * power;
+    vy = Math.min(vy, -180) - pull * 160;
+    if (vy < -720) vy = -720;
+    ctx.fillStyle = `rgba(255,244,220,${0.25 + pull * 0.55})`;
+    for (let i = 0; i < 22; i++) {
+      vx *= DRAG;
+      vy += GRAVITY * 0.038;
+      x += vx * 0.038;
+      y += vy * 0.038;
+      if (y > GROUND) break;
+      ctx.beginPath();
+      ctx.arc(x, y, i % 2 ? 2.5 : 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // power arc
+    ctx.strokeStyle = `rgba(240,180,41,${0.35 + pull * 0.5})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(SLING.rest.x, SLING.rest.y, 20 + pull * 40, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  function drawReadyPulse() {
+    if (state !== "ready" || !axe) return;
+    const p = 0.5 + 0.5 * Math.sin(t * 3.4);
+    ctx.strokeStyle = `rgba(240,180,41,${0.3 + p * 0.5})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(axe.x, axe.y, 28 + p * 8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255,244,220,${0.65 + p * 0.3})`;
+    ctx.font = "700 17px Fredoka,sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("⬅ ciągnij", axe.x - 4, axe.y - 42);
+  }
+
+  function drawBg() {
+    const key = LEVELS[levelIndex].bg;
+    const bg = imgs[key] || imgs.bg;
     ctx.drawImage(bg, 0, 0, W, H);
 
-    // soft vignette sky wash
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, "rgba(255,255,255,0.05)");
-    g.addColorStop(0.55, "rgba(0,0,0,0)");
-    g.addColorStop(1, "rgba(20,10,0,0.15)");
+    // soft ground overlay for consistent collision line
+    const g = ctx.createLinearGradient(0, GROUND - 30, 0, H);
+    g.addColorStop(0, "rgba(60,110,45,0)");
+    g.addColorStop(0.35, "rgba(60,110,45,0.55)");
+    g.addColorStop(1, "rgba(40,80,30,0.9)");
     ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, GROUND - 30, W, H - (GROUND - 30));
 
-    if (imgs.castle) {
-      ctx.globalAlpha = 0.85;
-      ctx.drawImage(imgs.castle, W - 420, GROUND_Y - 260, 320, 180);
-      ctx.globalAlpha = 1;
-    }
-    if (imgs.trees) {
-      ctx.drawImage(imgs.trees, -40, GROUND_Y - 280, 420, 236);
-      ctx.drawImage(imgs.trees, 380, GROUND_Y - 250, 360, 200);
-    }
-    if (imgs.bushes) {
-      ctx.drawImage(imgs.bushes, 40, GROUND_Y - 90, 260, 120);
-      ctx.drawImage(imgs.bushes, W - 300, GROUND_Y - 85, 240, 110);
-    }
-
-    // ground strip
-    ctx.fillStyle = "#3d6b2e";
-    ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
-    ctx.fillStyle = "#5a8f3d";
+    // grass edge
+    ctx.strokeStyle = "rgba(90,150,60,0.8)";
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(0, GROUND_Y);
-    for (let x = 0; x <= W; x += 40) {
-      ctx.lineTo(x, GROUND_Y - 6 - Math.sin(x * 0.03 + levelIndex) * 4);
+    ctx.moveTo(0, GROUND);
+    for (let x = 0; x <= W; x += 24) {
+      ctx.lineTo(x, GROUND - 2 - Math.sin(x * 0.04 + t) * 2);
     }
-    ctx.lineTo(W, H);
-    ctx.lineTo(0, H);
-    ctx.closePath();
-    ctx.fill();
+    ctx.stroke();
 
-    // dirt path
-    ctx.fillStyle = "rgba(140, 100, 55, 0.45)";
-    ctx.beginPath();
-    ctx.moveTo(0, GROUND_Y + 10);
-    ctx.quadraticCurveTo(W * 0.4, GROUND_Y + 30, W, GROUND_Y + 8);
-    ctx.lineTo(W, GROUND_Y + 70);
-    ctx.quadraticCurveTo(W * 0.4, GROUND_Y + 90, 0, GROUND_Y + 55);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  function drawWind() {
-    for (const w of wind) {
-      ctx.fillStyle = `rgba(255,255,255,${w.a})`;
+    for (const c of clouds) {
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = "#fff";
       ctx.beginPath();
-      ctx.arc(w.x, w.y, w.size, 0, Math.PI * 2);
+      ctx.ellipse(c.x, c.y, 50 * c.s, 22 * c.s, 0, 0, Math.PI * 2);
+      ctx.ellipse(c.x + 30 * c.s, c.y + 4, 36 * c.s, 18 * c.s, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.globalAlpha = 1;
     }
   }
 
   function drawHero() {
-    const bob = Math.sin(heroBob) * 4;
-    if (imgs.hero) {
-      const hw = 150;
-      const hh = 126;
-      ctx.drawImage(imgs.hero, ORIGIN.x - 115, ORIGIN.y - hh + 30 + bob, hw, hh);
-    }
-    // stump platform
+    // pień pod procą
     ctx.fillStyle = "#6b4226";
     ctx.beginPath();
-    ctx.ellipse(ORIGIN.x - 30, GROUND_Y - 8, 55, 16, 0, 0, Math.PI * 2);
+    ctx.ellipse(SLING.baseX, GROUND - 2, 48, 12, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#8a5a32";
-    ctx.fillRect(ORIGIN.x - 70, GROUND_Y - 40, 80, 34);
+    ctx.fillStyle = "#8b5a32";
+    ctx.fillRect(SLING.baseX - 36, GROUND - 28, 72, 28);
+
+      if (imgs.hero) {
+      const bob = Math.sin(t * 2) * 2;
+      const hw = 138;
+      const hh = 116;
+      ctx.drawImage(imgs.hero, SLING.baseX - 168, GROUND - hh - 6 + bob, hw, hh);
+    }
   }
 
-  function drawAimGuide() {
-    if (state !== "aim" || !axe) return;
-    const power = Math.min(Math.hypot(aim.dx, aim.dy) / MAX_PULL, 1);
-    // rubber band
-    ctx.strokeStyle = "rgba(90, 50, 20, 0.75)";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(ORIGIN.x - 20, ORIGIN.y + 10);
-    ctx.lineTo(axe.x, axe.y);
-    ctx.lineTo(ORIGIN.x + 10, ORIGIN.y + 20);
-    ctx.stroke();
-
-    // trajectory dots
-    let x = ORIGIN.x + aim.dx;
-    let y = ORIGIN.y + aim.dy;
-    const speed = 980 + power * 1280;
-    let vx = (-aim.dx / MAX_PULL) * speed;
-    let vy = (-aim.dy / MAX_PULL) * speed;
-    ctx.fillStyle = `rgba(255, 246, 224, ${0.25 + power * 0.55})`;
-    for (let i = 0; i < 18; i++) {
-      vx *= AIR;
-      vy += GRAVITY * 0.045;
-      x += vx * 0.045;
-      y += vy * 0.045;
-      if (y > GROUND_Y) break;
-      const r = 3 + (i % 3);
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
+  function syncAxeSprite() {
+    if (!axeEl) return;
+    if (!axe || state === "boot" || state === "overlay") {
+      axeEl.classList.add("hidden");
+      return;
     }
-
-    // power ring
-    ctx.strokeStyle = `rgba(232, 163, 23, ${0.35 + power * 0.5})`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(ORIGIN.x, ORIGIN.y, 20 + power * 30, 0, Math.PI * 2);
-    ctx.stroke();
+    axeEl.classList.remove("hidden");
+    const px = (axe.x / W) * 100;
+    const py = (axe.y / H) * 100;
+    const deg = (axe.ang * 180) / Math.PI;
+    axeEl.style.left = `${px}%`;
+    axeEl.style.top = `${py}%`;
+    axeEl.style.transform = `rotate(${deg}deg)`;
   }
 
   function drawAxe() {
-    if (!axe) return;
-    ctx.save();
-    ctx.translate(axe.x, axe.y);
-    ctx.rotate(axe.angle);
-    const size = 78;
-    if (imgs.axe) {
-      ctx.drawImage(imgs.axe, -size * 0.45, -size * 0.45, size, size);
-    } else {
-      ctx.fillStyle = "#8b5a2b";
-      ctx.fillRect(-30, -4, 50, 8);
-      ctx.fillStyle = "#c0c8d0";
-      ctx.beginPath();
-      ctx.moveTo(10, -18);
-      ctx.lineTo(28, 0);
-      ctx.lineTo(10, 18);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.restore();
+    syncAxeSprite();
   }
 
   function drawMushrooms() {
     for (const m of mushrooms) {
-      if (m.scale <= 0.05) continue;
+      if (m.scale < 0.05) continue;
       ctx.save();
       ctx.translate(m.x, m.y);
-      const wob = m.alive ? Math.sin(m.wobble) * 0.06 : 0;
-      ctx.rotate(wob);
+      ctx.rotate(m.alive ? Math.sin(m.wob) * 0.05 : 0);
       ctx.scale(m.scale, m.scale);
-      if (!m.alive) ctx.globalAlpha = Math.max(0, m.scale);
-      const s = m.r * 2.4;
-      if (imgs.mushroom) {
-        ctx.drawImage(imgs.mushroom, -s / 2, -s * 0.85, s, s * 0.9);
-      } else {
-        ctx.fillStyle = "#8b5a2b";
-        ctx.fillRect(-20, -10, 40, 30);
-        ctx.fillStyle = "#d64545";
-        ctx.beginPath();
-        ctx.ellipse(0, -20, 28, 20, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      if (!m.alive) ctx.globalAlpha = m.scale;
+      const s = m.r * 2.3;
+      if (imgs.mushroom) ctx.drawImage(imgs.mushroom, -s / 2, -s, s, s);
       ctx.restore();
     }
   }
 
   function drawTargets() {
-    for (const t of targets) {
+    for (const tg of targets) {
       ctx.save();
-      ctx.translate(t.x, t.y);
-      const pulse = 1 + t.pulse * 0.08;
-      ctx.scale(pulse, pulse);
-      if (t.hits >= t.maxHits) ctx.globalAlpha = 0.45;
-      const s = t.r * 2.6;
+      ctx.translate(tg.x, tg.y);
+      const sc = 1 + tg.pulse * 0.08;
+      ctx.scale(sc, sc);
+      const s = tg.r * 2.5;
       if (imgs.target) {
-        ctx.drawImage(imgs.target, -s / 2, -s * 0.78, s, s);
-      } else {
-        ctx.fillStyle = "#c4a35a";
+        ctx.globalAlpha = tg.hits ? 0.75 : 1;
+        ctx.drawImage(imgs.target, -s / 2, -s, s, s);
+      }
+      if (tg.hits) {
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#2f8f4e";
         ctx.beginPath();
-        ctx.arc(0, -20, t.r, 0, Math.PI * 2);
+        ctx.arc(0, -s * 0.55, 22, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = "#c23b2e";
+        ctx.strokeStyle = "#fff4dc";
+        ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.arc(0, -20, t.r * 0.35, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(-9, -s * 0.55);
+        ctx.lineTo(-2, -s * 0.45);
+        ctx.lineTo(12, -s * 0.68);
+        ctx.stroke();
       }
       ctx.restore();
     }
   }
 
-  function drawParticles() {
+  function drawFX() {
     for (const p of particles) {
-      const a = 1 - p.age / p.life;
+      ctx.globalAlpha = 1 - p.age / p.life;
       ctx.fillStyle = p.color;
-      ctx.globalAlpha = a;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
-  }
-
-  function drawFloatTexts() {
-    for (const f of floatTexts) {
-      const a = 1 - f.age / f.life;
+    for (const tx of texts) {
+      const a = 1 - tx.age / tx.life;
       ctx.globalAlpha = a;
-      ctx.font = "700 28px Fredoka, sans-serif";
-      ctx.fillStyle = "#fff6e0";
-      ctx.strokeStyle = "rgba(42,26,14,0.7)";
-      ctx.lineWidth = 4;
+      ctx.font = "700 28px Fredoka,sans-serif";
       ctx.textAlign = "center";
-      ctx.strokeText(f.text, f.x, f.y);
-      ctx.fillText(f.text, f.x, f.y);
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "rgba(31,20,12,0.75)";
+      ctx.fillStyle = "#fff4dc";
+      ctx.strokeText(tx.text, tx.x, tx.y);
+      ctx.fillText(tx.text, tx.x, tx.y);
     }
     ctx.globalAlpha = 1;
     ctx.textAlign = "left";
@@ -721,104 +691,86 @@
     if (shake > 0) {
       ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
     }
-    drawBackground();
-    drawWind();
+    drawBg();
     drawTargets();
     drawMushrooms();
     drawHero();
-    drawAimGuide();
+    drawSling();
+    drawTrajectory();
+    drawReadyPulse();
     drawAxe();
-    drawParticles();
-    drawFloatTexts();
+    drawFX();
 
-    // level name ribbon
-    ctx.font = "600 18px Fredoka, sans-serif";
-    ctx.fillStyle = "rgba(42,26,14,0.55)";
+    // level chip
+    ctx.font = "700 16px Fredoka,sans-serif";
     const name = LEVELS[levelIndex].name;
     const tw = ctx.measureText(name).width;
-    ctx.fillRect(24, 18, tw + 24, 32);
-    ctx.fillStyle = "#fff6e0";
-    ctx.fillText(name, 36, 40);
-
+    ctx.fillStyle = "rgba(31,20,12,0.5)";
+    roundRect(18, 14, tw + 22, 28, 10);
+    ctx.fill();
+    ctx.fillStyle = "#fff4dc";
+    ctx.fillText(name, 29, 34);
     ctx.restore();
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
   function loop(ts) {
     if (!lastTs) lastTs = ts;
-    let dt = (ts - lastTs) / 1000;
+    let dt = Math.min((ts - lastTs) / 1000, 0.033);
     lastTs = ts;
-    dt = Math.min(dt, 0.033);
-    if (state !== "boot" && state !== "overlay") {
-      update(dt);
-    }
+    if (state !== "boot" && state !== "overlay") update(dt);
     if (state !== "boot") draw();
     requestAnimationFrame(loop);
   }
 
-  // events
-  canvas.addEventListener("mousedown", (e) => startPull(pointerPos(e)));
-  window.addEventListener("mousemove", (e) => {
-    if (aim.pulling) updateAim(pointerPos(e));
+  canvas.addEventListener("pointerdown", (e) => {
+    canvas.setPointerCapture(e.pointerId);
+    startAim(pointer(e));
   });
-  window.addEventListener("mouseup", () => {
-    if (aim.pulling) releaseThrow();
+  canvas.addEventListener("pointermove", (e) => {
+    if (aim.on) moveAim(pointer(e));
   });
-  canvas.addEventListener(
-    "touchstart",
-    (e) => {
-      e.preventDefault();
-      startPull(pointerPos(e));
-    },
-    { passive: false }
-  );
-  canvas.addEventListener(
-    "touchmove",
-    (e) => {
-      e.preventDefault();
-      if (aim.pulling) updateAim(pointerPos(e));
-    },
-    { passive: false }
-  );
-  canvas.addEventListener(
-    "touchend",
-    (e) => {
-      e.preventDefault();
-      if (aim.pulling) releaseThrow();
-    },
-    { passive: false }
-  );
+  canvas.addEventListener("pointerup", (e) => {
+    if (aim.on) release();
+    try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+  });
+  canvas.addEventListener("pointercancel", () => {
+    if (aim.on) release();
+  });
+  // touch: nie scrolluj strony podczas gry
+  canvas.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
+  canvas.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
 
-  function bindStart(handler) {
-    startBtn.onclick = (e) => {
-      e.preventDefault();
-      ensureAudio();
-      handler();
-    };
-  }
-
-  // boot
   loadAll()
     .then(() => {
       state = "boot";
       draw();
       showOverlay(
         "SiekieroLas",
-        "Przeciągnij siekierę w lewo (jak proca w Angry Birds) i puść. Traf grzybki i tarczę!",
-        "Rzuć siekierą!"
+        "Przeciągnij siekierę w LEWO i puść. Zniszcz grzybki! Tarcza = bonus.",
+        "Start"
       );
       bindStart(() => {
         score = 0;
         levelIndex = 0;
         hideOverlay();
         resetLevel();
-        spawnAxeReady();
       });
       requestAnimationFrame(loop);
     })
     .catch((err) => {
       console.error(err);
-      overlayTitle.textContent = "Błąd ładowania";
-      overlayText.textContent = "Nie udało się wczytać grafik. Odśwież stronę.";
+      overlayTitle.textContent = "Błąd";
+      overlayText.textContent = "Nie wczytano grafik. Odśwież stronę.";
       startBtn.style.display = "none";
     });
 })();

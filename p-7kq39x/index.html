@@ -114,18 +114,18 @@ function makeDetector(onRep){
   const th=Math.acos(Math.max(-1,Math.min(1,(F[0]*S.r[0]+F[1]*S.r[1]+F[2]*S.r[2])/fm)))*57.3;S.th=th;
   if(S.st2!==1&&th<12){const kr=1-Math.exp(-dt/(S.calib?.3:3));for(let i=0;i<3;i++)S.r[i]+=kr*(F[i]/fm-S.r[i]);const rm=Math.hypot(...S.r);for(let i=0;i<3;i++)S.r[i]/=rm}
   if(S.calib){if(S.cn++>30){S.cs+=ap;S.vs=(S.vs||0)+S.v*S.v;S.hs=(S.hs||0)+S.h}return S.pos}
-  if(!S.st2){if(th>28&&t-S.last>0.6){S.st2=1;S.t2=t;S.mx=th}}
+  if(!S.st2){if(th>20&&t-S.last>0.6){S.st2=1;S.t2=t;S.mx=th}}
   else{S.mx=Math.max(S.mx,th);const d2=t-S.t2;
-   if(d2>5||(th<15&&S.mx<40)){S.st2=0}
-   else if(th<Math.max(12,S.mx*.35)){S.st2=0;if(d2>=0.4&&S.mx>=40)S.rep(t,'T'+S.mx.toFixed(0))}}
-  const D=Math.max(.06,1.5*S.noise,.25*S.depth,.3*S.vr);
+   if(d2>5||(th<12&&S.mx<30)){S.st2=0}
+   else if(th<Math.max(12,S.mx*.35)){S.st2=0;if(d2>=0.35&&S.mx>=30)S.rep(t,'T'+S.mx.toFixed(0))}}
+  const D=Math.max(.03,1.0*S.noise,.15*S.depth,.18*S.vr);
   if(S.st===0){S.peak=Math.max(S.pos,(S.peak??0)-dt*.04);
    if(S.pos<S.peak-D&&t-S.last>0.6){S.st=1;S.t0=t;S.minPos=S.pos;S.tMin=t;S.top=S.peak;S.ev=0;S.eh=0}}
   else{ S.ev+=Math.max(0,Math.abs(S.v)-1.3*(S.vr||0))*dt;S.eh+=Math.max(0,S.h-1.3*(S.hn||0))*dt; if(S.pos<S.minPos){S.minPos=S.pos;S.tMin=t}
    const dur=t-S.t0,dep=S.top-S.minPos;
    if(dur>5){S.st=0;S.peak=S.pos}
    else if(S.pos>S.minPos+.5*dep&&t-S.tMin>0.15){S.st=0;S.peak=S.pos;
-    if(dur>=0.3&&dep>Math.max(.08,D*1.2)&&S.ev>2*S.eh){S.depth=S.depth?S.depth*.7+.3*dep:dep;S.rep(t,'P'+dep.toFixed(2)+'/'+(S.ev/S.eh).toFixed(2))}}}
+    if(dur>=0.3&&dep>Math.max(.04,D)&&S.ev>1.2*S.eh){S.depth=S.depth?S.depth*.7+.3*dep:dep;S.rep(t,'P'+dep.toFixed(2)+'/'+(S.ev/S.eh).toFixed(2))}}}
   return S.pos};
  S.rep=function(t,w){if(t-S.last<0.6)return;S.last=t;S.st=0;S.st2=0;S.peak=S.pos;onRep&&onRep()};
  S.endCalib=function(){S.calib=false;S.vel=0;S.pos=0;S.noise=S.cn>31?Math.min(.05,Math.max(.01,S.cs/(S.cn-31))):.03;S.hn=S.cn>31?S.hs/(S.cn-31):.3;S.vr=S.cn>31?Math.sqrt(S.vs/(S.cn-31)):.1};
@@ -176,7 +176,7 @@ requestAnimationFrame(frame);
 /* ---------- liczenie ---------- */
 function onRep(){if(!running)return;count++;showNum(count,count%10===0);repSnd(count);$('mint').classList.remove('flash');void $('mint').offsetWidth;$('mint').classList.add('flash');
  if(count%10===0){tenSnd();burst();buzz([60,40,60,40,140])}else buzz(40);
- setTimeout(()=>say(String(count)),count%10===0?250:120);
+ 
  if(count>best){$('best').textContent='rekord '+count}}
 function onMotion(e){const a=e.accelerationIncludingGravity;if(!a||a.x==null||!det)return;det.update(a.x,a.y,a.z,performance.now()/1000)}
 async function wake(){try{if('wakeLock' in navigator){wl=await navigator.wakeLock.request('screen')}}catch(e){}}
@@ -188,7 +188,7 @@ function countdown(done){const cd=$('cd'),s=$('cdn');cd.classList.remove('out');
 function begin(){count=0;$('num').innerHTML='<span class="d big">0</span>';det=makeDetector(onRep);tAcc=0;
  countdown(()=>{det.endCalib();running=true;t0=performance.now();$('hint').style.opacity=1;setTimeout(()=>$('hint').style.opacity=0,3500)})}
 $('start').addEventListener('click',async()=>{
- audio();say(' ');
+ audio();
  if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){try{await DeviceMotionEvent.requestPermission()}catch(e){}}
  window.addEventListener('devicemotion',onMotion);wake();
  $('start').classList.add('out');begin()});

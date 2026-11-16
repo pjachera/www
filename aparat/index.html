@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Aparat Pro</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="sharpen"><feConvolveMatrix order="3" preserveAlpha="true" kernelMatrix="0 -0.6 0 -0.6 3.4 -0.6 0 -0.6 0"/></filter>
+</svg>
+
+<div id="app">
+  <div id="stage">
+    <video id="video" playsinline muted autoplay></video>
+    <div id="frame">
+      <canvas id="view"></canvas>
+      <canvas id="fx"></canvas>
+      <canvas id="hud"></canvas>
+    </div>
+    <div id="flash"></div>
+    <div id="countdown"></div>
+    <canvas id="histo" width="256" height="100" class="hidden"></canvas>
+    <div id="badges"></div>
+    <div id="recInfo" class="hidden"><span class="dot"></span><span id="recTime">00:00</span></div>
+  </div>
+
+  <header id="top">
+    <button id="btnMenu" class="ib" title="Funkcje">☰</button>
+    <button id="btnStab" class="tg" title="Stabilizacja">STAB</button>
+    <button id="btnTorch" class="tg" title="Latarka">⚡</button>
+    <button id="btnTimer" class="tg" title="Samowyzwalacz">⏱</button>
+    <button id="btnGrid" class="tg" title="Siatka">▦</button>
+    <button id="btnLevel" class="tg" title="Poziomica">⊖</button>
+    <button id="btnPro" class="tg" title="Sterowanie ręczne">PRO</button>
+  </header>
+
+  <div id="proPanel" class="panel hidden"></div>
+
+  <footer id="bottom">
+    <div id="zoomRow">
+      <div id="zoomPills"></div>
+      <input id="zoomSlider" type="range" min="0" max="1000" value="0">
+      <div id="zoomVal">1.0×</div>
+    </div>
+    <div id="modes"></div>
+    <div id="controls">
+      <button id="btnGallery" class="thumb" title="Galeria"></button>
+      <button id="shutter" title="Zrób zdjęcie"><span></span></button>
+      <button id="btnSwitch" class="ib round" title="Przełącz kamerę">⟲</button>
+    </div>
+  </footer>
+
+  <div id="startScreen" class="overlay">
+    <div class="startBox">
+      <div class="logo">◉</div>
+      <h1>Aparat Pro</h1>
+      <p>20 profesjonalnych funkcji: stabilizacja, zoom do 50×, AI upscale, tryb nocny, HDR, skaner dokumentów i więcej.</p>
+      <button id="btnStart" class="primary">Uruchom aparat</button>
+      <p id="startErr" class="err"></p>
+    </div>
+  </div>
+
+  <div id="sheet" class="sheet hidden">
+    <div class="sheetHead"><h2 id="sheetTitle"></h2><button class="ib close" data-close>✕</button></div>
+    <div id="sheetBody"></div>
+  </div>
+
+  <div id="viewer" class="overlay hidden">
+    <div class="vTop"><button class="ib" id="vClose">✕</button><span id="vInfo"></span><button class="ib" id="vDel">🗑</button></div>
+    <div id="vMedia"></div>
+    <div class="vActions">
+      <button id="vDown">Pobierz</button>
+      <button id="vShare">Udostępnij</button>
+      <button id="vAi2">AI ×2</button>
+      <button id="vAi4">AI ×4</button>
+      <button id="vDoc">Prostuj</button>
+    </div>
+  </div>
+
+  <div id="docEditor" class="overlay hidden">
+    <div class="vTop"><button class="ib" id="docCancel">✕</button><span>Dopasuj rogi dokumentu</span><span></span></div>
+    <div id="docWrap"><canvas id="docCanvas"></canvas></div>
+    <div class="vActions">
+      <button id="docAuto">Wykryj ponownie</button>
+      <button id="docColor" class="primary">Zapisz (kolor)</button>
+      <button id="docBW" class="primary">Zapisz (skan)</button>
+    </div>
+  </div>
+
+  <div id="busy" class="overlay hidden"><div class="busyBox"><div class="spinner"></div><p id="busyText">Przetwarzanie…</p><div class="bar"><div id="busyBar"></div></div></div></div>
+  <div id="toast"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -100,3 +100,4 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   .sheet{left:auto;right:20px;bottom:20px;width:440px;border-radius:18px;border:1px solid var(--line)}
   #top{right:340px}
 }
+@media (max-width:400px){#top{gap:2px;padding-left:4px;padding-right:4px}#top .tg{min-width:34px;padding:0 4px;font-size:12px}#top .ib{width:36px}}

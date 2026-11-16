@@ -1,5 +1,5 @@
 'use strict';
-/* Aparat Pro – 20 funkcji, działa w całości w przeglądarce */
+/* Aparat Pro – 21 funkcji, działa w całości w przeglądarce */
 const $ = s => document.querySelector(s);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -15,7 +15,7 @@ const CDN = {
 const S = {
   stream: null, track: null, caps: {}, facing: 'environment',
   vw: 0, vh: 0, mode: 'photo',
-  stab: false, grid: false, level: false, histo: false, peaking: false, zebra: false, torch: false,
+  stab: false, hstab: false, grid: false, level: false, histo: false, peaking: false, zebra: false, torch: false,
   timer: 0, zoom: 1, hwZoom: 1, digital: 1, zMin: 1, zMax: 50,
   off: { x: 0, y: 0 }, path: { x: 0, y: 0 }, smooth: { x: 0, y: 0 }, prevProf: null,
   busy: false, recorder: null, recChunks: [], recStart: 0, tl: null,
@@ -79,7 +79,7 @@ async function startCamera() {
   S.zMax = Math.max(50, z ? z.max : 1);
   S.torch = false; S.zoom = 1; setZoom(1);
   $('#frame').classList.toggle('mirror', S.facing === 'user');
-  resetStab(); buildZoomPills(); updateButtons(); buildPro();
+  resetStab(); resetHStab(); buildZoomPills(); updateButtons(); buildPro();
 }
 function stopCamera() { if (S.stream) S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
 
@@ -180,6 +180,7 @@ function updateStab() {
   S.off.x = ox; S.off.y = oy;
 }
 function cropSize() {
+  if (S.hstab && HZ.cw) return { cw: HZ.cw, ch: HZ.ch };
   const f = S.digital * (S.stab ? STAB_MARGIN : 1);
   return { cw: S.vw / f, ch: S.vh / f };
 }
@@ -187,6 +188,170 @@ function cropRect(W = S.vw, H = S.vh) {
   const { cw, ch } = cropSize(); const kx = W / S.vw, ky = H / S.vh;
   const x = clamp((S.vw - cw) / 2 + S.off.x, 0, S.vw - cw), y = clamp((S.vh - ch) / 2 + S.off.y, 0, S.vh - ch);
   return { x: x * kx, y: y * ky, w: cw * kx, h: ch * ky };
+}
+
+/* ================= HORYZONT + SUPER STABILIZACJA ================= */
+// Blokada horyzontu (czujnik grawitacji + żyroskop) + bardzo mocna stabilizacja (analiza obrazu, duży zapas kadru)
+const H_MARGIN = 1.38, HAW = 256, HSR = 18;
+const HZ = {
+  roll: null, accRoll: null, lastMotion: 0, lastT: 0, hasSensor: false, warned: false,
+  cxy: 0, cxx: 1e-6, cyy: 1e-6, prevAcc: null, beta: null, betaT: 0,
+  ios: /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1),
+  flipVote: 0, gs: 0, gLP: null, aLP: null,
+  zoomK: 1, cw: 0, ch: 0, ox: 0, oy: 0, rot: 0,
+  path: { x: 0, y: 0, r: 0 }, s1: { x: 0, y: 0, r: 0 }, s2: { x: 0, y: 0, r: 0 }, prevQ: null
+};
+HZ.flipVote = HZ.ios ? 20 : -20;
+const wrap180 = a => { a = ((a + 180) % 360 + 360) % 360 - 180; return a; };
+const screenAngle = () => (screen.orientation && typeof screen.orientation.angle === 'number' ? screen.orientation.angle : (window.orientation || 0));
+function resetHStab() {
+  HZ.path = { x: 0, y: 0, r: 0 }; HZ.s1 = { x: 0, y: 0, r: 0 }; HZ.s2 = { x: 0, y: 0, r: 0 };
+  HZ.prevQ = null; HZ.ox = HZ.oy = 0; HZ.zoomK = 1;
+}
+// próbka "w górę" w układzie urządzenia (x w prawo, y do góry ekranu) -> przechył względem ekranu
+function feedUp(x, y, now, gyro) {
+  const mag = Math.hypot(x, y); HZ.hasSensor = true;
+  const dt = HZ.lastT ? clamp((now - HZ.lastT) / 1000, 0.001, 0.1) : 0.016; HZ.lastT = now;
+  let acc = null;
+  if (mag > 2.5) acc = wrap180(Math.atan2(-x, y) * 180 / Math.PI + screenAngle()); // telefon nie leży płasko
+  if (HZ.roll == null) { if (acc != null) HZ.roll = acc; HZ.prevAcc = acc; return; }
+  // automatyczne dopasowanie znaku żyroskopu (różne przeglądarki) przez korelację z akcelerometrem
+  let useGyro = false, gs = 1;
+  if (gyro != null && isFinite(gyro)) {
+    HZ.gLP = HZ.gLP == null ? gyro : HZ.gLP + (gyro - HZ.gLP) * 0.15;
+    if (acc != null) {
+      const prevLP = HZ.aLP; HZ.aLP = HZ.aLP == null ? acc : wrap180(HZ.aLP + wrap180(acc - HZ.aLP) * 0.15);
+      if (prevLP != null) {
+        const dA = wrap180(HZ.aLP - prevLP) / dt;
+        if (Math.abs(dA) < 400) { HZ.cxy = HZ.cxy * 0.99 + HZ.gLP * dA; HZ.cxx = HZ.cxx * 0.99 + HZ.gLP * HZ.gLP; HZ.cyy = HZ.cyy * 0.99 + dA * dA; }
+      }
+    }
+    const r = HZ.cxy / Math.sqrt(HZ.cxx * HZ.cyy);
+    if (Math.abs(r) > 0.5 && HZ.cyy > 2000) HZ.gs = r > 0 ? 1 : -1; // znak zapamiętany (poprawiany przy wyraźnym ruchu)
+    if (HZ.gs) { useGyro = true; gs = HZ.gs; }
+  }
+  HZ.prevAcc = acc;
+  if (useGyro) {
+    HZ.roll = wrap180(HZ.roll + gs * gyro * dt);
+    if (acc != null) HZ.roll = wrap180(HZ.roll + wrap180(acc - HZ.roll) * 0.03);
+  } else if (acc != null) HZ.roll = wrap180(HZ.roll + wrap180(acc - HZ.roll) * 0.12);
+}
+function onHMotion(e) {
+  const g = e.accelerationIncludingGravity; if (!g || g.x == null || g.y == null) return;
+  // znak osi różni się między przeglądarkami (iOS) – sprawdzamy go kątem beta z deviceorientation
+  if (HZ.beta != null && performance.now() - HZ.betaT < 1000 && Math.abs(Math.sin(HZ.beta * Math.PI / 180)) > 0.5 && Math.abs(g.y) > 4)
+    HZ.flipVote = clamp(HZ.flipVote + (g.y * Math.sin(HZ.beta * Math.PI / 180) < 0 ? 1 : -1), -60, 60);
+  HZ.ios = HZ.flipVote > 0;
+  let x = g.x, y = g.y; if (HZ.ios) { x = -x; y = -y; }
+  const rr = e.rotationRate; const gyro = rr && rr.alpha != null ? -rr.alpha : null; // obrót wokół osi ekranu
+  HZ.lastMotion = performance.now(); feedUp(x, y, HZ.lastMotion, gyro);
+}
+function onHOrient(e) {
+  if (e.beta != null) { HZ.beta = e.beta; HZ.betaT = performance.now(); }
+  if (performance.now() - HZ.lastMotion < 600 || e.beta == null || e.gamma == null) return; // zapas: gdy brak devicemotion
+  const b = e.beta * Math.PI / 180, gm = e.gamma * Math.PI / 180;
+  feedUp(-Math.cos(b) * Math.sin(gm) * 9.81, Math.sin(b) * 9.81, performance.now(), null);
+}
+async function enableHorizon() {
+  // iOS: zgoda musi być poproszona w kliknięciu
+  try {
+    const reqs = [];
+    if (typeof DeviceMotionEvent !== 'undefined' && DeviceMotionEvent.requestPermission) reqs.push(DeviceMotionEvent.requestPermission());
+    if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) reqs.push(DeviceOrientationEvent.requestPermission());
+    const res = await Promise.all(reqs);
+    if (res.some(r => r !== 'granted')) toast('Brak zgody na czujniki ruchu – działa tylko stabilizacja z obrazu.', 3500);
+  } catch (e) { toast('Brak zgody na czujniki ruchu – działa tylko stabilizacja z obrazu.', 3500); }
+  if (!HZ.listening) {
+    HZ.listening = true;
+    window.addEventListener('devicemotion', onHMotion);
+    window.addEventListener('deviceorientation', onHOrient);
+  }
+  setTimeout(() => {
+    if (S.hstab && !HZ.hasSensor && !HZ.warned) { HZ.warned = true; toast('Brak czujników ruchu (np. komputer) – horyzont z analizy obrazu, stabilizacja działa.', 4000); }
+  }, 1500);
+}
+function subShift(cur, prev, R) {
+  const n = cur.length, E = new Float32Array(2 * R + 1); let best = 0, bestE = Infinity;
+  for (let s = -R; s <= R; s++) {
+    let e = 0, c = 0;
+    for (let i = Math.max(R, s + R); i < Math.min(n - R, n + s - R); i++) { const d = cur[i] - prev[i - s]; e += d * d; c++; }
+    e /= c || 1; E[s + R] = e; if (e < bestE) { bestE = e; best = s; }
+  }
+  const i = best + R;
+  if (i > 0 && i < 2 * R) { const a = E[i - 1], b = E[i], c = E[i + 1], den = a - 2 * b + c; if (den > 1e-9) return best + clamp(0.5 * (a - c) / den, -0.5, 0.5); }
+  return best;
+}
+// ruch w 4 ćwiartkach -> przesunięcie + obrót klatki
+function estimateRigid(src, sx, sy, sw, sh) {
+  const ah = Math.round(HAW * sh / sw);
+  if (stabC.width !== HAW || stabC.height !== ah) { stabC.width = HAW; stabC.height = ah; }
+  sctx.drawImage(src, sx, sy, sw, sh, 0, 0, HAW, ah);
+  const qw = HAW >> 1, qh = ah >> 1, Q = [];
+  for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) Q.push({ p: profiles(sctx.getImageData(i * qw, j * qh, qw, qh).data, qw, qh), cx: (i + 0.5) * qw - HAW / 2, cy: (j + 0.5) * qh - ah / 2 });
+  const prev = HZ.prevQ; HZ.prevQ = Q;
+  if (!prev || prev[0].p.col.length !== Q[0].p.col.length || prev[0].p.row.length !== Q[0].p.row.length) return null;
+  let tx = 0, ty = 0; const v = [];
+  for (let k = 0; k < 4; k++) { const dx = subShift(Q[k].p.col, prev[k].p.col, HSR), dy = subShift(Q[k].p.row, prev[k].p.row, HSR); v.push([dx, dy]); tx += dx; ty += dy; }
+  tx /= 4; ty /= 4;
+  let num = 0, den = 0;
+  for (let k = 0; k < 4; k++) { const px = Q[k].cx, py = Q[k].cy; num += px * (v[k][1] - ty) - py * (v[k][0] - tx); den += px * px + py * py; }
+  let th = den ? num / den : 0; // rad, + = zgodnie z zegarem
+  if (Math.abs(th) > 0.05) th = 0;
+  const k = sw / HAW;
+  return { dx: tx * k, dy: ty * k, dr: th * 180 / Math.PI };
+}
+function hGeometry() {
+  const d = S.digital, cw0 = S.vw / (d * H_MARGIN), ch0 = S.vh / (d * H_MARGIN);
+  const t = HZ.rot * Math.PI / 180, c = Math.abs(Math.cos(t)), s = Math.abs(Math.sin(t));
+  const need = Math.min(1, (S.vw * 0.47) / ((cw0 * c + ch0 * s) / 2), (S.vh * 0.47) / ((cw0 * s + ch0 * c) / 2));
+  // natychmiast przybliż, gdy trzeba (żadnych czarnych rogów), oddalaj powoli
+  HZ.zoomK = need < HZ.zoomK ? need : HZ.zoomK + (need - HZ.zoomK) * 0.04;
+  HZ.cw = cw0 * HZ.zoomK; HZ.ch = ch0 * HZ.zoomK;
+  const bx = (HZ.cw * c + HZ.ch * s) / 2, by = (HZ.cw * s + HZ.ch * c) / 2;
+  return { mx: Math.max(0, S.vw / 2 - bx), my: Math.max(0, S.vh / 2 - by) };
+}
+function updateHStab() {
+  const dd = Math.min(S.digital, 4), rw = S.vw / dd, rh = S.vh / dd;
+  const m = estimateRigid(video, (S.vw - rw) / 2, (S.vh - rh) / 2, rw, rh);
+  if (m && (Math.abs(m.dx) > rw * 0.2 || Math.abs(m.dy) > rh * 0.2)) { resetHStab(); }
+  else if (m) { HZ.path.x += m.dx; HZ.path.y += m.dy; HZ.path.r += m.dr; }
+  // dwustopniowy filtr dolnoprzepustowy toru kamery = bardzo "zablokowany" obraz
+  const k = 0.03;
+  for (const a of ['x', 'y', 'r']) { HZ.s1[a] += (HZ.path[a] - HZ.s1[a]) * k; HZ.s2[a] += (HZ.s1[a] - HZ.s2[a]) * k; }
+  // obrót: czujnik (prawdziwy poziom) albo wygładzanie obrotu z obrazu
+  const sensor = HZ.hasSensor && HZ.roll != null && performance.now() - HZ.lastT < 1500;
+  if (sensor) HZ.rot = S.facing === 'user' ? -HZ.roll : HZ.roll;
+  else {
+    let jr = HZ.path.r - HZ.s2.r; if (Math.abs(jr) > 8) { jr = Math.sign(jr) * 8; HZ.s1.r = HZ.s2.r = HZ.path.r - jr; }
+    HZ.rot = -jr;
+  }
+  const { mx, my } = hGeometry();
+  let ox = HZ.path.x - HZ.s2.x, oy = HZ.path.y - HZ.s2.y;
+  if (Math.abs(ox) > mx) { ox = Math.sign(ox) * mx; HZ.s1.x = HZ.s2.x = HZ.path.x - ox; }
+  if (Math.abs(oy) > my) { oy = Math.sign(oy) * my; HZ.s1.y = HZ.s2.y = HZ.path.y - oy; }
+  HZ.ox = ox; HZ.oy = oy;
+}
+// rysuje wypoziomowany i ustabilizowany kadr (kx/ky = skala źródła względem wideo)
+function drawHStab(ctx, src, W, Hh, kx = 1, ky = 1) {
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, Hh);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.translate(W / 2, Hh / 2); ctx.rotate(HZ.rot * Math.PI / 180);
+  ctx.scale(W / (HZ.cw * kx), Hh / (HZ.ch * ky));
+  ctx.drawImage(src, -(S.vw / 2 + HZ.ox) * kx, -(S.vh / 2 + HZ.oy) * ky);
+  ctx.restore();
+}
+function drawHStabHud(w, h, lw) {
+  const sensor = HZ.hasSensor && HZ.roll != null;
+  hctx.save();
+  hctx.strokeStyle = 'rgba(76,217,100,.85)'; hctx.lineWidth = lw * 2; hctx.setLineDash([w * 0.02, w * 0.012]);
+  hctx.beginPath(); hctx.moveTo(w * 0.08, h / 2); hctx.lineTo(w * 0.92, h / 2); hctx.stroke(); hctx.setLineDash([]);
+  const fs = Math.max(11, Math.round(w / 45)); hctx.font = `600 ${fs}px sans-serif`; hctx.textAlign = 'center';
+  const txt = sensor ? `🔒 HORYZONT  ${(HZ.roll > 0 ? '+' : '') + HZ.roll.toFixed(1)}°` : '🔒 SUPER STAB · brak czujnika (poziom z obrazu)';
+  const tw = hctx.measureText(txt).width + fs;
+  hctx.fillStyle = 'rgba(0,0,0,.5)'; hctx.fillRect(w / 2 - tw / 2, h - fs * 2.6, tw, fs * 1.7);
+  hctx.fillStyle = sensor ? '#4cd964' : '#ffb020'; hctx.fillText(txt, w / 2, h - fs * 1.35);
+  hctx.restore();
 }
 
 /* ================= RENDER ================= */
@@ -207,11 +372,14 @@ function render(t) {
   requestAnimationFrame(render);
   if (!S.stream || !S.vw || video.readyState < 2) return;
   S.frameNo++;
-  if (video.videoWidth !== S.vw) { S.vw = video.videoWidth; S.vh = video.videoHeight; resetStab(); }
-  updateStab(); sizeCanvases();
-  const r = cropRect();
-  vctx.imageSmoothingQuality = 'high';
-  vctx.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, view.width, view.height);
+  if (video.videoWidth !== S.vw) { S.vw = video.videoWidth; S.vh = video.videoHeight; resetStab(); resetHStab(); }
+  if (S.hstab) { updateHStab(); sizeCanvases(); drawHStab(vctx, video, view.width, view.height); }
+  else {
+    updateStab(); sizeCanvases();
+    const r = cropRect();
+    vctx.imageSmoothingQuality = 'high';
+    vctx.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, view.width, view.height);
+  }
   if (S.mode === 'portrait') portraitLive();
   drawFx(); drawHud();
   if (S.mode === 'qr' && t - (S.qrT || 0) > 250) { S.qrT = t; scanQR(); }
@@ -346,6 +514,7 @@ function drawHud() {
       hctx.strokeStyle = '#4cd964'; hctx.beginPath(); S.qrBox.pts.forEach((p, i) => i ? hctx.lineTo(p.x, p.y) : hctx.moveTo(p.x, p.y)); hctx.closePath(); hctx.stroke();
     }
   }
+  if (S.hstab) drawHStabHud(w, h, lw);
   if (S.mode === 'doc' && S.docLive) {
     hctx.strokeStyle = '#4cd964'; hctx.lineWidth = lw * 3; hctx.fillStyle = 'rgba(76,217,100,.12)'; hctx.beginPath();
     S.docLive.forEach((p, i) => { const X = p.x * w, Y = p.y * h; i ? hctx.lineTo(X, Y) : hctx.moveTo(X, Y); }); hctx.closePath(); hctx.fill(); hctx.stroke();
@@ -429,6 +598,7 @@ function grabFrame(src = video, W = S.vw, H = S.vh, upscale = true, maxDim = 0) 
   if (maxDim && Math.max(ow, oh) > maxDim) { const k = maxDim / Math.max(ow, oh); ow *= k; oh *= k; }
   if (upscale && S.digital > 1) { const k = Math.min(S.digital, 4096 / r.w, 4096 / r.h); ow = r.w * Math.max(1, k); oh = r.h * Math.max(1, k); }
   const c = mkCanvas(ow, oh), g = c.getContext('2d', { willReadFrequently: true });
+  if (S.hstab && HZ.cw) { drawHStab(g, src, c.width, c.height, W / S.vw, H / S.vh); return c; }
   g.imageSmoothingQuality = 'high'; g.drawImage(src, r.x, r.y, r.w, r.h, 0, 0, c.width, c.height);
   return c;
 }
@@ -562,7 +732,7 @@ async function captureMax() {
     let blob; try { blob = await S.imageCapture.takePhoto(opts); } catch (e) { blob = await S.imageCapture.takePhoto(); }
     const bmp = await createImageBitmap(blob);
     // zastosuj ten sam kadr (zoom cyfrowy) proporcjonalnie
-    if (S.digital > 1.01 || S.stab) {
+    if (S.digital > 1.01 || S.stab || S.hstab) {
       const c = finishZoom(grabFrame(bmp, bmp.width, bmp.height, false)); await saveCanvas(c, 'max');
     } else await saveBlob(blob, 'image', 'max');
     toast(`Zapisano ${bmp.width}×${bmp.height} px`);
@@ -905,6 +1075,7 @@ function buildModes() {
 function updateBadges() {
   const b = [];
   if (S.stab) b.push('STABILIZACJA');
+  if (S.hstab) b.push('HORYZONT + SUPER STAB');
   if (S.digital > 1.01) b.push('ZOOM CYFROWY ' + S.digital.toFixed(1) + '×');
   if (S.timer) b.push('TIMER ' + S.timer + 's');
   if (S.peaking) b.push('PEAKING'); if (S.zebra) b.push('ZEBRA');
@@ -913,6 +1084,7 @@ function updateBadges() {
 setInterval(updateBadges, 500);
 function updateButtons() {
   $('#btnStab').classList.toggle('on', S.stab);
+  $('#btnHor').classList.toggle('on', S.hstab);
   $('#btnGrid').classList.toggle('on', S.grid);
   $('#btnLevel').classList.toggle('on', S.level);
   $('#btnTorch').classList.toggle('on', S.torch);
@@ -922,7 +1094,14 @@ function updateButtons() {
   $('#histo').classList.toggle('hidden', !S.histo);
 }
 const TOGGLES = {
-  stab() { S.stab = !S.stab; resetStab(); toast(S.stab ? 'Stabilizacja włączona (kadr przycięty o 15%)' : 'Stabilizacja wyłączona'); },
+  stab() { S.stab = !S.stab; resetStab(); if (S.stab && S.hstab) { S.hstab = false; HZ.cw = 0; } toast(S.stab ? 'Stabilizacja włączona (kadr przycięty o 15%)' : 'Stabilizacja wyłączona'); },
+  async hstab() {
+    if (S.hstab) { S.hstab = false; HZ.cw = 0; resetStab(); toast('Horyzont + Super stabilizacja wyłączone'); return; }
+    const p = enableHorizon(); // wywołane w kliknięciu (iOS)
+    S.stab = false; resetStab(); resetHStab(); S.hstab = true;
+    toast('Horyzont zablokowany + Super stabilizacja (kadr przycięty ~28%)', 3000);
+    await p;
+  },
   grid() { S.grid = !S.grid; },
   async level() { if (!S.level) { if (await enableLevel()) S.level = true; } else S.level = false; },
   histo() { S.histo = !S.histo; },
@@ -936,7 +1115,7 @@ const TOGGLES = {
   pro() { $('#proPanel').classList.toggle('hidden'); }
 };
 async function toggle(k) { await TOGGLES[k](); updateButtons(); updateBadges(); }
-$('#btnStab').onclick = () => toggle('stab'); $('#btnGrid').onclick = () => toggle('grid'); $('#btnLevel').onclick = () => toggle('level');
+$('#btnStab').onclick = () => toggle('stab'); $('#btnHor').onclick = () => toggle('hstab'); $('#btnGrid').onclick = () => toggle('grid'); $('#btnLevel').onclick = () => toggle('level');
 $('#btnTorch').onclick = () => toggle('torch'); $('#btnTimer').onclick = () => toggle('timer'); $('#btnPro').onclick = () => toggle('pro');
 $('#shutter').onclick = shutter; $('#btnGallery').onclick = openGallery; $('#btnMenu').onclick = openFeatures;
 $('#btnSwitch').onclick = async () => {
@@ -977,11 +1156,11 @@ function openSheet(title, html) { $('#sheetTitle').textContent = title; $('#shee
 function closeSheet() { $('#sheet').classList.add('hidden'); }
 document.querySelector('[data-close]').onclick = closeSheet;
 
-/* ---- menu 20 funkcji ---- */
+/* ---- menu funkcji ---- */
 function support() {
   const c = S.caps, hasMR = !!window.MediaRecorder && !!view.captureStream;
   return {
-    stab: true, zoom: true, ai: !!window.WebGLRenderingContext, night: true, hdr: true, burst: true, timer: true, grid: true,
+    stab: true, hstab: true, zoom: true, ai: !!window.WebGLRenderingContext, night: true, hdr: true, burst: true, timer: true, grid: true,
     level: typeof DeviceMotionEvent !== 'undefined', manual: !!(c.exposureCompensation || c.exposureTime || c.iso || c.colorTemperature || c.focusDistance),
     torch: !!c.torch, histo: true, peaking: true, zebra: true, qr: true, doc: true, video: hasMR, timelapse: hasMR,
     portrait: typeof WebAssembly !== 'undefined', max: !!(S.imageCapture && S.imageCapture.takePhoto)
@@ -989,6 +1168,7 @@ function support() {
 }
 const FEATURES = [
   ['stab', 'Stabilizacja obrazu', 'Cyfrowa stabilizacja na żywo: analiza ruchu klatek i kompensacja kadrem.', () => toggle('stab')],
+  ['hstab', 'Horyzont + Super stabilizacja', 'Blokada horyzontu jak w kamerach sportowych (żyroskop) + bardzo mocna stabilizacja obrazu.', () => { if (!S.hstab) toggle('hstab'); }],
   ['zoom', 'Mega zoom do 50×', 'Zoom optyczny/sprzętowy + cyfrowy z wyostrzaniem, gest szczypania.', () => setZoom(10)],
   ['ai', 'AI upscale ×2 / ×4', 'Sieć neuronowa ESRGAN (TensorFlow.js) w galerii; zapas: Lanczos.', () => openGallery()],
   ['night', 'Tryb nocny', 'Składa 12 klatek z wyrównaniem – mniej szumu, jaśniejszy obraz.', () => setMode('night')],
@@ -1011,7 +1191,7 @@ const FEATURES = [
 ];
 function openFeatures() {
   const sup = support();
-  openSheet('Funkcje (20)', FEATURES.map(([k, t, d], i) => `<button class="feat" data-i="${i}"><span class="n">${i + 1}</span><span><div class="t">${t}</div><div class="d">${d}</div></span><span class="s ${sup[k] ? 'ok' : 'no'}">${sup[k] ? '● dostępne' : '○ brak w tej przeglądarce'}</span></button>`).join(''));
+  openSheet(`Funkcje (${FEATURES.length})`, FEATURES.map(([k, t, d], i) => `<button class="feat" data-i="${i}"><span class="n">${i + 1}</span><span><div class="t">${t}</div><div class="d">${d}</div></span><span class="s ${sup[k] ? 'ok' : 'no'}">${sup[k] ? '● dostępne' : '○ brak w tej przeglądarce'}</span></button>`).join(''));
   document.querySelectorAll('.feat').forEach(b => b.onclick = () => {
     const f = FEATURES[+b.dataset.i]; closeSheet();
     if (!sup[f[0]]) toast(`„${f[1]}” nie jest obsługiwane na tym urządzeniu lub w tej przeglądarce.`, 3500);

@@ -370,6 +370,112 @@
       font-size: 12px;
       font-weight: 600;
     }
+
+    /* ---- v2 ---- */
+    .cam-tools {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 8px;
+    }
+    .cam-tools button {
+      border: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 99px;
+      background: rgba(0,0,0,.55);
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .cam-tools button.on { background: var(--orange); }
+    .cam-tools button[hidden] { display: none; }
+    .laser {
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      top: 50%;
+      height: 2px;
+      background: var(--red);
+      box-shadow: 0 0 10px var(--red);
+      animation: laser 1.6s ease-in-out infinite;
+    }
+    @keyframes laser { 0%,100% { transform: translateY(-38px); } 50% { transform: translateY(38px); } }
+    .viewfinder.hit::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(255,176,32,.55);
+      animation: hit .45s ease-out forwards;
+    }
+    @keyframes hit { from { opacity: 1; } to { opacity: 0; } }
+
+    .btn-photo {
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,122,0,.45);
+      color: var(--text);
+      font-size: 17px;
+      min-height: 52px;
+      margin: -4px 0 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-photo input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+      font-size: 100px;
+    }
+
+    .msg.ok { background: rgba(255,176,32,.14); color: #ffe1a8; }
+
+    .product {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .product img {
+      width: 64px;
+      height: 64px;
+      flex: none;
+      object-fit: contain;
+      background: #fff;
+      border-radius: 12px;
+    }
+    .product img[hidden] { display: none; }
+    .product .pname { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+    .product .pcode { color: var(--muted); font-size: 13px; font-weight: 700; margin-top: 2px; }
+    .lookup {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0 0 12px;
+    }
+    .lookup[hidden], #guesses[hidden], #product[hidden], #foundRow[hidden] { display: none; }
+    .spin {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      margin-right: 6px;
+      vertical-align: -2px;
+      border: 2px solid rgba(255,122,0,.3);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .note {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+    .pill { text-align: left; }
   </style>
 </head>
 <body>
@@ -391,16 +497,19 @@
       </div>
       <p class="sub">Skanuj blister i znajdź najniższą cenę</p>
       <div class="stripe" aria-hidden="true"></div>
-    </header>
 
     <p id="error" class="msg" hidden></p>
 
     <section id="scanner" class="panel" hidden>
-      <div class="viewfinder">
-        <video id="video" autoplay muted playsinline></video>
+      <div class="viewfinder" id="viewfinder">
+        <video id="video" autoplay muted playsinline webkit-playsinline></video>
         <div class="frame"><i></i></div>
+        <div class="laser" aria-hidden="true"></div>
+        <div class="cam-tools">
+          <button type="button" id="torchBtn" hidden aria-label="Latarka">🔦</button>
+        </div>
       </div>
-      <p id="scanStatus">Celuj w kod na blisterze</p>
+      <p id="scanStatus">Celuj w kod kreskowy na blisterze</p>
       <button type="button" class="btn btn-ghost" id="cancelBtn">Anuluj</button>
     </section>
 
@@ -412,15 +521,32 @@
       Skanuj
     </button>
 
+    <label class="btn btn-photo" id="photoBtn">
+      📷 Zrób zdjęcie kodu
+      <input type="file" id="photoInput" accept="image/*" capture="environment">
+    </label>
+
     <div class="panel">
-      <label class="field" for="nameInput">Albo wpisz nazwę autka</label>
-      <input id="nameInput" type="text" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="np. Twin Mill">
+      <label class="field" for="nameInput">Albo wpisz nazwę, kod modelu lub cyfry</label>
+      <input id="nameInput" type="text" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="np. Twin Mill albo HKL22">
     </div>
 
     <section id="results" class="panel pop" hidden>
-      <div class="found">
+      <div class="product" id="product" hidden>
+        <img id="pimg" alt="" hidden referrerpolicy="no-referrer">
+        <div>
+          <div class="pname" id="pname"></div>
+          <div class="pcode" id="pcode"></div>
+        </div>
+      </div>
+      <div class="found" id="foundRow">
         <b id="queryLabel"></b>
         <small id="queryKind"></small>
+      </div>
+      <p class="lookup" id="lookup" hidden></p>
+      <div id="guesses" hidden>
+        <p class="hint" style="margin-top:0">Które to autko? Kliknij:</p>
+        <div class="pills" id="guessPills" style="margin-bottom:12px"></div>
       </div>
       <a class="btn btn-allegro" id="allegroBtn" target="_blank" rel="noopener noreferrer">Allegro – najtaniej</a>
       <a class="btn btn-ebay" id="ebayBtn" target="_blank" rel="noopener noreferrer">eBay – najtaniej</a>
@@ -431,6 +557,7 @@
           <button type="button" class="pill" id="pillHw"></button>
         </div>
       </div>
+      <p class="note" id="priceNote">Ceny sprawdzisz po kliknięciu – Allegro i eBay pokażą najtańsze na górze.</p>
     </section>
 
     <section id="history" class="panel" hidden>
@@ -441,88 +568,319 @@
       <ul class="hist-list" id="histList"></ul>
     </section>
 
-    <footer>Tylko linki do sklepów — bez czekania na ceny</footer>
+    <footer>Tip: zwykłe Hot Wheelsy mają często ten sam kod kreskowy. Pewniej: wpisz kod modelu z tyłu blistra (np. HKL22).</footer>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
   <script>
   (function () {
-    const STORAGE = "blisterscan-history-v1";
-    const video = document.getElementById("video");
-    const scanner = document.getElementById("scanner");
-    const scanBtn = document.getElementById("scanBtn");
-    const cancelBtn = document.getElementById("cancelBtn");
-    const scanStatus = document.getElementById("scanStatus");
-    const nameInput = document.getElementById("nameInput");
-    const results = document.getElementById("results");
-    const queryLabel = document.getElementById("queryLabel");
-    const queryKind = document.getElementById("queryKind");
-    const allegroBtn = document.getElementById("allegroBtn");
-    const ebayBtn = document.getElementById("ebayBtn");
-    const hwOption = document.getElementById("hwOption");
-    const pillPlain = document.getElementById("pillPlain");
-    const pillHw = document.getElementById("pillHw");
-    const historyBox = document.getElementById("history");
-    const histList = document.getElementById("histList");
-    const clearBtn = document.getElementById("clearBtn");
-    const errorBox = document.getElementById("error");
+    "use strict";
+    var STORAGE = "blisterscan-history-v1";
+    var ZXW_URL = "https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.4/dist/iife/reader/index.js";
+    var WASM_MIRRORS = ["https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.4/dist/reader/", "https://unpkg.com/zxing-wasm@2.2.4/dist/reader/"];
+    var ZXJS_URL = "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
+    var LOOKUP_PROXY = "https://r.jina.ai/";
+    var FORMATS = ["EAN-13", "UPC-A", "EAN-8", "UPC-E", "Code128"];
 
-    let stream = null;
-    let reader = null;
-    let scanning = false;
-    let raf = 0;
-    let current = null; // { kind: "code"|"name", base: string, query: string }
-    let nameSaveTimer = 0;
+    function $(id) { return document.getElementById(id); }
+    var video = $("video"), viewfinder = $("viewfinder"), scanner = $("scanner"), scanBtn = $("scanBtn");
+    var cancelBtn = $("cancelBtn"), torchBtn = $("torchBtn"), scanStatus = $("scanStatus");
+    var photoInput = $("photoInput"), nameInput = $("nameInput"), results = $("results");
+    var queryLabel = $("queryLabel"), queryKind = $("queryKind"), allegroBtn = $("allegroBtn"), ebayBtn = $("ebayBtn");
+    var hwOption = $("hwOption"), pillPlain = $("pillPlain"), pillHw = $("pillHw");
+    var historyBox = $("history"), histList = $("histList"), clearBtn = $("clearBtn"), errorBox = $("error");
+    var product = $("product"), pimg = $("pimg"), pname = $("pname"), pcode = $("pcode");
+    var lookupBox = $("lookup"), guesses = $("guesses"), guessPills = $("guessPills");
 
-    function showError(text) {
+    var stream = null, scanning = false, loopTimer = 0, torchOn = false;
+    var current = null, nameSaveTimer = 0, lookupSeq = 0;
+    var canvas = document.createElement("canvas");
+    var ctx = canvas.getContext("2d", { willReadFrequently: true });
+    var lastCode = "", lastCount = 0;
+
+    // ---------- helpers ----------
+    function showError(text, ok) {
       errorBox.hidden = !text;
       errorBox.textContent = text || "";
+      errorBox.classList.toggle("ok", !!ok);
+    }
+    function loadScript(src) {
+      return new Promise(function (resolve, reject) {
+        var s = document.createElement("script");
+        s.src = src; s.async = true; s.crossOrigin = "anonymous";
+        s.onload = function () { resolve(); };
+        s.onerror = function () { reject(new Error("load " + src)); };
+        document.head.appendChild(s);
+      });
+    }
+    function withTimeout(p, ms) {
+      return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error("timeout")); }, ms); })]);
+    }
+    function validCheck(code) {
+      // EAN-13 / UPC-A / EAN-8 checksum; other lengths pass
+      if (!/^\d+$/.test(code)) return true;
+      if ([8, 12, 13].indexOf(code.length) === -1) return true;
+      var d = code.split("").map(Number), check = d.pop(), sum = 0;
+      d.reverse().forEach(function (n, i) { sum += n * (i % 2 === 0 ? 3 : 1); });
+      return (10 - (sum % 10)) % 10 === check;
     }
 
+    // ---------- decoders ----------
+    var engine = null; // { name, decode(imageData) -> Promise<string|null> }
+    var enginePromise = null;
+
+    function getEngine() {
+      if (engine) return Promise.resolve(engine);
+      if (enginePromise) return enginePromise;
+      enginePromise = (async function () {
+        // 1) native BarcodeDetector (Chrome/Android)
+        if ("BarcodeDetector" in window) {
+          try {
+            var sup = await BarcodeDetector.getSupportedFormats();
+            var want = ["ean_13", "upc_a", "ean_8", "upc_e", "code_128"].filter(function (f) { return sup.indexOf(f) !== -1; });
+            if (want.length) {
+              var det = new BarcodeDetector({ formats: want });
+              engine = { name: "native", decode: async function (img) {
+                var r = await det.detect(img);
+                return r && r.length ? r[0].rawValue : null;
+              } };
+              return engine;
+            }
+          } catch (e) {}
+        }
+        // 2) zxing-cpp WebAssembly (best on iPhone)
+        try {
+          if (!window.ZXingWASM) await withTimeout(loadScript(ZXW_URL), 12000);
+          var ready = false;
+          for (var mi = 0; mi < WASM_MIRRORS.length && !ready; mi++) {
+            try {
+              (function (base) {
+                ZXingWASM.__p = ZXingWASM.prepareZXingModule({
+                  overrides: { locateFile: function (path, prefix) { return /\.wasm$/.test(path) ? base + path : prefix + path; } },
+                  fireImmediately: true
+                });
+              })(WASM_MIRRORS[mi]);
+              await withTimeout(ZXingWASM.__p, 15000);
+              ready = true;
+            } catch (e) { console.warn("wasm mirror failed", WASM_MIRRORS[mi], e); }
+          }
+          if (!ready) throw new Error("wasm");
+          engine = { name: "wasm", decode: async function (img) {
+            var r = await ZXingWASM.readBarcodes(img, { formats: FORMATS, tryHarder: true, tryRotate: true, tryInvert: false, maxNumberOfSymbols: 1 });
+            for (var i = 0; i < r.length; i++) if (r[i].isValid && r[i].text) return r[i].text;
+            return null;
+          } };
+          return engine;
+        } catch (e) { console.warn("wasm failed", e); }
+        // 3) ZXing JS fallback
+        try {
+          if (!window.ZXing) await withTimeout(loadScript(ZXJS_URL), 12000);
+          var Z = window.ZXing;
+          var hints = new Map();
+          hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_E, Z.BarcodeFormat.CODE_128]);
+          hints.set(Z.DecodeHintType.TRY_HARDER, true);
+          var mfr = new Z.MultiFormatReader(); mfr.setHints(hints);
+          engine = { name: "js", decode: async function (img) {
+            var c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+            c.getContext("2d").putImageData(img, 0, 0);
+            try {
+              var bmp = new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(c)));
+              return mfr.decode(bmp, hints).getText();
+            } catch (e) { return null; }
+          } };
+          return engine;
+        } catch (e) { console.warn("zxing js failed", e); }
+        enginePromise = null;
+        throw new Error("no-engine");
+      })();
+      return enginePromise;
+    }
+    // preload decoder in background so first scan is quick
+    setTimeout(function () { getEngine().catch(function () {}); }, 300);
+
+    // ---------- camera ----------
     function stopCamera() {
       scanning = false;
-      if (raf) {
-        cancelAnimationFrame(raf);
-        raf = 0;
-      }
-      if (reader) {
-        try { reader.reset(); } catch (e) {}
-        reader = null;
-      }
-      if (stream) {
-        stream.getTracks().forEach(function (t) { t.stop(); });
-        stream = null;
-      }
+      clearTimeout(loopTimer);
+      if (stream) { stream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} }); stream = null; }
+      try { video.pause(); } catch (e) {}
       video.srcObject = null;
+      torchOn = false; torchBtn.classList.remove("on"); torchBtn.hidden = true;
       scanner.hidden = true;
       scanBtn.hidden = false;
     }
 
-    function allegroUrl(q) {
-      return "https://allegro.pl/listing?string=" + encodeURIComponent(q) + "&order=p";
-    }
-    function ebayUrl(q) {
-      return "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(q) + "&_sop=15";
+    function camError(e) {
+      var n = e && e.name;
+      if (n === "NotAllowedError" || n === "SecurityError")
+        return "Brak zgody na aparat 🙁 Na iPhonie: Ustawienia → Safari → Aparat → Zezwalaj (albo kliknij „aA” przy adresie → Ustawienia strony → Aparat). Możesz też użyć „Zrób zdjęcie kodu”.";
+      if (n === "NotFoundError" || n === "OverconstrainedError") return "Nie widzę aparatu w tym urządzeniu. Użyj „Zrób zdjęcie kodu” albo wpisz nazwę.";
+      if (n === "NotReadableError") return "Aparat jest zajęty przez inną aplikację. Zamknij ją i spróbuj znowu.";
+      return "Nie udało się włączyć aparatu. Użyj „Zrób zdjęcie kodu” albo wpisz nazwę.";
     }
 
-    function setLinks(q) {
+    async function openCamera() {
+      showError("");
+      if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showError("Ta przeglądarka nie daje aparatu na żywo. Użyj „Zrób zdjęcie kodu” albo wpisz nazwę.");
+        return;
+      }
+      // getUserMedia called straight from the tap (no await before it) – needed on iOS
+      var gum = navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+      });
+      scanBtn.hidden = true;
+      scanner.hidden = false;
+      scanStatus.textContent = "Włączam aparat…";
+      try {
+        stream = await gum;
+      } catch (e) {
+        if (e && e.name === "OverconstrainedError") {
+          try { stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true }); } catch (e2) { e = e2; }
+        }
+        if (!stream) { stopCamera(); showError(camError(e)); return; }
+      }
+      video.setAttribute("playsinline", ""); video.setAttribute("muted", "");
+      video.playsInline = true; video.muted = true;
+      video.srcObject = stream;
+      try { await video.play(); } catch (e) {}
+      var track = stream.getVideoTracks()[0];
+      try {
+        var caps = track.getCapabilities ? track.getCapabilities() : {};
+        if (caps.focusMode && caps.focusMode.indexOf("continuous") !== -1) track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(function () {});
+        if (caps.torch) torchBtn.hidden = false;
+      } catch (e) {}
+      scanning = true;
+      lastCode = ""; lastCount = 0;
+      scanStatus.textContent = "Wczytuję skaner…";
+      try {
+        await getEngine();
+      } catch (e) {
+        stopCamera();
+        showError("Skaner się nie wczytał (brak internetu?). Odśwież stronę albo wpisz nazwę.");
+        return;
+      }
+      if (!scanning) return;
+      scanStatus.textContent = "Celuj w kod kreskowy – trzymaj 15–25 cm od blistra";
+      loop();
+    }
+
+    async function loop() {
+      if (!scanning) return;
+      try {
+        if (video.readyState >= 2 && video.videoWidth) {
+          var vw = video.videoWidth, vh = video.videoHeight;
+          // centre crop (barcode area), max 1280 wide
+          var cw = Math.round(vw * 0.9), ch = Math.round(vh * 0.6);
+          var sx = Math.round((vw - cw) / 2), sy = Math.round((vh - ch) / 2);
+          var scale = Math.min(1, 1280 / cw);
+          canvas.width = Math.round(cw * scale); canvas.height = Math.round(ch * scale);
+          ctx.drawImage(video, sx, sy, cw, ch, 0, 0, canvas.width, canvas.height);
+          var img = engine.name === "native" ? canvas : ctx.getImageData(0, 0, canvas.width, canvas.height);
+          var text = await engine.decode(img);
+          if (text && scanning && validCheck(text)) {
+            // need the same code twice in a row for 1D codes (avoids misreads)
+            if (text === lastCode) lastCount++; else { lastCode = text; lastCount = 1; }
+            if (lastCount >= 2 || engine.name === "wasm") { onFound(text, "code"); return; }
+          }
+        }
+      } catch (e) { console.warn(e); }
+      if (scanning) loopTimer = setTimeout(loop, 90);
+    }
+
+    torchBtn.addEventListener("click", function () {
+      if (!stream) return;
+      var t = stream.getVideoTracks()[0];
+      torchOn = !torchOn;
+      t.applyConstraints({ advanced: [{ torch: torchOn }] }).then(function () {
+        torchBtn.classList.toggle("on", torchOn);
+      }).catch(function () { torchOn = false; torchBtn.hidden = true; });
+    });
+
+    // ---------- photo fallback ----------
+    async function imageToData(file) {
+      var src;
+      if (window.createImageBitmap) {
+        try { src = await createImageBitmap(file); } catch (e) { src = null; }
+      }
+      if (!src) {
+        src = await new Promise(function (res, rej) {
+          var im = new Image();
+          im.onload = function () { res(im); };
+          im.onerror = rej;
+          im.src = URL.createObjectURL(file);
+        });
+      }
+      var w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
+      var out = [];
+      [2000, 1200].forEach(function (max) {
+        var s = Math.min(1, max / Math.max(w, h));
+        var c = document.createElement("canvas");
+        c.width = Math.round(w * s); c.height = Math.round(h * s);
+        var cx = c.getContext("2d", { willReadFrequently: true });
+        cx.drawImage(src, 0, 0, c.width, c.height);
+        out.push({ canvas: c, data: cx.getImageData(0, 0, c.width, c.height) });
+      });
+      return out;
+    }
+
+    photoInput.addEventListener("change", async function () {
+      var file = photoInput.files && photoInput.files[0];
+      photoInput.value = "";
+      if (!file) return;
+      if (scanning) stopCamera();
+      showError("Szukam kodu na zdjęciu…", true);
+      try {
+        var eng = await getEngine();
+        var imgs = await imageToData(file);
+        var text = null;
+        for (var i = 0; i < imgs.length && !text; i++) {
+          text = await eng.decode(eng.name === "native" ? imgs[i].canvas : imgs[i].data);
+        }
+        if (text) { onFound(text, "code"); }
+        else showError("Nie widzę kodu na zdjęciu. Zrób zdjęcie bliżej, prosto i ostro (cały kod w kadrze) albo wpisz nazwę.");
+      } catch (e) {
+        showError(e && e.message === "no-engine" ? "Skaner się nie wczytał (brak internetu?). Odśwież stronę." : "Nie udało się odczytać zdjęcia. Spróbuj jeszcze raz.");
+      }
+    });
+
+    // ---------- results ----------
+    function allegroUrl(q) { return "https://allegro.pl/listing?string=" + encodeURIComponent(q) + "&order=p"; }
+    function ebayUrl(q) { return "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(q) + "&_sop=15"; }
+
+    function setQuery(q) {
+      current.query = q;
+      queryLabel.textContent = q;
+      $("foundRow").hidden = !!current.name && q === current.name;
       allegroBtn.href = allegroUrl(q);
       ebayBtn.href = ebayUrl(q);
+      allegroBtn.textContent = "Allegro – najtaniej";
+      ebayBtn.textContent = "eBay – najtaniej";
+      Array.prototype.forEach.call(guessPills.children, function (b) { b.classList.toggle("on", b.dataset.q === q); });
     }
+
+    function isModelCode(v) { return /^[A-Z]{3}\d{2}$/i.test(v) || /^[A-Z]\d{4}$/i.test(v); }
+    function isBarcode(v) { return /^\d{8,14}$/.test(v); }
 
     function showResults(item, opts) {
       opts = opts || {};
-      const wasHidden = results.hidden;
-      const queryChanged = !current || current.query !== item.query || current.kind !== item.kind;
-      current = item;
-      queryLabel.textContent = item.query;
-      queryKind.textContent = item.kind === "code" ? "kod" : "nazwa";
-      setLinks(item.query);
+      var wasHidden = results.hidden;
+      current = { kind: item.kind, base: item.base, query: item.query, name: item.name || "", img: item.img || "" };
+      queryKind.textContent = item.kind === "code" ? "kod" : (isModelCode(item.base) ? "model" : "nazwa");
+      // product box
+      product.hidden = !current.name;
+      pname.textContent = current.name;
+      pcode.textContent = item.kind === "code" ? "Kod: " + item.base : "";
+      pimg.hidden = !current.img;
+      if (current.img) pimg.src = current.img; else pimg.removeAttribute("src");
+      guesses.hidden = true; guessPills.innerHTML = "";
+      lookupBox.hidden = true;
+      setQuery(item.query);
       if (item.kind === "name") {
         hwOption.hidden = false;
         pillPlain.textContent = item.base;
         pillHw.textContent = "Hot Wheels " + item.base;
-        const usingHw = item.query.toLowerCase() === ("hot wheels " + item.base).toLowerCase();
+        var usingHw = item.query.toLowerCase() === ("hot wheels " + item.base).toLowerCase();
         pillPlain.classList.toggle("on", !usingHw);
         pillHw.classList.toggle("on", usingHw);
       } else {
@@ -530,204 +888,190 @@
       }
       results.hidden = false;
       if (opts.animate || wasHidden) {
-        results.classList.remove("pop");
-        void results.offsetWidth;
-        results.classList.add("pop");
+        results.classList.remove("pop"); void results.offsetWidth; results.classList.add("pop");
       }
-      if (opts.save) saveHistory(item);
+      if (opts.save) saveHistory(current);
+      if (opts.scroll) results.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
-    function loadHistory() {
-      try {
-        const raw = localStorage.getItem(STORAGE);
-        const list = raw ? JSON.parse(raw) : [];
-        return Array.isArray(list) ? list : [];
-      } catch (e) {
-        return [];
-      }
+    // ---------- model lookup ----------
+    function cleanTitle(t) {
+      t = String(t || "").replace(/\*\*/g, "").replace(/\b\d{12,13}\b/g, " ").replace(/\s+/g, " ").trim();
+      t = t.split(/\s*[|–]\s*|\s-\s|\s\[|\s\(|\s\.\.\.|…|, (?=[A-Z0-9])/)[0];
+      t = t.replace(/\b(new|nowy|nowa|ebay|amazon|2\d{3})\b/gi, "").replace(/#\d+/g, "").replace(/\b\d+\/\d+\b/g, "")
+           .replace(/\s+\w$/, "").replace(/[\s:,-]+$/, "").replace(/\s+/g, " ").trim();
+      if (t.length > 60) t = t.slice(0, 60).replace(/\s\S*$/, "");
+      if (!/hot\s*wheels/i.test(t)) t = "Hot Wheels " + t;
+      return t.replace(/^.*?hot\s*wheels/i, "Hot Wheels").trim();
     }
 
-    function saveHistory(item) {
-      const row = { kind: item.kind, base: item.base, query: item.query, t: Date.now() };
-      const list = loadHistory().filter(function (x) {
-        return !(x.kind === row.kind && x.base === row.base);
-      });
-      list.unshift(row);
-      localStorage.setItem(STORAGE, JSON.stringify(list.slice(0, 10)));
-      renderHistory();
+    function fetchJson(url, ms, headers) {
+      var ctl = window.AbortController ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ctl) ctl.abort(); }, ms);
+      return fetch(url, { signal: ctl ? ctl.signal : undefined, headers: headers || {} })
+        .then(function (r) { if (!r.ok && r.status !== 404) throw new Error("http " + r.status); return r.json(); })
+        .finally(function () { clearTimeout(timer); });
     }
 
-    function renderHistory() {
-      const list = loadHistory();
-      histList.innerHTML = "";
-      if (!list.length) {
-        historyBox.hidden = true;
+    function lookupOpenProducts(code) {
+      var c = code.length === 12 ? "0" + code : code;
+      return fetchJson("https://world.openproductsfacts.org/api/v2/product/" + c + ".json?fields=product_name,brands,image_front_small_url,image_url", 4000)
+        .then(function (d) {
+          if (!d || d.status !== 1 || !d.product || !d.product.product_name) return null;
+          var p = d.product;
+          var name = String(p.product_name).trim();
+          // skip useless generic names like "Hot Wheel"
+          if (name.replace(/hot\s*wheels?|mattel|matchbox|car|auto/gi, "").replace(/[^a-z0-9]/gi, "").length < 4) return null;
+          if (p.brands && name.toLowerCase().indexOf(p.brands.split(",")[0].toLowerCase()) === -1) name = p.brands.split(",")[0] + " " + name;
+          return { names: [name], img: p.image_front_small_url || p.image_url || "" };
+        }).catch(function () { return null; });
+    }
+
+    function lookupWeb(code) {
+      var url = LOOKUP_PROXY + "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(code);
+      return fetchJson(url, 9000, { "Accept": "application/json" }).then(function (d) {
+        var content = d && d.data && d.data.content || "";
+        var titles = [], seen = {};
+        var re = /##\s*\[([^\]]+)\]/g, m;
+        while ((m = re.exec(content))) {
+          var raw = m[1];
+          if (!/hot\s*wheels|mattel|matchbox/i.test(raw)) continue;
+          var t = cleanTitle(raw);
+          var k = t.toLowerCase();
+          if (t.length < 14 || seen[k]) continue;
+          seen[k] = 1; titles.push(t);
+          if (titles.length >= 5) break;
+        }
+        return titles.length ? { names: titles, img: "" } : null;
+      }).catch(function () { return null; });
+    }
+
+    async function lookupCode(code) {
+      var seq = ++lookupSeq;
+      lookupBox.hidden = false;
+      lookupBox.innerHTML = '<span class="spin"></span>Sprawdzam, jaki to model…';
+      var opf = lookupOpenProducts(code);
+      var web = lookupWeb(code);
+      var a = await opf;
+      if (seq !== lookupSeq || !current || current.base !== code) return;
+      var b = await web;
+      if (seq !== lookupSeq || !current || current.base !== code) return;
+      var res = null;
+      if (a && b) res = { names: a.names.concat(b.names.filter(function (n) { return n.toLowerCase() !== a.names[0].toLowerCase(); })).slice(0, 5), img: a.img };
+      else res = a || b;
+      if (!res) {
+        lookupBox.textContent = "Nie znalazłem nazwy dla tego kodu. Wpisz nazwę albo kod modelu z tyłu blistra (np. HKL22) w pole wyżej.";
         return;
       }
+      lookupBox.hidden = true;
+      var best = res.names[0];
+      current.name = best; current.img = res.img || "";
+      product.hidden = false;
+      pname.textContent = best;
+      pcode.textContent = "Kod: " + code + (res.names.length > 1 ? " · możliwe kilka modeli" : "");
+      if (res.img) { pimg.src = res.img; pimg.hidden = false; }
+      if (res.names.length > 1) {
+        guesses.hidden = false;
+        guessPills.innerHTML = "";
+        res.names.forEach(function (n) {
+          var b2 = document.createElement("button");
+          b2.type = "button"; b2.className = "pill"; b2.textContent = n; b2.dataset.q = n;
+          b2.addEventListener("click", function () {
+            pname.textContent = n; current.name = n; setQuery(n); saveHistory(current);
+          });
+          guessPills.appendChild(b2);
+        });
+      }
+      setQuery(best);
+      saveHistory(current);
+    }
+
+    // ---------- history ----------
+    function loadHistory() {
+      try {
+        var raw = localStorage.getItem(STORAGE);
+        var list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list : [];
+      } catch (e) { return []; }
+    }
+    function saveHistory(item) {
+      var row = { kind: item.kind, base: item.base, query: item.query, name: item.name || "", img: item.img || "", t: Date.now() };
+      var list = loadHistory().filter(function (x) { return !(x.kind === row.kind && x.base === row.base); });
+      list.unshift(row);
+      try { localStorage.setItem(STORAGE, JSON.stringify(list.slice(0, 10))); } catch (e) {}
+      renderHistory();
+    }
+    function renderHistory() {
+      var list = loadHistory();
+      histList.innerHTML = "";
+      if (!list.length) { historyBox.hidden = true; return; }
       historyBox.hidden = false;
-      list.forEach(function (item, idx) {
-        const li = document.createElement("li");
-        const btn = document.createElement("button");
+      list.forEach(function (item) {
+        var li = document.createElement("li");
+        var btn = document.createElement("button");
         btn.type = "button";
         btn.innerHTML = '<span class="q"></span><span class="tag"></span>';
-        btn.querySelector(".q").textContent = item.query;
+        btn.querySelector(".q").textContent = item.name || item.query;
         btn.querySelector(".tag").textContent = item.kind === "code" ? "kod" : "nazwa";
         btn.addEventListener("click", function () {
-          if (item.kind === "name") nameInput.value = item.base;
-          else nameInput.value = "";
-          showResults({
-            kind: item.kind,
-            base: item.base || item.query,
-            query: item.query
-          }, { animate: true });
+          nameInput.value = item.kind === "name" ? item.base : "";
+          showResults({ kind: item.kind, base: item.base || item.query, query: item.query, name: item.name, img: item.img }, { animate: true, scroll: true });
+          if (item.kind === "code" && !item.name) lookupCode(item.base);
         });
         li.appendChild(btn);
         histList.appendChild(li);
       });
     }
 
+    // ---------- found ----------
+    function normCode(v) {
+      v = String(v || "").trim();
+      return /^0\d{12}$/.test(v) ? v.slice(1) : v;
+    }
+
     function onFound(text, kind) {
-      const value = String(text || "").trim();
+      var value = normCode(text);
       if (!value) return;
+      if (kind === "code") {
+        try { if (navigator.vibrate) navigator.vibrate([60, 40, 60]); } catch (e) {}
+        viewfinder.classList.remove("hit"); void viewfinder.offsetWidth; viewfinder.classList.add("hit");
+      }
       stopCamera();
-      if (kind === "code" && navigator.vibrate) {
-        try { navigator.vibrate(80); } catch (e) {}
-      }
       showError("");
-      if (kind === "name") {
-        showResults({ kind: "name", base: value, query: value }, { animate: true, save: true });
-      } else {
-        nameInput.value = "";
-        showResults({ kind: "code", base: value, query: value }, { animate: true, save: true });
-      }
+      nameInput.value = "";
+      showResults({ kind: "code", base: value, query: value }, { animate: true, save: true, scroll: true });
+      lookupCode(value);
     }
-
-    async function startNativeDetector() {
-      if (!("BarcodeDetector" in window)) return false;
-      let formats;
-      try {
-        formats = await BarcodeDetector.getSupportedFormats();
-      } catch (e) {
-        return false;
-      }
-      const wanted = ["ean_13", "upc_a", "ean_8", "upc_e"].filter(function (f) {
-        return formats.indexOf(f) !== -1;
-      });
-      if (!wanted.length) return false;
-      const detector = new BarcodeDetector({ formats: wanted });
-
-      const tick = async function () {
-        if (!scanning) return;
-        try {
-          if (video.readyState >= 2) {
-            const codes = await detector.detect(video);
-            if (scanning && codes && codes.length && codes[0].rawValue) {
-              onFound(codes[0].rawValue, "code");
-              return;
-            }
-          }
-        } catch (e) {}
-        if (scanning) raf = requestAnimationFrame(tick);
-      };
-      raf = requestAnimationFrame(tick);
-      return true;
-    }
-
-    function startZxing() {
-      if (!window.ZXing || !ZXing.BrowserMultiFormatReader) {
-        showError("Skaner się nie wczytał. Wpisz nazwę autka.");
-        stopCamera();
-        return;
-      }
-      const hints = new Map();
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-        ZXing.BarcodeFormat.EAN_13,
-        ZXing.BarcodeFormat.UPC_A,
-        ZXing.BarcodeFormat.EAN_8,
-        ZXing.BarcodeFormat.UPC_E
-      ]);
-      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-      reader = new ZXing.BrowserMultiFormatReader(hints, 150);
-      const onResult = function (result) {
-        if (result && scanning) onFound(result.getText(), "code");
-      };
-      reader.decodeFromStream(stream, video, onResult).catch(function () {
-        if (!scanning) return;
-        const tick = function () {
-          if (!scanning) return;
-          try {
-            if (video.readyState >= 2 && video.videoWidth) {
-              const result = reader.decode(video);
-              if (result) { onResult(result); return; }
-            }
-          } catch (e) {}
-          if (scanning) setTimeout(tick, 100);
-        };
-        tick();
-      });
-    }
-
-    async function openCamera() {
-      showError("");
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showError("Ta przeglądarka nie daje aparatu. Wpisz nazwę autka.");
-        return;
-      }
-      scanBtn.hidden = true;
-      scanner.hidden = false;
-      scanStatus.textContent = "Włączam aparat…";
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: { facingMode: { ideal: "environment" } }
-        });
-      } catch (e) {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
-        } catch (e2) {
-          stopCamera();
-          showError("Nie mam dostępu do aparatu. Zezwól w ustawieniach albo wpisz nazwę.");
-          return;
-        }
-      }
-      video.setAttribute("playsinline", "true");
-      video.playsInline = true;
-      video.muted = true;
-      video.srcObject = stream;
-      try { await video.play(); } catch (e) {}
-      scanStatus.textContent = "Celuj w kod na blisterze";
-      scanning = true;
-      const nativeOk = await startNativeDetector();
-      if (!nativeOk && scanning) startZxing();
-    }
-
-    scanBtn.addEventListener("click", openCamera);
-    cancelBtn.addEventListener("click", function () {
-      stopCamera();
-    });
 
     function applyName(value, save, animate) {
       showError("");
-      showResults({ kind: "name", base: value, query: value }, { save: !!save, animate: !!animate });
-    }
-
-    nameInput.addEventListener("input", function () {
-      const value = nameInput.value.trim();
-      clearTimeout(nameSaveTimer);
-      if (!value) {
-        if (current && current.kind === "name") {
-          results.hidden = true;
-          current = null;
-        }
+      if (isBarcode(value)) {
+        value = normCode(value);
+        if (save) { showResults({ kind: "code", base: value, query: value }, { animate: true, save: true }); lookupCode(value); }
         return;
       }
-      const first = !current || current.kind !== "name" || results.hidden;
+      var q = isModelCode(value) ? "Hot Wheels " + value.toUpperCase() : value;
+      showResults({ kind: "name", base: value, query: q }, { save: !!save, animate: !!animate });
+    }
+
+    scanBtn.addEventListener("click", openCamera);
+    cancelBtn.addEventListener("click", stopCamera);
+
+    nameInput.addEventListener("input", function () {
+      var value = nameInput.value.trim();
+      clearTimeout(nameSaveTimer);
+      if (!value) {
+        if (current && current.kind === "name") { results.hidden = true; current = null; }
+        return;
+      }
+      if (isBarcode(value)) return; // wait for Enter
+      var first = !current || current.kind !== "name" || results.hidden;
       applyName(value, false, first);
-      nameSaveTimer = setTimeout(function () { saveHistory(current); }, 600);
+      nameSaveTimer = setTimeout(function () { if (current) saveHistory(current); }, 900);
     });
     nameInput.addEventListener("keydown", function (e) {
       if (e.key === "Enter") {
-        const value = nameInput.value.trim();
+        var value = nameInput.value.trim();
         if (!value) return;
         clearTimeout(nameSaveTimer);
         applyName(value, true, false);
@@ -735,7 +1079,7 @@
       }
     });
     nameInput.addEventListener("blur", function () {
-      const value = nameInput.value.trim();
+      var value = nameInput.value.trim();
       if (!value || !current || current.kind !== "name") return;
       clearTimeout(nameSaveTimer);
       saveHistory(current);
@@ -747,21 +1091,15 @@
     });
     pillHw.addEventListener("click", function () {
       if (!current || current.kind !== "name") return;
-      showResults({ kind: "name", base: current.base, query: "Hot Wheels " + current.base }, { save: true });
+      var b = current.base;
+      showResults({ kind: "name", base: b, query: /^hot\s*wheels/i.test(b) ? b : "Hot Wheels " + b }, { save: true });
     });
+    clearBtn.addEventListener("click", function () { localStorage.removeItem(STORAGE); renderHistory(); });
 
-    clearBtn.addEventListener("click", function () {
-      localStorage.removeItem(STORAGE);
-      renderHistory();
-    });
+    document.addEventListener("visibilitychange", function () { if (document.hidden && scanning) stopCamera(); });
+    window.addEventListener("pagehide", function () { if (scanning) stopCamera(); });
 
-    document.addEventListener("visibilitychange", function () {
-      if (document.hidden && scanning) stopCamera();
-    });
-    window.addEventListener("pagehide", function () {
-      if (scanning) stopCamera();
-    });
-
+    window.__bs = { onFound: onFound, getEngine: getEngine };
     renderHistory();
   })();
   </script>

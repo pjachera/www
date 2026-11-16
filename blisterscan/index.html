@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BlisterScan">
+  <meta name="description" content="Skanuj blister i znajdź najniższą cenę na Allegro i eBay.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 36'%3E%3Cpath fill='%23ff7a00' d='M16.2 1.4c1.3 6.2-2.6 8.4-1.3 13.2 4.4-3.2 10.2 1.2 10.2 8.6 0 6.4-4.1 11.2-9.1 11.2s-9.1-4.8-9.1-11.2c0-5.4 2.9-8.7 5.4-12.8 1.3 3.2 3.4 4.4 3.9-9z'/%3E%3C/svg%3E">
+  <title>BlisterScan</title>
+  <style>
+    :root {
+      --bg: #0a0a0c;
+      --bg-2: #131217;
+      --card: #1a181e;
+      --line: rgba(255, 255, 255, .08);
+      --text: #fff7f0;
+      --muted: #b9a99c;
+      --orange: #ff7a00;
+      --orange-2: #ffb020;
+      --red: #e10600;
+      --glow: rgba(255, 106, 0, .45);
+      --radius: 22px;
+      --safe-t: env(safe-area-inset-top, 0px);
+      --safe-b: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+    body {
+      min-height: 100dvh;
+      font-family: system-ui, -apple-system, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      font-size: 17px;
+      line-height: 1.35;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 430px;
+      margin: 0 auto;
+      padding: calc(var(--safe-t) + 22px) 20px calc(var(--safe-b) + 28px);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .flare {
+      pointer-events: none;
+      position: fixed;
+      top: -80px;
+      left: 50%;
+      width: 280px;
+      height: 240px;
+      transform: translateX(-50%);
+      background:
+        radial-gradient(ellipse at 50% 40%, rgba(255, 122, 0, .28), transparent 62%),
+        radial-gradient(ellipse at 30% 60%, rgba(225, 6, 0, .18), transparent 55%);
+      filter: blur(8px);
+    }
+
+    header { text-align: center; margin-bottom: 22px; }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .flame {
+      width: 28px;
+      height: 32px;
+      flex: none;
+      filter: drop-shadow(0 0 10px var(--glow));
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+    h1 span { color: var(--orange); }
+
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .stripe {
+      height: 5px;
+      margin: 18px auto 0;
+      width: 84px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--orange-2), var(--orange), var(--red));
+      box-shadow: 0 0 18px var(--glow);
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    #scanner[hidden], #results[hidden], #history[hidden], #hwOption[hidden] { display: none; }
+
+    .viewfinder {
+      position: relative;
+      overflow: hidden;
+      border-radius: 18px;
+      background: #000;
+      aspect-ratio: 3 / 4;
+      box-shadow: 0 0 0 1px rgba(255,122,0,.25), 0 12px 40px rgba(0,0,0,.4);
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .frame {
+      position: absolute;
+      inset: 16% 12%;
+      border-radius: 14px;
+      pointer-events: none;
+      box-shadow: 0 0 0 200px rgba(0,0,0,.28);
+    }
+    .frame::before, .frame::after,
+    .frame i::before, .frame i::after {
+      content: "";
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border: 3px solid var(--orange);
+      filter: drop-shadow(0 0 6px var(--glow));
+    }
+    .frame::before { top: -2px; left: -2px; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
+    .frame::after { top: -2px; right: -2px; border-left: 0; border-bottom: 0; border-radius: 0 8px 0 0; }
+    .frame i::before { bottom: -2px; left: -2px; border-right: 0; border-top: 0; border-radius: 0 0 0 8px; }
+    .frame i::after { bottom: -2px; right: -2px; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
+
+    #scanStatus {
+      margin: 12px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+      color: #fff;
+      border-radius: 18px;
+      min-height: 62px;
+      padding: 14px 18px;
+      transition: transform .22s cubic-bezier(.34, 1.56, .64, 1), box-shadow .22s ease, filter .22s ease;
+      will-change: transform;
+      user-select: none;
+    }
+    .btn:active { transform: scale(.94); }
+    .btn[disabled] { opacity: .55; pointer-events: none; }
+
+    .btn-scan {
+      background: linear-gradient(135deg, var(--orange-2) 0%, var(--orange) 48%, var(--red) 100%);
+      box-shadow: 0 10px 28px var(--glow), 0 1px 0 rgba(255,255,255,.25) inset;
+      font-size: 22px;
+      margin-bottom: 14px;
+    }
+    .btn-scan:active { box-shadow: 0 4px 14px var(--glow); }
+
+    .btn-ghost {
+      margin-top: 12px;
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      min-height: 48px;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .btn-allegro {
+      background: linear-gradient(135deg, #ff9a1f, #ff7a00);
+      box-shadow: 0 8px 22px rgba(255,122,0,.35);
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .btn-ebay {
+      background: linear-gradient(135deg, #ff4d2e, #e10600);
+      box-shadow: 0 8px 22px rgba(225,6,0,.32);
+      font-size: 18px;
+    }
+
+    label.field {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      margin: 2px 0 8px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--bg-2);
+      color: var(--text);
+      border-radius: 16px;
+      min-height: 52px;
+      padding: 12px 16px;
+      font: inherit;
+      font-size: 17px;
+      font-weight: 600;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input[type="text"]::placeholder { color: #6f635b; font-weight: 500; }
+    input[type="text"]:focus {
+      border-color: rgba(255,122,0,.7);
+      box-shadow: 0 0 0 4px rgba(255,122,0,.18);
+    }
+
+    .found {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .found b {
+      font-size: 20px;
+      letter-spacing: -0.03em;
+      word-break: break-all;
+    }
+    .found small {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      flex: none;
+    }
+
+    .pills {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0 2px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      border: 1px solid var(--line);
+      background: var(--bg-2);
+      color: var(--text);
+      border-radius: 99px;
+      padding: 8px 12px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .2s cubic-bezier(.34, 1.56, .64, 1), background .2s, border-color .2s;
+    }
+    .pill:active { transform: scale(.96); }
+    .pill.on {
+      background: linear-gradient(135deg, var(--orange), var(--red));
+      border-color: transparent;
+      color: #fff;
+    }
+    .hint {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .hist-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .hist-head h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .clear {
+      border: 0;
+      background: none;
+      color: var(--muted);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 6px 4px;
+    }
+
+    .hist-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .hist-list button {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: var(--bg-2);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
+    }
+    .hist-list button:active { transform: scale(.97); }
+    .hist-list .q { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hist-list .tag {
+      flex: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .msg {
+      margin: 0 0 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(225, 6, 0, .14);
+      color: #ffc4b8;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .msg[hidden] { display: none; }
+
+    .pop { animation: pop .45s cubic-bezier(.34, 1.56, .64, 1); }
+    @keyframes pop {
+      from { transform: scale(.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    footer {
+      margin-top: auto;
+      padding-top: 28px;
+      text-align: center;
+      color: #6f635b;
+      font-size: 12px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="flare" aria-hidden="true"></div>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <svg class="flame" viewBox="0 0 32 36" aria-hidden="true">
+          <defs>
+            <linearGradient id="fg" x1="8" y1="0" x2="24" y2="36" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#ffd56a"/>
+              <stop offset=".45" stop-color="#ff7a00"/>
+              <stop offset="1" stop-color="#e10600"/>
+            </linearGradient>
+          </defs>
+          <path fill="url(#fg)" d="M16.2 1.4c1.3 6.2-2.6 8.4-1.3 13.2 4.4-3.2 10.2 1.2 10.2 8.6 0 6.4-4.1 11.2-9.1 11.2s-9.1-4.8-9.1-11.2c0-5.4 2.9-8.7 5.4-12.8 1.3 3.2 3.4 4.4 3.9-9z"/>
+        </svg>
+        <h1>Blister<span>Scan</span></h1>
+      </div>
+      <p class="sub">Skanuj blister i znajdź najniższą cenę</p>
+      <div class="stripe" aria-hidden="true"></div>
+    </header>
+
+    <p id="error" class="msg" hidden></p>
+
+    <section id="scanner" class="panel" hidden>
+      <div class="viewfinder">
+        <video id="video" autoplay muted playsinline></video>
+        <div class="frame"><i></i></div>
+      </div>
+      <p id="scanStatus">Celuj w kod na blisterze</p>
+      <button type="button" class="btn btn-ghost" id="cancelBtn">Anuluj</button>
+    </section>
+
+    <button type="button" class="btn btn-scan" id="scanBtn">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M7 12h10" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+      Skanuj
+    </button>
+
+    <div class="panel">
+      <label class="field" for="nameInput">Albo wpisz nazwę autka</label>
+      <input id="nameInput" type="text" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="np. Twin Mill">
+    </div>
+
+    <section id="results" class="panel pop" hidden>
+      <div class="found">
+        <b id="queryLabel"></b>
+        <small id="queryKind"></small>
+      </div>
+      <a class="btn btn-allegro" id="allegroBtn" target="_blank" rel="noopener noreferrer">Allegro – najtaniej</a>
+      <a class="btn btn-ebay" id="ebayBtn" target="_blank" rel="noopener noreferrer">eBay – najtaniej</a>
+      <div id="hwOption" hidden>
+        <p class="hint">Szukaj też jako</p>
+        <div class="pills">
+          <button type="button" class="pill" id="pillPlain"></button>
+          <button type="button" class="pill" id="pillHw"></button>
+        </div>
+      </div>
+    </section>
+
+    <section id="history" class="panel" hidden>
+      <div class="hist-head">
+        <h2>Ostatnie skany</h2>
+        <button type="button" class="clear" id="clearBtn">Wyczyść</button>
+      </div>
+      <ul class="hist-list" id="histList"></ul>
+    </section>
+
+    <footer>Tylko linki do sklepów — bez czekania na ceny</footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+  <script>
+  (function () {
+    const STORAGE = "blisterscan-history-v1";
+    const video = document.getElementById("video");
+    const scanner = document.getElementById("scanner");
+    const scanBtn = document.getElementById("scanBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const scanStatus = document.getElementById("scanStatus");
+    const nameInput = document.getElementById("nameInput");
+    const results = document.getElementById("results");
+    const queryLabel = document.getElementById("queryLabel");
+    const queryKind = document.getElementById("queryKind");
+    const allegroBtn = document.getElementById("allegroBtn");
+    const ebayBtn = document.getElementById("ebayBtn");
+    const hwOption = document.getElementById("hwOption");
+    const pillPlain = document.getElementById("pillPlain");
+    const pillHw = document.getElementById("pillHw");
+    const historyBox = document.getElementById("history");
+    const histList = document.getElementById("histList");
+    const clearBtn = document.getElementById("clearBtn");
+    const errorBox = document.getElementById("error");
+
+    let stream = null;
+    let reader = null;
+    let scanning = false;
+    let raf = 0;
+    let current = null; // { kind: "code"|"name", base: string, query: string }
+    let nameSaveTimer = 0;
+
+    function showError(text) {
+      errorBox.hidden = !text;
+      errorBox.textContent = text || "";
+    }
+
+    function stopCamera() {
+      scanning = false;
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+      if (reader) {
+        try { reader.reset(); } catch (e) {}
+        reader = null;
+      }
+      if (stream) {
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        stream = null;
+      }
+      video.srcObject = null;
+      scanner.hidden = true;
+      scanBtn.hidden = false;
+    }
+
+    function allegroUrl(q) {
+      return "https://allegro.pl/listing?string=" + encodeURIComponent(q) + "&order=p";
+    }
+    function ebayUrl(q) {
+      return "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(q) + "&_sop=15";
+    }
+
+    function setLinks(q) {
+      allegroBtn.href = allegroUrl(q);
+      ebayBtn.href = ebayUrl(q);
+    }
+
+    function showResults(item, opts) {
+      opts = opts || {};
+      const wasHidden = results.hidden;
+      const queryChanged = !current || current.query !== item.query || current.kind !== item.kind;
+      current = item;
+      queryLabel.textContent = item.query;
+      queryKind.textContent = item.kind === "code" ? "kod" : "nazwa";
+      setLinks(item.query);
+      if (item.kind === "name") {
+        hwOption.hidden = false;
+        pillPlain.textContent = item.base;
+        pillHw.textContent = "Hot Wheels " + item.base;
+        const usingHw = item.query.toLowerCase() === ("hot wheels " + item.base).toLowerCase();
+        pillPlain.classList.toggle("on", !usingHw);
+        pillHw.classList.toggle("on", usingHw);
+      } else {
+        hwOption.hidden = true;
+      }
+      results.hidden = false;
+      if (opts.animate || wasHidden) {
+        results.classList.remove("pop");
+        void results.offsetWidth;
+        results.classList.add("pop");
+      }
+      if (opts.save) saveHistory(item);
+    }
+
+    function loadHistory() {
+      try {
+        const raw = localStorage.getItem(STORAGE);
+        const list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveHistory(item) {
+      const row = { kind: item.kind, base: item.base, query: item.query, t: Date.now() };
+      const list = loadHistory().filter(function (x) {
+        return !(x.kind === row.kind && x.base === row.base);
+      });
+      list.unshift(row);
+      localStorage.setItem(STORAGE, JSON.stringify(list.slice(0, 10)));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const list = loadHistory();
+      histList.innerHTML = "";
+      if (!list.length) {
+        historyBox.hidden = true;
+        return;
+      }
+      historyBox.hidden = false;
+      list.forEach(function (item, idx) {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.innerHTML = '<span class="q"></span><span class="tag"></span>';
+        btn.querySelector(".q").textContent = item.query;
+        btn.querySelector(".tag").textContent = item.kind === "code" ? "kod" : "nazwa";
+        btn.addEventListener("click", function () {
+          if (item.kind === "name") nameInput.value = item.base;
+          else nameInput.value = "";
+          showResults({
+            kind: item.kind,
+            base: item.base || item.query,
+            query: item.query
+          }, { animate: true });
+        });
+        li.appendChild(btn);
+        histList.appendChild(li);
+      });
+    }
+
+    function onFound(text, kind) {
+      const value = String(text || "").trim();
+      if (!value) return;
+      stopCamera();
+      if (kind === "code" && navigator.vibrate) {
+        try { navigator.vibrate(80); } catch (e) {}
+      }
+      showError("");
+      if (kind === "name") {
+        showResults({ kind: "name", base: value, query: value }, { animate: true, save: true });
+      } else {
+        nameInput.value = "";
+        showResults({ kind: "code", base: value, query: value }, { animate: true, save: true });
+      }
+    }
+
+    async function startNativeDetector() {
+      if (!("BarcodeDetector" in window)) return false;
+      let formats;
+      try {
+        formats = await BarcodeDetector.getSupportedFormats();
+      } catch (e) {
+        return false;
+      }
+      const wanted = ["ean_13", "upc_a", "ean_8", "upc_e"].filter(function (f) {
+        return formats.indexOf(f) !== -1;
+      });
+      if (!wanted.length) return false;
+      const detector = new BarcodeDetector({ formats: wanted });
+
+      const tick = async function () {
+        if (!scanning) return;
+        try {
+          if (video.readyState >= 2) {
+            const codes = await detector.detect(video);
+            if (scanning && codes && codes.length && codes[0].rawValue) {
+              onFound(codes[0].rawValue, "code");
+              return;
+            }
+          }
+        } catch (e) {}
+        if (scanning) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+      return true;
+    }
+
+    function startZxing() {
+      if (!window.ZXing || !ZXing.BrowserMultiFormatReader) {
+        showError("Skaner się nie wczytał. Wpisz nazwę autka.");
+        stopCamera();
+        return;
+      }
+      const hints = new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.UPC_E
+      ]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      reader = new ZXing.BrowserMultiFormatReader(hints, 150);
+      const onResult = function (result) {
+        if (result && scanning) onFound(result.getText(), "code");
+      };
+      reader.decodeFromStream(stream, video, onResult).catch(function () {
+        if (!scanning) return;
+        const tick = function () {
+          if (!scanning) return;
+          try {
+            if (video.readyState >= 2 && video.videoWidth) {
+              const result = reader.decode(video);
+              if (result) { onResult(result); return; }
+            }
+          } catch (e) {}
+          if (scanning) setTimeout(tick, 100);
+        };
+        tick();
+      });
+    }
+
+    async function openCamera() {
+      showError("");
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showError("Ta przeglądarka nie daje aparatu. Wpisz nazwę autka.");
+        return;
+      }
+      scanBtn.hidden = true;
+      scanner.hidden = false;
+      scanStatus.textContent = "Włączam aparat…";
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: "environment" } }
+        });
+      } catch (e) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+        } catch (e2) {
+          stopCamera();
+          showError("Nie mam dostępu do aparatu. Zezwól w ustawieniach albo wpisz nazwę.");
+          return;
+        }
+      }
+      video.setAttribute("playsinline", "true");
+      video.playsInline = true;
+      video.muted = true;
+      video.srcObject = stream;
+      try { await video.play(); } catch (e) {}
+      scanStatus.textContent = "Celuj w kod na blisterze";
+      scanning = true;
+      const nativeOk = await startNativeDetector();
+      if (!nativeOk && scanning) startZxing();
+    }
+
+    scanBtn.addEventListener("click", openCamera);
+    cancelBtn.addEventListener("click", function () {
+      stopCamera();
+    });
+
+    function applyName(value, save, animate) {
+      showError("");
+      showResults({ kind: "name", base: value, query: value }, { save: !!save, animate: !!animate });
+    }
+
+    nameInput.addEventListener("input", function () {
+      const value = nameInput.value.trim();
+      clearTimeout(nameSaveTimer);
+      if (!value) {
+        if (current && current.kind === "name") {
+          results.hidden = true;
+          current = null;
+        }
+        return;
+      }
+      const first = !current || current.kind !== "name" || results.hidden;
+      applyName(value, false, first);
+      nameSaveTimer = setTimeout(function () { saveHistory(current); }, 600);
+    });
+    nameInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        const value = nameInput.value.trim();
+        if (!value) return;
+        clearTimeout(nameSaveTimer);
+        applyName(value, true, false);
+        nameInput.blur();
+      }
+    });
+    nameInput.addEventListener("blur", function () {
+      const value = nameInput.value.trim();
+      if (!value || !current || current.kind !== "name") return;
+      clearTimeout(nameSaveTimer);
+      saveHistory(current);
+    });
+
+    pillPlain.addEventListener("click", function () {
+      if (!current || current.kind !== "name") return;
+      showResults({ kind: "name", base: current.base, query: current.base }, { save: true });
+    });
+    pillHw.addEventListener("click", function () {
+      if (!current || current.kind !== "name") return;
+      showResults({ kind: "name", base: current.base, query: "Hot Wheels " + current.base }, { save: true });
+    });
+
+    clearBtn.addEventListener("click", function () {
+      localStorage.removeItem(STORAGE);
+      renderHistory();
+    });
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden && scanning) stopCamera();
+    });
+    window.addEventListener("pagehide", function () {
+      if (scanning) stopCamera();
+    });
+
+    renderHistory();
+  })();
+  </script>
+</body>
+</html>

@@ -16,8 +16,8 @@
 
 <div id="app">
   <div id="stage">
-    <video id="video" playsinline muted autoplay></video>
     <div id="frame">
+      <div id="vwrap"><video id="video" playsinline muted autoplay></video></div>
       <canvas id="view"></canvas>
       <canvas id="fx"></canvas>
       <canvas id="hud"></canvas>
@@ -26,6 +26,7 @@
     <div id="countdown"></div>
     <canvas id="histo" width="256" height="100" class="hidden"></canvas>
     <div id="badges"></div>
+    <div id="fps" class="hidden"></div>
     <div id="recInfo" class="hidden"><span class="dot"></span><span id="recTime">00:00</span></div>
   </div>
 

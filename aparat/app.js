@@ -27,6 +27,15 @@ const video = $('#video'), view = $('#view'), fx = $('#fx'), hud = $('#hud');
 const vctx = view.getContext('2d'), fxctx = fx.getContext('2d'), hctx = hud.getContext('2d');
 const ana = document.createElement('canvas'), actx = ana.getContext('2d', { willReadFrequently: true });
 const stabC = document.createElement('canvas'), sctx = stabC.getContext('2d', { willReadFrequently: true });
+// mały kanwas GPU: wideo jest najpierw zmniejszane na GPU, dopiero mała klatka idzie do CPU (bez kopiowania całej klatki 1080p/4K)
+const gpuC = document.createElement('canvas'), gctx = gpuC.getContext('2d');
+function downscale(dst, dctx, src, sx, sy, sw, sh, w, h) {
+  if (dst.width !== w || dst.height !== h) { dst.width = w; dst.height = h; }
+  if (src instanceof HTMLVideoElement) {
+    if (gpuC.width !== w || gpuC.height !== h) { gpuC.width = w; gpuC.height = h; }
+    gctx.drawImage(src, sx, sy, sw, sh, 0, 0, w, h); dctx.drawImage(gpuC, 0, 0);
+  } else dctx.drawImage(src, sx, sy, sw, sh, 0, 0, w, h);
+}
 
 function toast(msg, ms = 2600) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('on');
@@ -60,8 +69,9 @@ async function startCamera() {
   }
   stopCamera();
   const tries = [
-    { video: { facingMode: { ideal: S.facing }, width: { ideal: 3840 }, height: { ideal: 2160 } }, audio: false },
-    { video: { facingMode: { ideal: S.facing }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+    // podgląd w 1080p/30 kl./s (płynnie); pełna rozdzielczość tylko przy zdjęciu MAX RES
+    { video: { facingMode: { ideal: S.facing }, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, audio: false },
+    { video: { facingMode: { ideal: S.facing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
     { video: true, audio: false }
   ];
   let err;
@@ -104,7 +114,7 @@ function setZoom(z) {
   $('#zoomVal').textContent = (S.zoom < 10 ? S.zoom.toFixed(1) : Math.round(S.zoom)) + '×';
   const t = Math.log(S.zoom / S.zMin) / Math.log(S.zMax / S.zMin);
   $('#zoomSlider').value = Math.round(t * 1000);
-  view.classList.toggle('sharp', S.digital > 1.8);
+  layoutVideo();
   document.querySelectorAll('#zoomPills button').forEach(b => b.classList.toggle('on', Math.abs(+b.dataset.z - S.zoom) < 0.05));
 }
 function buildZoomPills() {
@@ -153,8 +163,7 @@ function bestShift(cur, prev, R) {
 }
 function estimateMotion(src, sx, sy, sw, sh, R = SR, store = true, ref = null) {
   const ah = Math.round(AW * sh / sw);
-  if (stabC.width !== AW || stabC.height !== ah) { stabC.width = AW; stabC.height = ah; }
-  sctx.drawImage(src, sx, sy, sw, sh, 0, 0, AW, ah);
+  downscale(stabC, sctx, src, sx, sy, sw, sh, AW, ah);
   const p = profiles(sctx.getImageData(0, 0, AW, ah).data, AW, ah);
   const prev = ref || S.prevProf; let dx = 0, dy = 0;
   if (prev && prev.col.length === p.col.length && prev.row.length === p.row.length) {
@@ -284,8 +293,7 @@ function subShift(cur, prev, R) {
 // ruch w 4 ćwiartkach -> przesunięcie + obrót klatki
 function estimateRigid(src, sx, sy, sw, sh) {
   const ah = Math.round(HAW * sh / sw);
-  if (stabC.width !== HAW || stabC.height !== ah) { stabC.width = HAW; stabC.height = ah; }
-  sctx.drawImage(src, sx, sy, sw, sh, 0, 0, HAW, ah);
+  downscale(stabC, sctx, src, sx, sy, sw, sh, HAW, ah);
   const qw = HAW >> 1, qh = ah >> 1, Q = [];
   for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) Q.push({ p: profiles(sctx.getImageData(i * qw, j * qh, qw, qh).data, qw, qh), cx: (i + 0.5) * qw - HAW / 2, cy: (j + 0.5) * qh - ah / 2 });
   const prev = HZ.prevQ; HZ.prevQ = Q;
@@ -335,7 +343,7 @@ function updateHStab() {
 function drawHStab(ctx, src, W, Hh, kx = 1, ky = 1) {
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, Hh);
-  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = ctx === vctx ? 'low' : 'high'; // podgląd: szybko, zdjęcie: jakość
   ctx.translate(W / 2, Hh / 2); ctx.rotate(HZ.rot * Math.PI / 180);
   ctx.scale(W / (HZ.cw * kx), Hh / (HZ.ch * ky));
   ctx.drawImage(src, -(S.vw / 2 + HZ.ox) * kx, -(S.vh / 2 + HZ.oy) * ky);
@@ -359,31 +367,88 @@ const bgC = document.createElement('canvas'), bgctx = bgC.getContext('2d');
 const personC = document.createElement('canvas'), pctx = personC.getContext('2d');
 const maskC = document.createElement('canvas'), mctx = maskC.getContext('2d');
 const segIn = document.createElement('canvas'), segctx = segIn.getContext('2d');
-let lastT = 0;
+// czy podgląd musi iść przez kanwas? (tylko gdy coś przetwarza obraz). W przeciwnym razie pokazujemy <video> bezpośrednio (GPU, pełne kl./s)
+function needCanvas() { return !!(S.stab || S.hstab || S.mode === 'portrait' || S.recCanvas); }
+const vwrap = $('#vwrap');
+let stageBox = null;
+function stageRect() { if (!stageBox) stageBox = $('#stage').getBoundingClientRect(); return stageBox; }
+window.addEventListener('resize', () => { stageBox = null; layoutVideo(); });
+// ramka obrazu = prostokąt "contain" w scenie; <video> jest w niej przybliżany CSS-em (zoom cyfrowy na GPU)
+function layoutVideo() {
+  if (!S.vw) return;
+  const st = stageRect(), asp = S.vw / S.vh;
+  let w = st.width, h = w / asp; if (h > st.height) { h = st.height; w = h * asp; }
+  const key = [w, h, S.digital].join();
+  if (layoutVideo.k === key) return; layoutVideo.k = key;
+  Object.assign(vwrap.style, { left: (st.width - w) / 2 + 'px', top: (st.height - h) / 2 + 'px', width: w + 'px', height: h + 'px' });
+  video.style.transform = S.digital > 1.001 ? `scale(${S.digital})` : '';
+}
 function sizeCanvases() {
   const { cw, ch } = cropSize(); const asp = cw / ch;
-  const st = $('#stage').getBoundingClientRect(); const dpr = Math.min(devicePixelRatio || 1, 2);
-  let w = Math.min(1600, Math.round(Math.max(st.width, st.height * asp) * dpr)); let h = Math.round(w / asp);
-  if (view.width !== w || view.height !== h) { view.width = hud.width = w; view.height = hud.height = h; }
+  const st = stageRect(); const dpr = Math.min(devicePixelRatio || 1, 2);
+  let w;
+  if (S.recCanvas) w = Math.min(1920, Math.max(1280, Math.round(cw)));                      // nagrywanie: max 1080p
+  else w = Math.min(S.mode === 'portrait' ? 1280 : 1600, Math.round(cw), Math.round(Math.min(st.width, st.height * asp) * dpr)); // rozmiar wyświetlanego obrazu (contain), nie większy
+  w = Math.max(2, w & ~1); const h = Math.max(2, Math.round(w / asp) & ~1);
+  if (view.width !== w || view.height !== h) { view.width = hud.width = w; view.height = hud.height = h; hudDirty = true; }
   const aw = 320, ah = Math.round(320 / asp);
   if (fx.width !== aw || fx.height !== ah) { fx.width = ana.width = aw; fx.height = ana.height = ah; }
 }
-function render(t) {
-  requestAnimationFrame(render);
+// źródło do analizy: kanwas podglądu (gdy aktywny) albo wycinek wideo
+function anaSource() {
+  if (needCanvas() && view.width > 2) return { src: view, x: 0, y: 0, w: view.width, h: view.height };
+  const r = cropRect(); return { src: video, x: r.x, y: r.y, w: r.w, h: r.h };
+}
+// mała klatka (GPU) do analizy: dokumenty, QR
+const smallC = document.createElement('canvas'), smctx = smallC.getContext('2d');
+function smallFrame(w) {
+  const a = anaSource(); const h = Math.max(2, Math.round(w * a.h / a.w));
+  if (smallC.width !== w || smallC.height !== h) { smallC.width = w; smallC.height = h; }
+  smctx.drawImage(a.src, a.x, a.y, a.w, a.h, 0, 0, w, h); return { c: smallC, a };
+}
+const FPS = { n: 0, t0: performance.now(), val: 0, show: true, last: 0 };
+let canvasOn = null, hudDirty = true;
+function tick(now) {
   if (!S.stream || !S.vw || video.readyState < 2) return;
-  S.frameNo++;
-  if (video.videoWidth !== S.vw) { S.vw = video.videoWidth; S.vh = video.videoHeight; resetStab(); resetHStab(); }
-  if (S.hstab) { updateHStab(); sizeCanvases(); drawHStab(vctx, video, view.width, view.height); }
-  else {
-    updateStab(); sizeCanvases();
-    const r = cropRect();
-    vctx.imageSmoothingQuality = 'high';
-    vctx.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, view.width, view.height);
+  FPS.last = performance.now();
+  S.frameNo++; FPS.n++;
+  if (FPS.last - FPS.t0 >= 1000) { FPS.val = FPS.n * 1000 / (FPS.last - FPS.t0); FPS.n = 0; FPS.t0 = FPS.last; updateFpsLabel(); }
+  if (video.videoWidth !== S.vw) { S.vw = video.videoWidth; S.vh = video.videoHeight; resetStab(); resetHStab(); layoutVideo(); }
+  const nc = needCanvas();
+  if (nc !== canvasOn) { canvasOn = nc; view.classList.toggle('hidden', !nc); vwrap.classList.toggle('under', nc); if (!nc) { HZ.cw = 0; } updateFpsLabel(); }
+  if (nc) {
+    if (S.hstab) { updateHStab(); sizeCanvases(); drawHStab(vctx, video, view.width, view.height); }
+    else {
+      updateStab(); sizeCanvases();
+      const r = cropRect();
+      vctx.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, view.width, view.height);
+    }
+    if (S.mode === 'portrait') portraitLive();
+  } else { S.off.x = S.off.y = 0; layoutVideo(); sizeCanvases(); }
+  // analiza na małych klatkach, co 2. klatkę
+  if (S.frameNo % 2 === 0) drawFx();
+  drawHud();
+  if (S.mode === 'qr' && now - (S.qrT || 0) > 250) { S.qrT = now; scanQR(); }
+  if (S.mode === 'doc' && now - (S.docT || 0) > 400) { S.docT = now; const { c } = smallFrame(220); const q = detectDoc(c, 220); S.docLive = q.found ? q.pts.map(p => ({ x: p.x / c.width, y: p.y / c.height })) : null; }
+}
+function updateFpsLabel() {
+  const el = $('#fps'); el.classList.toggle('hidden', !FPS.show);
+  if (FPS.show) el.textContent = `${Math.round(FPS.val)} kl./s · ${canvasOn ? 'kanwas' : 'GPU'} · ${S.vw}×${S.vh}`;
+}
+// pętla: requestVideoFrameCallback (tylko nowe klatki z aparatu), zapas: requestAnimationFrame
+let loopStarted = false;
+function startLoop() {
+  if (loopStarted) return; loopStarted = true;
+  if (video.requestVideoFrameCallback) {
+    const cb = now => { tick(now); video.requestVideoFrameCallback(cb); };
+    video.requestVideoFrameCallback(cb);
+    // strażnik: gdyby callbacki stanęły (np. po zmianie kamery), dociągamy przez rAF
+    setInterval(() => { if (S.stream && performance.now() - FPS.last > 400) requestAnimationFrame(t => tick(t)); }, 300);
+  } else {
+    let lastTime = -1;
+    const raf = t => { requestAnimationFrame(raf); if (video.currentTime !== lastTime) { lastTime = video.currentTime; tick(t); } };
+    requestAnimationFrame(raf);
   }
-  if (S.mode === 'portrait') portraitLive();
-  drawFx(); drawHud();
-  if (S.mode === 'qr' && t - (S.qrT || 0) > 250) { S.qrT = t; scanQR(); }
-  if (S.mode === 'doc' && t - (S.docT || 0) > 400) { S.docT = t; const q = detectDoc(view, 220); S.docLive = q.found ? q.pts.map(p => ({ x: p.x / view.width, y: p.y / view.height })) : null; }
 }
 
 /* ---- portret (rozmycie tła) ---- */
@@ -453,8 +518,8 @@ function drawFx() {
   const need = S.histo || S.peaking || S.zebra;
   fxctx.clearRect(0, 0, fx.width, fx.height);
   if (!need) return;
-  const w = ana.width, h = ana.height;
-  actx.drawImage(view, 0, 0, w, h);
+  const w = ana.width, h = ana.height, a = anaSource();
+  downscale(ana, actx, a.src, a.x, a.y, a.w, a.h, w, h);
   const d = actx.getImageData(0, 0, w, h).data;
   const L = new Uint8ClampedArray(w * h);
   for (let i = 0, j = 0; i < d.length; i += 4, j++) L[j] = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
@@ -471,7 +536,7 @@ function drawFx() {
     }
     fxctx.putImageData(out, 0, 0);
   }
-  if (S.histo && S.frameNo % 3 === 0) drawHisto(d);
+  if (S.histo && S.frameNo % 4 === 0) drawHisto(d);
 }
 function drawHisto(d) {
   const c = $('#histo'), g = c.getContext('2d'), W = c.width, H = c.height;
@@ -487,7 +552,10 @@ function drawHisto(d) {
   g.globalCompositeOperation = 'source-over';
 }
 function drawHud() {
-  const w = hud.width, h = hud.height; hctx.clearRect(0, 0, w, h);
+  const w = hud.width, h = hud.height;
+  const any = S.grid || (S.level && S.tilt != null) || S.mode === 'qr' || (S.mode === 'doc' && S.docLive) || S.hstab;
+  if (!any && !hudDirty) return;
+  hctx.clearRect(0, 0, w, h); hudDirty = any;
   const lw = Math.max(1, w / 900);
   if (S.grid) {
     hctx.strokeStyle = 'rgba(255,255,255,.45)'; hctx.lineWidth = lw; hctx.beginPath();
@@ -552,14 +620,15 @@ async function scanQR() {
     let res = null;
     if ('BarcodeDetector' in window) {
       if (!S.bd) { const f = await BarcodeDetector.getSupportedFormats(); S.bd = new BarcodeDetector({ formats: f.length ? f : ['qr_code'] }); }
-      const r = await S.bd.detect(view);
+      const a = anaSource(); const r = await S.bd.detect(a.src);
+      if (r.length) r[0].cornerPoints = r[0].cornerPoints.map(p => ({ x: (p.x - a.x) / a.w * hud.width, y: (p.y - a.y) / a.h * hud.height }));
       if (r.length) res = { text: r[0].rawValue, fmt: r[0].format, pts: r[0].cornerPoints };
     } else {
       if (!window.jsQR) await loadScript(CDN.jsqr);
-      const w = 640, h = Math.round(640 * view.height / view.width), c = mkCanvas(w, h), g = c.getContext('2d');
-      g.drawImage(view, 0, 0, w, h);
+      const sf = smallFrame(640), w = sf.c.width, h = sf.c.height, c = mkCanvas(w, h), g = c.getContext('2d', { willReadFrequently: true });
+      g.drawImage(sf.c, 0, 0);
       const q = jsQR(g.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
-      if (q) { const k = view.width / w, L = q.location; res = { text: q.data, fmt: 'qr_code', pts: [L.topLeftCorner, L.topRightCorner, L.bottomRightCorner, L.bottomLeftCorner].map(p => ({ x: p.x * k, y: p.y * k })) }; }
+      if (q) { const k = hud.width / w, L = q.location; res = { text: q.data, fmt: 'qr_code', pts: [L.topLeftCorner, L.topRightCorner, L.bottomRightCorner, L.bottomLeftCorner].map(p => ({ x: p.x * k, y: p.y * k })) }; }
     }
     if (res) { S.qrBox = { pts: res.pts, t: performance.now() }; if (res.text !== S.lastQR || performance.now() - S.lastQRt > 4000) { S.lastQR = res.text; S.lastQRt = performance.now(); showQR(res); } }
   } catch (e) { if (!S.qrWarned) { S.qrWarned = true; toast('Skaner kodów niedostępny: ' + e.message); } }
@@ -721,8 +790,18 @@ async function shutter() {
 }
 async function captureMax() {
   if (!S.imageCapture || !S.imageCapture.takePhoto) {
-    toast('Ta przeglądarka nie obsługuje zdjęć w maks. rozdzielczości (ImageCapture). Zapisuję zwykłe zdjęcie.');
-    return saveCanvas(finishZoom(grabFrame()), 'foto');
+    // brak ImageCapture (np. iPhone): na chwilę przełączamy aparat na najwyższą rozdzielczość, robimy klatkę i wracamy do 1080p
+    busy(true, 'Zdjęcie w pełnej rozdzielczości…');
+    const w0 = video.videoWidth;
+    try {
+      await S.track.applyConstraints({ width: { ideal: 4096 }, height: { ideal: 3072 }, frameRate: { ideal: 30 } });
+      for (let i = 0; i < 30 && video.videoWidth === w0; i++) await sleep(50);
+      await nextFrame(); await nextFrame();
+      S.vw = video.videoWidth; S.vh = video.videoHeight; flashFx();
+      const c = finishZoom(grabFrame()); await saveCanvas(c, 'max'); toast(`Zapisano ${c.width}×${c.height} px`);
+    } catch (e) { await saveCanvas(finishZoom(grabFrame()), 'foto'); }
+    S.track.applyConstraints({ width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }).catch(() => {});
+    busy(false); return;
   }
   busy(true, 'Zdjęcie w pełnej rozdzielczości…');
   try {
@@ -747,15 +826,24 @@ function pickMime() {
 }
 async function toggleRecording() {
   if (S.recorder) { S.recorder.stop(); return; }
-  if (!window.MediaRecorder || !view.captureStream) return toast('Nagrywanie wideo nie jest obsługiwane w tej przeglądarce.');
-  const vs = view.captureStream(30); const tracks = [...vs.getVideoTracks()];
+  if (!window.MediaRecorder) return toast('Nagrywanie wideo nie jest obsługiwane w tej przeglądarce.');
+  // bez efektów: nagrywamy prosto z aparatu (natywne kl./s); z efektami/zoomem: z kanwasu max 1080p, 30 kl./s
+  let tracks;
+  if (!S.stab && !S.hstab && S.mode !== 'portrait' && S.digital <= 1.01) tracks = [S.track.clone()];
+  else {
+    if (!view.captureStream) return toast('Nagrywanie z efektami nie jest obsługiwane w tej przeglądarce.');
+    S.recCanvas = true; sizeCanvases();
+    tracks = [...view.captureStream(30).getVideoTracks()];
+  }
+  S.recVideoTracks = tracks.slice();
   try { const a = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true } }); S.audio = a; tracks.push(...a.getAudioTracks()); }
   catch (e) { toast('Bez mikrofonu – nagrywam obraz bez dźwięku.'); }
-  const mime = pickMime(); const rec = new MediaRecorder(new MediaStream(tracks), mime ? { mimeType: mime, videoBitsPerSecond: 12e6 } : {});
+  const mime = pickMime(); const rec = new MediaRecorder(new MediaStream(tracks), mime ? { mimeType: mime, videoBitsPerSecond: 8e6 } : { videoBitsPerSecond: 8e6 });
   S.recChunks = []; rec.ondataavailable = e => e.data.size && S.recChunks.push(e.data);
   rec.onstop = async () => {
     clearInterval(S.recTimer); $('#recInfo').classList.add('hidden'); $('#shutter').classList.remove('rec');
     if (S.audio) S.audio.getTracks().forEach(t => t.stop()); S.audio = null;
+    (S.recVideoTracks || []).forEach(t => t.stop()); S.recVideoTracks = null; S.recCanvas = false;
     const blob = new Blob(S.recChunks, { type: rec.mimeType || mime || 'video/webm' }); S.recorder = null;
     await saveBlob(blob, 'video', 'wideo'); toast('Wideo zapisane w galerii');
   };
@@ -774,7 +862,7 @@ async function toggleTimelapse() {
   if (!window.MediaRecorder) return toast('Timelapse wymaga MediaRecorder – nieobsługiwane w tej przeglądarce.');
   const iv = S.tlInterval || 1;
   S.tl = { frames: [], iv: null, t0: Date.now() };
-  const grab = async () => { if (!S.tl) return; if (S.tl.frames.length >= 1800) return toggleTimelapse(); const b = await canvasBlob(view, 'image/jpeg', 0.9); if (S.tl) { S.tl.frames.push(b); $('#recTime').textContent = `${S.tl.frames.length} kl. (co ${iv}s)`; } };
+  const grab = async () => { if (!S.tl) return; if (S.tl.frames.length >= 1800) return toggleTimelapse(); const b = await canvasBlob(needCanvas() ? view : grabFrame(video, S.vw, S.vh, false, 1920), 'image/jpeg', 0.9); if (S.tl) { S.tl.frames.push(b); $('#recTime').textContent = `${S.tl.frames.length} kl. (co ${iv}s)`; } };
   grab(); S.tl.iv = setInterval(grab, iv * 1000);
   $('#shutter').classList.add('rec'); $('#recInfo').classList.remove('hidden');
   toast(`Timelapse: klatka co ${iv} s. Naciśnij ponownie, aby zakończyć.`);
@@ -1135,7 +1223,7 @@ function buildPro() {
   h += sl('pIso', 'ISO', c.iso, st.iso ?? c.iso?.min, v => Math.round(v));
   h += sl('pWb', 'Balans bieli (K)', c.colorTemperature, st.colorTemperature ?? 5000, v => Math.round(v) + ' K');
   h += sl('pFd', 'Ostrość (odległość)', c.focusDistance, st.focusDistance ?? c.focusDistance?.min, v => (+v).toFixed(2));
-  h += `<div class="row" style="margin-top:6px"><button id="pAuto">Wszystko AUTO</button><button id="pHisto" class="chip${S.histo ? ' on' : ''}">Histogram</button><button id="pPeak" class="chip${S.peaking ? ' on' : ''}">Peaking</button><button id="pZebra" class="chip${S.zebra ? ' on' : ''}">Zebra</button></div>`;
+  h += `<div class="row" style="margin-top:6px"><button id="pAuto">Wszystko AUTO</button><button id="pHisto" class="chip${S.histo ? ' on' : ''}">Histogram</button><button id="pPeak" class="chip${S.peaking ? ' on' : ''}">Peaking</button><button id="pZebra" class="chip${S.zebra ? ' on' : ''}">Zebra</button><button id="pFps" class="chip${FPS.show ? ' on' : ''}">Licznik kl./s</button></div>`;
   if (!/pEc|pEt|pIso|pWb|pFd/.test(h)) h = '<p class="note">⚠ Ta przeglądarka/aparat nie udostępnia ręcznej ekspozycji, ISO, balansu bieli ani ostrości (np. Safari na iPhonie). Dostępne są narzędzia pomiarowe:</p>' + h;
   p.innerHTML = h;
   const on = (id, fn) => { const e = $('#' + id); if (e) e.oninput = () => { $('#' + id + 'V').textContent = fn.fmt(e.value); fn.apply(+e.value); }; };
@@ -1148,6 +1236,7 @@ function buildPro() {
   $('#pHisto').onclick = async () => { await toggle('histo'); buildPro(); };
   $('#pPeak').onclick = async () => { await toggle('peaking'); buildPro(); };
   $('#pZebra').onclick = async () => { await toggle('zebra'); buildPro(); };
+  $('#pFps').onclick = () => { FPS.show = !FPS.show; updateFpsLabel(); buildPro(); };
 }
 function fmtShutter(v) { const s = v / 10000; return s >= 1 ? s.toFixed(1) + ' s' : '1/' + Math.round(1 / s) + ' s'; }
 
@@ -1203,7 +1292,7 @@ function openFeatures() {
 buildModes(); setMode('photo'); loadGallery();
 $('#btnStart').onclick = async () => {
   $('#startErr').textContent = '';
-  try { await startCamera(); $('#startScreen').classList.add('hidden'); requestAnimationFrame(render); }
+  try { await startCamera(); $('#startScreen').classList.add('hidden'); startLoop(); }
   catch (e) {
     const n = e && e.name;
     $('#startErr').textContent = n === 'NotAllowedError' ? 'Brak zgody na aparat. Zezwól na dostęp w ustawieniach przeglądarki i spróbuj ponownie.' :

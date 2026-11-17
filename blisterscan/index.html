@@ -74,6 +74,11 @@
     .r-price b { display: block; font-size: 38px; font-weight: 900; letter-spacing: -.045em; line-height: 1; color: var(--ink); }
     .r-price b.none { font-size: 18px; color: var(--ink3); letter-spacing: 0; padding-top: 10px; }
     .r-price small { display: block; margin-top: 3px; font-size: 11.5px; font-weight: 750; color: var(--ink3); text-transform: uppercase; letter-spacing: .04em; }
+    .r-price a.pr-a { display: block; color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+    .r-price a.pr-a:active { opacity: .6; }
+    .ebay-b { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; height: 30px; padding: 0 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--paper2); color: var(--ink); font-size: 12.5px; font-weight: 750; text-decoration: none; white-space: nowrap; }
+    .ebay-b .logo { font-size: 10px; padding: 2px 6px; }
+    .ebay-b svg { width: 12px; height: 12px; color: var(--ink3); }
     .r-price small i { font-style: normal; color: var(--orange); }
     .r2 { display: flex; gap: 14px; align-items: stretch; min-height: 0; }
     .car { flex: none; width: 124px; display: flex; flex-direction: column; gap: 8px; }
@@ -258,14 +263,14 @@
           <div class="alts" id="rAlts" hidden></div>
         </div>
         <div class="sec" id="prices">
-          <div class="sec-h"><h3>Najtańsze oferty</h3><small id="pTime"></small></div>
+          <div class="sec-h"><h3>Najtańsze nowe na OLX</h3><small id="pTime"></small></div>
           <div class="sum" id="pSum"></div>
           <div id="offers"></div>
           <div class="links" style="margin-top:12px">
             <a class="lcard" id="lAllegro" target="_blank" rel="noopener noreferrer"><span class="logo al">allegro</span><b>Allegro →</b><span>od najtańszych</span></a>
             <a class="lcard" id="lEbay" target="_blank" rel="noopener noreferrer"><span class="logo eb">ebay</span><b>eBay →</b><span>od najtańszych</span></a>
           </div>
-          <p class="fine">Ceny bez dostawy, z ogłoszeń Allegro Lokalnie i OLX (na żywo). Allegro.pl i eBay blokują pobieranie cen przez inne strony, więc otwierają się w nowej karcie.</p>
+          <p class="fine">Ceny z żywych ogłoszeń OLX (tylko stan „nowe”, bez dostawy). Allegro.pl i eBay blokują pobieranie cen przez inne strony, więc ich ceny widzisz po otwarciu w nowej karcie.</p>
         </div>
         <div class="sec" id="checkSec">
           <div class="sec-h"><h3>Sprawdź sam: TH czy STH?</h3></div>
@@ -810,21 +815,16 @@
   }
 
   // ---------- ceny ----------
-  function parseAllegroLokalnie(md) {
-    var out = [], re = /\[!\[Image \d+:[^\]]*\]\((https:\/\/a\.allegroimg\.com\/[^)\s]+)\)\s*###\s*([\s\S]*?)\]\((https:\/\/allegrolokalnie\.pl\/oferta\/[^)\s]+)\)/g, m;
-    while ((m = re.exec(md))) {
-      var body = m[2], title = body.split(/\s+-\s+\[x\]|\s+- \[ \]/)[0].trim();
-      var pm = /(Kup teraz|Licytacja)\s+(\d[\d\s]*(?:,\d{1,2})?)\s*zł/.exec(body);
-      if (!pm) continue;
-      var price = parseFloat(pm[2].replace(/\s/g, "").replace(",", "."));
-      if (!(price > 0)) continue;
-      out.push({ src: "al", title: title, price: price, auction: pm[1] === "Licytacja", url: m[3], img: m[1].replace(/\/s\d+x\d+\//, "/s360/") });
-    }
-    return out;
+  var BRAND_RE = /hot\s?-?wheels|\bhw\b|mattel/i;
+  var LOT_RE = /\b(zestaw\w*|komplet\w*|pakiet\w*|lot|set|mix|kolekcja|\d+\s*(szt|sztuk|pak)\w*|\d+\s?x|[2-9]\s?-?pack)\b|gablot|etui|protector|plakat|naklejk/i;
+  function stateOf(o) {
+    var p = (o.params || []).filter(function (x) { return x.key === "state"; })[0];
+    return p && p.value && p.value.key;
   }
   function parseOlx(txt) {
     var j = JSON.parse(txt), out = [];
     (j.data || []).forEach(function (o) {
+      if (stateOf(o) !== "new") return;                       // tylko NOWE
       var p = (o.params || []).filter(function (x) { return x.key === "price"; })[0];
       var v = p && p.value && p.value.value;
       if (!(v > 0) || (p.value.currency && p.value.currency !== "PLN")) return;
@@ -833,66 +833,77 @@
     });
     return out;
   }
-  function getAllegroLokalnie(q) { return fetchText(PROXY + "https://allegrolokalnie.pl/oferty/q/" + encodeURIComponent(q) + "?sort=price-asc", 20000).then(parseAllegroLokalnie); }
-  function getOlx(q) { return fetchText(PROXY + "https://www.olx.pl/api/v1/offers/?offset=0&limit=40&query=" + encodeURIComponent(q) + "&sort_by=filter_float_price:asc", 15000, { "X-Return-Format": "text" }).then(parseOlx); }
-  var SRC = { al: ["Allegro Lokalnie", "al"], olx: ["OLX", "olx"] };
+  function getOlx(q) {
+    return fetchText(PROXY + "https://www.olx.pl/api/v1/offers/?offset=0&limit=50&query=" + encodeURIComponent(q) + "&filter_enum_state%5B0%5D=new&sort_by=filter_float_price:asc", 15000, { "X-Return-Format": "text" }).then(parseOlx);
+  }
+  // inne odmiany tego samego auta, np. „'95 Mazda RX-7” kontra „'95 Mazda RX-7 Drift”
+  var extCache = {};
+  function siblingExtras(name) {
+    if (extCache[name]) return extCache[name];
+    var base = HWMatch.norm(name).replace(/'/g, "").split(" "), out = [];
+    (DB.cars || []).forEach(function (c) {
+      if (c.n === name) return;
+      var t = HWMatch.norm(c.n).replace(/'/g, "").split(" ");
+      var rest = t.filter(function (w) { return base.indexOf(w) === -1; });
+      if (t.length > base.length && base.every(function (w) { return t.indexOf(w) !== -1; }) && rest.length) out.push(rest);
+    });
+    return (extCache[name] = out);
+  }
+  function goodOffer(o, name) {
+    if (!BRAND_RE.test(o.title) || LOT_RE.test(o.title) || (o.title.match(/,/g) || []).length >= 3 || !HWMatch.offerMatches(o.title, name)) return false;
+    var tt = " " + HWMatch.norm(o.title).replace(/'/g, "") + " ";
+    return !siblingExtras(name).some(function (ex) { var has = function (w) { return tt.indexOf(" " + w + " ") !== -1; }; return ex.every(has) || ex.some(function (w) { return w.length >= 4 && !/\d/.test(w) && has(w); }); });
+  }
+  var SRC = { olx: ["OLX · nowe", "olx"] };
   function offerHtml(o, i) {
-    var lbl = "<span class='logo " + SRC[o.src][1] + "'>" + SRC[o.src][0] + "</span>";
+    var lbl = "<span class='logo olx'>OLX</span><span class='rank' style='margin-left:6px'>nowe</span>";
     var img = o.img ? "<img src='" + esc(o.img) + "' alt='' loading='lazy' referrerpolicy='no-referrer'>" : "<span class='noimg'></span>";
     return "<a class='offer" + (i === 0 ? " best" : "") + "' style='animation-delay:" + (i * 60) + "ms' href='" + esc(o.url) + "' target='_blank' rel='noopener noreferrer'>" + img +
       "<div class='t'><div class='tt'>" + esc(o.title) + "</div><div class='s'><span class='rank'>" + (i + 1) + "</span>" + lbl + "</div></div>" +
-      "<div class='p'><b>" + fmtPrice(o.price) + "</b><small>" + (o.auction ? "licytacja" : i === 0 ? "najtaniej" : "ogłoszenie") + "</small></div></a>";
+      "<div class='p'><b>" + fmtPrice(o.price) + "</b><small>" + (i === 0 ? "najtaniej" : "ogłoszenie") + "</small></div></a>";
   }
+  var ebayHref = "https://www.ebay.com/sch/i.html?_nkw=hot+wheels&_sop=15&LH_ItemCondition=1000";
+  var EBAY_BTN = function () { return "<a class='ebay-b' href='" + esc(ebayHref) + "' target='_blank' rel='noopener noreferrer'><span class='logo eb'>ebay</span> sprawdź najtańsze <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M7 17L17 7M8 7h9v9'/></svg></a>"; };
   function setPanelPrice(state, o) {
-    if (state === "loading") rPrice.innerHTML = "<b class='none'>…</b><small>szukam ceny</small>";
-    else if (state === "none") rPrice.innerHTML = "<b class='none'>brak ofert</b><small>sprawdź w „Więcej”</small>";
-    else rPrice.innerHTML = "<b>" + fmtPrice(o.price) + "</b><small><i>od</i> · " + esc(SRC[o.src][0]) + "</small>";
+    var h;
+    if (state === "loading") h = "<b class='none'>…</b><small>szukam ceny</small>";
+    else if (state === "none") h = "<b class='none'>brak nowych na OLX</b><small>nic teraz nie ma</small>";
+    else if (state === "err") h = "<b class='none'>brak połączenia</b><small>spróbuj za chwilę</small>";
+    else h = "<a class='pr-a' href='" + esc(o.url) + "' target='_blank' rel='noopener noreferrer'><b>" + fmtPrice(o.price) + "</b><small><i>OLX · nowe</i> ↗</small></a>";
+    rPrice.innerHTML = h + EBAY_BTN();
   }
   function loadPrices(name) {
     var seq = ++priceSeq, q = "hot wheels " + name;
-    lAllegro.href = "https://allegro.pl/listing?string=" + encodeURIComponent(q) + "&order=p";
-    lEbay.href = "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(q) + "&_sop=15";
+    lAllegro.href = "https://allegro.pl/listing?string=" + encodeURIComponent(q) + "&order=p&stan=nowe";
+    ebayHref = "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(q) + "&_sop=15&LH_ItemCondition=1000";
+    lEbay.href = ebayHref;
     pSum.innerHTML = ""; pTime.textContent = "szukam…"; setPanelPrice("loading");
     offersBox.innerHTML = "<div class='skel'></div><div class='skel'></div><div class='skel'></div>";
-    var cacheKey = "bs-offers:" + q.toLowerCase(), cached = null;
+    var cacheKey = "bs-offers5:" + q.toLowerCase(), cached = null;
     try { cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null"); } catch (e) {}
-    if (cached && Date.now() - cached.t < 15 * 60 * 1000) { renderOffers(cached.r, name, cached.ms, true); return; }
+    if (cached && Date.now() - cached.t < 10 * 60 * 1000) { renderOffers(cached.r, name, cached.ms, true); return; }
     var t0 = performance.now();
-    var settled = function (p) { return p.then(function (v) { return { ok: true, v: v }; }, function (e) { return { ok: false, e: e }; }); };
-    var results = { al: null, olx: null };
-    var al = settled(getAllegroLokalnie(q)).then(function (r) { results.al = r; if (seq === priceSeq) renderOffers(results, name, performance.now() - t0, false, true); });
-    var ol = settled(getOlx(q)).then(function (r) { results.olx = r; if (seq === priceSeq) renderOffers(results, name, performance.now() - t0, false, true); });
-    Promise.all([al, ol]).then(function () {
+    getOlx(q).then(function (v) { return { ok: true, v: v }; }, function (e) { return { ok: false, e: e }; }).then(function (r) {
       if (seq !== priceSeq) return;
-      var ms = performance.now() - t0;
-      renderOffers(results, name, ms, false, false);
-      if ((results.al && results.al.ok) || (results.olx && results.olx.ok)) try { sessionStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), r: results, ms: ms })); } catch (e) {}
+      var ms = performance.now() - t0, results = { olx: r };
+      renderOffers(results, name, ms, false);
+      if (r.ok) try { sessionStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), r: results, ms: ms })); } catch (e) {}
     });
   }
-  function renderOffers(results, name, ms, fromCache, partial) {
-    var all = [], sum = [];
-    ["al", "olx"].forEach(function (k) {
-      var r = results[k], lg = "<span class='logo " + SRC[k][1] + "'>" + SRC[k][0] + "</span>";
-      if (!r) { sum.push("<span class='chip'>" + lg + " szukam…</span>"); return; }
-      if (!r.ok) { sum.push("<span class='chip'>" + lg + " brak połączenia</span>"); return; }
-      var good = r.v.filter(function (o) { return HWMatch.offerMatches(o.title, name); }).sort(function (a, b) { return a.price - b.price; });
-      all = all.concat(good);
-      sum.push("<span class='chip'>" + lg + " " + (good.length ? "od <b>" + fmtPrice(good[0].price) + "</b> · " + good.length + " ofert" : "brak ofert") + "</span>");
-    });
-    all.sort(function (a, b) { return (a.auction - b.auction) || (a.price - b.price); });
-    pSum.innerHTML = sum.join("");
-    var top = all.slice(0, 3);
-    if (top.length) {
-      offersBox.innerHTML = top.map(offerHtml).join("") + (partial ? "<div class='skel' style='height:40px'></div>" : "");
-      setPanelPrice("ok", top[0]);
-      if (current && current.car.n === name) { current.min = top[0].price; current.minSrc = top[0].src; saveHistory(); }
-    } else if (partial) {
-      offersBox.innerHTML = "<div class='skel'></div><div class='skel'></div>";
+  function renderOffers(results, name, ms, fromCache) {
+    var r = results.olx, lg = "<span class='logo olx'>OLX · nowe</span>";
+    pTime.textContent = fromCache ? "przed chwilą" : "w " + (ms / 1000).toFixed(1).replace(".", ",") + " s";
+    if (!r || !r.ok) { pSum.innerHTML = "<span class='chip'>" + lg + " brak połączenia</span>"; offersBox.innerHTML = "<div class='empty'>Nie udało się teraz pobrać ofert z OLX. Spróbuj ponownie za chwilę.</div>"; setPanelPrice("err"); return; }
+    var good = r.v.filter(function (o) { return goodOffer(o, name); }).sort(function (a, b) { return a.price - b.price; });
+    pSum.innerHTML = "<span class='chip'>" + lg + " " + (good.length ? "od <b>" + fmtPrice(good[0].price) + "</b> · " + good.length + " ofert" : "brak ofert") + "</span>";
+    if (good.length) {
+      offersBox.innerHTML = good.slice(0, 3).map(offerHtml).join("");
+      setPanelPrice("ok", good[0]);
+      if (current && current.car.n === name) { current.min = good[0].price; current.minSrc = "olx"; saveHistory(); }
     } else {
-      offersBox.innerHTML = "<div class='empty'>Nie znalazłem teraz ofert z ceną dla tego modelu. Sprawdź Allegro i eBay poniżej.</div>";
+      offersBox.innerHTML = "<div class='empty'>Brak nowych ofert na OLX dla tego modelu. Sprawdź Allegro i eBay poniżej.</div>";
       setPanelPrice("none");
     }
-    pTime.textContent = partial ? "szukam…" : (fromCache ? "przed chwilą" : "w " + (ms / 1000).toFixed(1).replace(".", ",") + " s");
   }
 
   // ---------- arkusz „Więcej” ----------
@@ -971,7 +982,7 @@
   clearBtn.addEventListener("click", function () { localStorage.removeItem(STORAGE); renderHistory(); });
 
   // ---------- start ----------
-  window.__bs = { found: found, showCar: showCar, analyzeCanvas: analyzeCanvas, celebrate: celebrate, getOcr: getOcr, getEngine: getEngine, db: function () { return DB; }, parseAllegroLokalnie: parseAllegroLokalnie, parseOlx: parseOlx, state: function () { return { scanning: scanning, paused: paused, torchSupported: torchSupported }; } };
+  window.__bs = { found: found, showCar: showCar, analyzeCanvas: analyzeCanvas, celebrate: celebrate, getOcr: getOcr, getEngine: getEngine, db: function () { return DB; }, parseOlx: parseOlx, state: function () { return { scanning: scanning, paused: paused, torchSupported: torchSupported }; } };
   setTimeout(function () { getEngine().catch(function () {}); }, 400);
   startCamera();
 })();

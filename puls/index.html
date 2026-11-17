@@ -1,0 +1,55 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pulsometr z aparatu</title>
+<style>
+body{margin:0;font-family:system-ui,sans-serif;background:#000;color:#fff;text-align:center}
+h1{font-size:22px;margin:16px}#bpm{font-size:80px;font-weight:800;margin:10px 0}
+#info{opacity:.8;min-height:40px;padding:0 16px}button{font-size:20px;padding:14px 28px;border:0;border-radius:30px;background:#e33;color:#fff;margin:10px}
+canvas#g{width:95%;height:140px;background:#111;border-radius:10px}video{display:none}
+.heart{display:inline-block;transition:transform .1s}
+</style></head><body>
+<h1><span class="heart" id="h">❤️</span> Pulsometr z aparatu</h1>
+<div id="bpm">--</div><div>uderzeń na minutę</div>
+<p id="info">Kliknij START, przyłóż palec do tylnego aparatu (i lampy) i trzymaj nieruchomo ok. 20 s.</p>
+<button id="go">START</button><br><canvas id="g" width="600" height="140"></canvas>
+<video id="v" playsinline muted></video><canvas id="c" width="40" height="30" style="display:none"></canvas>
+<script>
+const v=document.getElementById('v'),c=document.getElementById('c'),x=c.getContext('2d',{willReadFrequently:true}),
+g=document.getElementById('g'),gx=g.getContext('2d'),bpmEl=document.getElementById('bpm'),info=document.getElementById('info'),h=document.getElementById('h');
+let data=[],stream,run=false,lastBeat=0,beats=[];
+document.getElementById('go').onclick=async()=>{
+ if(run){stop();return}
+ try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:320,height:240}});}catch(e){info.textContent='Brak dostępu do aparatu: '+e.message;return}
+ v.srcObject=stream;await v.play();
+ const t=stream.getVideoTracks()[0];try{await t.applyConstraints({advanced:[{torch:true}]})}catch(e){}
+ run=true;data=[];beats=[];document.getElementById('go').textContent='STOP';info.textContent='Mierzę… nie ruszaj palcem.';loop();
+};
+function stop(){run=false;stream&&stream.getTracks().forEach(t=>t.stop());document.getElementById('go').textContent='START'}
+function loop(){
+ if(!run)return;
+ x.drawImage(v,0,0,40,30);const d=x.getImageData(0,0,40,30).data;let r=0,gg=0;
+ for(let i=0;i<d.length;i+=4){r+=d[i];gg+=d[i+1]}r/=d.length/4;gg/=d.length/4;
+ const now=performance.now();
+ if(r<120||gg>r*0.8){info.textContent='Przyłóż palec, żeby zakrył cały obiektyw 👆';data=[];beats=[]}
+ else{data.push({t:now,v:r});if(data.length>300)data.shift();analyze(now);}
+ draw();requestAnimationFrame(loop);
+}
+function analyze(now){
+ if(data.length<30)return;
+ // wygładzenie i usunięcie trendu
+ const n=data.length,s=data.map((p,i)=>{let a=0,k=0;for(let j=Math.max(0,i-2);j<=Math.min(n-1,i+2);j++){a+=data[j].v;k++}return a/k});
+ const m=s.map((p,i)=>{let a=0,k=0;for(let j=Math.max(0,i-15);j<=Math.min(n-1,i+15);j++){a+=s[j];k++}return p-a/k});
+ const i=n-3;
+ if(m[i]>m[i-1]&&m[i]>=m[i+1]&&m[i]>0&&now-lastBeat>330){
+  if(lastBeat){const iv=data[i].t-lastBeat;if(iv<1500)beats.push(60000/iv);if(beats.length>12)beats.shift()}
+  lastBeat=data[i].t;h.style.transform='scale(1.4)';setTimeout(()=>h.style.transform='',120);
+  if(beats.length>=5){const b=[...beats].sort((a,b)=>a-b),med=b[b.length>>1];bpmEl.textContent=Math.round(med);
+   info.textContent=beats.length>=10?'Wynik stabilny ✅ (to zabawa, nie badanie lekarskie)':'Mierzę… jeszcze chwilka'}
+ }
+ window._m=m;
+}
+function draw(){
+ gx.fillStyle='#111';gx.fillRect(0,0,600,140);const m=window._m;if(!m||!run)return;
+ let mx=Math.max(...m.map(Math.abs))||1;gx.strokeStyle='#f44';gx.lineWidth=3;gx.beginPath();
+ m.forEach((p,i)=>{const X=i/(m.length-1)*600,Y=70-p/mx*60;i?gx.lineTo(X,Y):gx.moveTo(X,Y)});gx.stroke();
+}
+</script></body></html>

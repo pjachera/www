@@ -3,665 +3,390 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0a0a0c">
+  <meta name="theme-color" content="#0b0b0e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="BlisterScan">
-  <meta name="description" content="Skanuj blister i znajdź najniższą cenę na Allegro i eBay.">
+  <meta name="description" content="Skaner Hot Wheels: nazwa modelu z blistra, rzadkość (TH / STH) i najtańsze oferty.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 36'%3E%3Cpath fill='%23ff7a00' d='M16.2 1.4c1.3 6.2-2.6 8.4-1.3 13.2 4.4-3.2 10.2 1.2 10.2 8.6 0 6.4-4.1 11.2-9.1 11.2s-9.1-4.8-9.1-11.2c0-5.4 2.9-8.7 5.4-12.8 1.3 3.2 3.4 4.4 3.9-9z'/%3E%3C/svg%3E">
   <title>BlisterScan</title>
   <style>
     :root {
-      --bg: #0a0a0c;
-      --bg-2: #131217;
-      --card: #1a181e;
-      --line: rgba(255, 255, 255, .08);
-      --text: #fff7f0;
-      --muted: #b9a99c;
-      --orange: #ff7a00;
-      --orange-2: #ffb020;
-      --red: #e10600;
-      --glow: rgba(255, 106, 0, .45);
-      --radius: 22px;
-      --safe-t: env(safe-area-inset-top, 0px);
-      --safe-b: env(safe-area-inset-bottom, 0px);
+      --bg: #0b0b0e; --bg2: #121116; --card: #17161c; --card2: #1e1c24;
+      --line: rgba(255,255,255,.08); --line2: rgba(255,255,255,.14);
+      --text: #fbf6f1; --muted: #a79d95; --dim: #6f6861;
+      --orange: #ff7a00; --orange2: #ffb020; --red: #e8250c;
+      --green: #2fd27a; --silver: #cfd6df; --gold: #ffcc33;
+      --glow: rgba(255,106,0,.42);
+      --r: 20px; --r2: 14px;
+      --st: env(safe-area-inset-top, 0px); --sb: env(safe-area-inset-bottom, 0px);
+      --ease: cubic-bezier(.2,.8,.2,1);
     }
-
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+    html, body { margin: 0; background: var(--bg); color: var(--text); }
     body {
-      min-height: 100dvh;
-      font-family: system-ui, -apple-system, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-      font-size: 17px;
-      line-height: 1.35;
-      overflow-x: hidden;
-      display: flex;
-      flex-direction: column;
+      min-height: 100dvh; overflow-x: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px; line-height: 1.4; font-weight: 500;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
     }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    .flare { pointer-events: none; position: fixed; z-index: 0; top: -120px; left: 50%; width: 520px; height: 340px; transform: translateX(-50%);
+      background: radial-gradient(ellipse at 50% 45%, rgba(255,122,0,.22), transparent 60%), radial-gradient(ellipse at 28% 62%, rgba(232,37,12,.14), transparent 55%); filter: blur(10px); }
+    .wrap { position: relative; z-index: 1; max-width: 460px; margin: 0 auto; padding: calc(var(--st) + 18px) 18px calc(var(--sb) + 30px); }
 
-    .wrap {
-      width: 100%;
-      max-width: 430px;
-      margin: 0 auto;
-      padding: calc(var(--safe-t) + 22px) 20px calc(var(--safe-b) + 28px);
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
+    /* header */
+    .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .flame { width: 26px; height: 30px; filter: drop-shadow(0 0 10px var(--glow)); }
+    .brand h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.035em; }
+    .brand h1 span { color: var(--orange); }
+    .tag { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--orange2);
+      border: 1px solid rgba(255,176,32,.35); background: rgba(255,176,32,.08); padding: 5px 9px; border-radius: 99px; }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 15px; }
+    .lead b { color: var(--text); font-weight: 700; }
 
-    .flare {
-      pointer-events: none;
-      position: fixed;
-      top: -80px;
-      left: 50%;
-      width: 280px;
-      height: 240px;
-      transform: translateX(-50%);
-      background:
-        radial-gradient(ellipse at 50% 40%, rgba(255, 122, 0, .28), transparent 62%),
-        radial-gradient(ellipse at 30% 60%, rgba(225, 6, 0, .18), transparent 55%);
-      filter: blur(8px);
-    }
+    /* cards */
+    .card { background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012)); border: 1px solid var(--line);
+      border-radius: var(--r); padding: 16px; margin-bottom: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; border: 0; border-radius: 16px;
+      padding: 15px 16px; font-weight: 750; font-size: 17px; text-decoration: none; transition: transform .15s var(--ease), filter .2s, background .2s; }
+    .btn:active { transform: scale(.98); }
+    .btn svg { width: 22px; height: 22px; flex: none; }
+    .btn-primary { color: #1a0b00; background: linear-gradient(135deg, var(--orange2), var(--orange) 55%, #ff5a00);
+      box-shadow: 0 8px 26px rgba(255,106,0,.35), inset 0 1px 0 rgba(255,255,255,.35); font-size: 18px; padding: 18px; }
+    .btn-ghost { background: var(--card2); border: 1px solid var(--line2); color: var(--text); font-size: 16px; }
+    .row { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+    .search { position: relative; margin-top: 12px; }
+    .search input { width: 100%; padding: 14px 44px 14px 44px; border-radius: 14px; border: 1px solid var(--line2); background: #0f0e12;
+      font-size: 16px; font-weight: 600; outline: none; transition: border-color .2s, box-shadow .2s; }
+    .search input::placeholder { color: var(--dim); font-weight: 500; }
+    .search input:focus { border-color: rgba(255,122,0,.6); box-shadow: 0 0 0 4px rgba(255,122,0,.14); }
+    .search .ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--dim); }
+    .search .x { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 10px; border: 0; background: transparent; color: var(--muted); font-size: 18px; }
+    .sugg { position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 6px); background: #19171e; border: 1px solid var(--line2);
+      border-radius: 14px; overflow: hidden; box-shadow: 0 16px 40px rgba(0,0,0,.55); }
+    .sugg button { display: flex; width: 100%; justify-content: space-between; gap: 10px; text-align: left; padding: 12px 14px; border: 0; background: transparent; border-bottom: 1px solid var(--line); font-weight: 650; }
+    .sugg button:last-child { border-bottom: 0; }
+    .sugg button small { color: var(--muted); font-weight: 500; white-space: nowrap; }
+    .sugg button:active, .sugg button.on { background: rgba(255,122,0,.12); }
+    .hint { margin: 10px 2px 0; font-size: 13px; color: var(--dim); }
 
-    header { text-align: center; margin-bottom: 22px; }
+    /* status + toast */
+    .status { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); margin-bottom: 14px; font-weight: 600; font-size: 15px; animation: fade .25s var(--ease); }
+    .status .bar { height: 4px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 7px; }
+    .status .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--orange2), var(--orange)); transition: width .3s; }
+    .status > div { flex: 1; min-width: 0; }
+    .spin { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.18); border-top-color: var(--orange); animation: spin .8s linear infinite; flex: none; }
+    .toast { padding: 12px 14px; border-radius: 14px; margin-bottom: 14px; font-size: 15px; font-weight: 600; background: rgba(232,37,12,.12); border: 1px solid rgba(232,37,12,.35); color: #ffd7cf; animation: fade .25s var(--ease); }
+    .toast.ok { background: rgba(47,210,122,.1); border-color: rgba(47,210,122,.3); color: #cff7e0; }
 
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
+    /* result */
+    .result { padding: 0; overflow: hidden; }
+    .r-media { position: relative; height: 170px; background: radial-gradient(ellipse at 50% 70%, rgba(255,122,0,.22), transparent 65%), linear-gradient(180deg, #221d26, #141217);
+      display: flex; align-items: center; justify-content: center; }
+    .r-media img { max-width: 88%; max-height: 150px; object-fit: contain; filter: drop-shadow(0 14px 18px rgba(0,0,0,.6)); opacity: 0; transition: opacity .4s; }
+    .r-media img.ok { opacity: 1; }
+    .r-media .ph { position: absolute; font-size: 56px; opacity: .35; }
+    .r-media .src { position: absolute; left: 12px; top: 12px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+      background: rgba(0,0,0,.45); padding: 5px 8px; border-radius: 8px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+    .r-body { padding: 16px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 850; letter-spacing: .07em; text-transform: uppercase;
+      padding: 6px 10px; border-radius: 99px; border: 1px solid; }
+    .badge.norm { color: #d9e3ee; border-color: rgba(217,227,238,.3); background: rgba(217,227,238,.08); }
+    .badge.th { color: #e6edf5; border-color: rgba(207,214,223,.6); background: linear-gradient(135deg, rgba(207,214,223,.25), rgba(120,130,145,.15)); }
+    .badge.sth { color: #1a1200; border-color: transparent; background: linear-gradient(135deg, #fff1a8, var(--gold) 45%, #d99a00); box-shadow: 0 0 18px rgba(255,204,51,.35); }
+    .badge.maybe { border-style: dashed; }
+    .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .r-name { margin: 10px 0 4px; font-size: 26px; font-weight: 850; letter-spacing: -.03em; line-height: 1.12; }
+    .r-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .chip { font-size: 13px; font-weight: 650; color: var(--muted); background: rgba(255,255,255,.05); border: 1px solid var(--line); padding: 5px 9px; border-radius: 9px; }
+    .chip b { color: var(--text); font-weight: 750; }
+    .r-note { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+    .r-note b { color: var(--text); }
+    .alts { margin-top: 12px; font-size: 13px; color: var(--muted); }
+    .alts button { margin: 6px 6px 0 0; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line2); background: transparent; font-size: 13px; font-weight: 650; }
+    .check { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+    .check summary { list-style: none; display: flex; justify-content: space-between; align-items: center; font-weight: 750; font-size: 15px; cursor: pointer; }
+    .check summary::-webkit-details-marker { display: none; }
+    .check summary::after { content: "›"; font-size: 22px; color: var(--muted); transition: transform .2s; }
+    .check[open] summary::after { transform: rotate(90deg); }
+    .check p { margin: 8px 0 10px; font-size: 13px; color: var(--muted); }
+    .ck { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+    .ck:last-child { border-bottom: 0; }
+    .ck input { appearance: none; -webkit-appearance: none; flex: none; width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--line2); margin: 0; position: relative; transition: background .15s, border-color .15s; }
+    .ck input:checked { background: var(--orange); border-color: var(--orange); }
+    .ck input:checked::after { content: ""; position: absolute; left: 6px; top: 2px; width: 6px; height: 11px; border: solid #1a0b00; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+    .ck b { display: block; font-weight: 700; }
+    .ck span { color: var(--muted); font-size: 13px; }
+    .ck .k { font-size: 10px; font-weight: 850; padding: 2px 6px; border-radius: 6px; margin-left: 6px; vertical-align: 1px; }
+    .k.th { background: rgba(207,214,223,.18); color: var(--silver); }
+    .k.sth { background: rgba(255,204,51,.18); color: var(--gold); }
 
-    .flame {
-      width: 28px;
-      height: 32px;
-      flex: none;
-      filter: drop-shadow(0 0 10px var(--glow));
-    }
+    /* prices */
+    .sec-h { display: flex; align-items: baseline; justify-content: space-between; margin: 2px 2px 12px; }
+    .sec-h h3 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -.02em; }
+    .sec-h small { color: var(--dim); font-size: 12px; font-weight: 600; }
+    .offer { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: 16px; background: var(--card2); border: 1px solid var(--line); margin-bottom: 8px;
+      text-decoration: none; animation: rise .35s var(--ease) both; transition: border-color .2s; }
+    .offer:active { border-color: rgba(255,122,0,.5); }
+    .offer img, .offer .noimg { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; flex: none; background: #2a2730; }
+    .offer .t { flex: 1; min-width: 0; }
+    .offer .tt { font-size: 14px; font-weight: 650; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .offer .s { margin-top: 4px; font-size: 12px; font-weight: 700; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .offer .p { text-align: right; flex: none; }
+    .offer .p b { display: block; font-size: 19px; font-weight: 850; letter-spacing: -.02em; }
+    .offer .p small { font-size: 11px; color: var(--dim); font-weight: 600; }
+    .offer.best { border-color: rgba(255,122,0,.45); background: linear-gradient(135deg, rgba(255,122,0,.14), rgba(255,122,0,.03)); }
+    .offer.best .p b { color: var(--orange2); }
+    .rank { width: 22px; height: 22px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 850; background: rgba(255,255,255,.08); }
+    .best .rank { background: var(--orange); color: #1a0b00; }
+    .logo { display: inline-block; font-size: 10px; font-weight: 850; letter-spacing: .04em; padding: 2px 6px; border-radius: 5px; }
+    .logo.al { background: #ff5a00; color: #fff; }
+    .logo.olx { background: #23e5db; color: #002f34; }
+    .logo.eb { background: #fff; color: #0064d2; }
+    .skel { height: 86px; border-radius: 16px; margin-bottom: 8px; background: linear-gradient(90deg, #1b1a20 0%, #26242c 40%, #1b1a20 80%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+    .sum { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
+    .empty { padding: 14px; border-radius: 14px; background: rgba(255,255,255,.03); border: 1px dashed var(--line2); color: var(--muted); font-size: 14px; margin-bottom: 8px; }
+    .links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+    .lcard { display: block; padding: 12px; border-radius: 14px; background: var(--card2); border: 1px solid var(--line); text-decoration: none; transition: border-color .2s; }
+    .lcard:active { border-color: var(--line2); }
+    .lcard b { display: block; font-size: 15px; font-weight: 800; margin-top: 6px; }
+    .lcard span { font-size: 12px; color: var(--muted); }
+    .fine { margin: 10px 2px 0; font-size: 12px; color: var(--dim); }
 
-    h1 {
-      margin: 0;
-      font-size: 34px;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-    }
-    h1 span { color: var(--orange); }
+    /* history */
+    .hgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .hcard { position: relative; text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: 16px; padding: 10px; overflow: hidden; transition: border-color .2s, transform .15s; }
+    .hcard:active { transform: scale(.98); }
+    .hcard .im { height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: linear-gradient(180deg, #221d26, #161419); margin-bottom: 8px; }
+    .hcard .im img { max-width: 92%; max-height: 58px; object-fit: contain; }
+    .hcard .nm { font-size: 13px; font-weight: 750; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 31px; }
+    .hcard .ft { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 12px; color: var(--muted); font-weight: 650; }
+    .hcard .ft b { color: var(--orange2); }
+    .mini { font-size: 9px; font-weight: 850; padding: 2px 6px; border-radius: 6px; letter-spacing: .05em; }
+    .mini.th { background: rgba(207,214,223,.2); color: var(--silver); }
+    .mini.sth { background: var(--gold); color: #1a1200; }
+    .mini.norm { background: rgba(255,255,255,.07); color: var(--muted); }
+    .linkbtn { border: 0; background: none; color: var(--muted); font-size: 13px; font-weight: 650; padding: 4px; }
+    footer { text-align: center; color: var(--dim); font-size: 12px; margin-top: 22px; }
 
-    .sub {
-      margin: 0;
-      color: var(--muted);
-      font-size: 15px;
-      font-weight: 500;
-    }
+    /* scanner */
+    .scanner { position: fixed; inset: 0; z-index: 50; background: #000; animation: fade .2s; }
+    .scanner video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .guide { position: absolute; left: 7%; right: 7%; top: 50%; height: 26%; transform: translateY(-50%); border-radius: 18px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,.52); border: 2px solid rgba(255,255,255,.85); transition: border-color .2s; }
+    .guide::before, .guide::after { content: ""; position: absolute; width: 34px; height: 34px; border: 4px solid var(--orange); }
+    .guide::before { left: -3px; top: -3px; border-right: 0; border-bottom: 0; border-radius: 16px 0 0 0; }
+    .guide::after { right: -3px; bottom: -3px; border-left: 0; border-top: 0; border-radius: 0 0 16px 0; }
+    .guide .laser { position: absolute; left: 10px; right: 10px; top: 50%; height: 2px; background: linear-gradient(90deg, transparent, var(--orange), transparent); box-shadow: 0 0 12px var(--orange); animation: laser 1.8s ease-in-out infinite; }
+    .guide .lbl { position: absolute; left: 0; right: 0; top: -34px; text-align: center; font-size: 14px; font-weight: 700; text-shadow: 0 1px 6px #000; }
+    .guide.hit { border-color: var(--green); }
+    .scan-top { position: absolute; left: 0; right: 0; top: 0; padding: calc(var(--st) + 12px) 14px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .round { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(0,0,0,.5); color: #fff; font-size: 19px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .round.on { background: var(--orange2); color: #000; }
+    .scan-status { flex: 1; text-align: center; font-size: 14px; font-weight: 650; background: rgba(0,0,0,.5); padding: 10px 12px; border-radius: 14px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .seen { position: absolute; left: 7%; right: 7%; top: calc(50% + 13% + 12px); text-align: center; font-size: 13px; color: rgba(255,255,255,.75); font-weight: 600; min-height: 18px; text-shadow: 0 1px 4px #000; }
+    .scan-bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 18px calc(var(--sb) + 22px); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .shutter { width: 74px; height: 74px; border-radius: 50%; border: 4px solid #fff; background: radial-gradient(circle, var(--orange) 0 56%, transparent 58%); box-shadow: 0 0 24px rgba(255,122,0,.5); }
+    .shutter:active { transform: scale(.94); }
+    .scan-bottom small { font-size: 13px; color: rgba(255,255,255,.8); font-weight: 600; text-shadow: 0 1px 4px #000; }
+    .flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+    .flash.go { animation: flash .35s; }
 
-    .stripe {
-      height: 5px;
-      margin: 18px auto 0;
-      width: 84px;
-      border-radius: 99px;
-      background: linear-gradient(90deg, var(--orange-2), var(--orange), var(--red));
-      box-shadow: 0 0 18px var(--glow);
-    }
-
-    .panel {
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 14px;
-    }
-
-    #scanner[hidden], #results[hidden], #history[hidden], #hwOption[hidden] { display: none; }
-
-    .viewfinder {
-      position: relative;
-      overflow: hidden;
-      border-radius: 18px;
-      background: #000;
-      aspect-ratio: 3 / 4;
-      box-shadow: 0 0 0 1px rgba(255,122,0,.25), 0 12px 40px rgba(0,0,0,.4);
-    }
-
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .frame {
-      position: absolute;
-      inset: 16% 12%;
-      border-radius: 14px;
-      pointer-events: none;
-      box-shadow: 0 0 0 200px rgba(0,0,0,.28);
-    }
-    .frame::before, .frame::after,
-    .frame i::before, .frame i::after {
-      content: "";
-      position: absolute;
-      width: 28px;
-      height: 28px;
-      border: 3px solid var(--orange);
-      filter: drop-shadow(0 0 6px var(--glow));
-    }
-    .frame::before { top: -2px; left: -2px; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
-    .frame::after { top: -2px; right: -2px; border-left: 0; border-bottom: 0; border-radius: 0 8px 0 0; }
-    .frame i::before { bottom: -2px; left: -2px; border-right: 0; border-top: 0; border-radius: 0 0 0 8px; }
-    .frame i::after { bottom: -2px; right: -2px; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
-
-    #scanStatus {
-      margin: 12px 0 0;
-      text-align: center;
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      border: 0;
-      cursor: pointer;
-      font: inherit;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      text-decoration: none;
-      color: #fff;
-      border-radius: 18px;
-      min-height: 62px;
-      padding: 14px 18px;
-      transition: transform .22s cubic-bezier(.34, 1.56, .64, 1), box-shadow .22s ease, filter .22s ease;
-      will-change: transform;
-      user-select: none;
-    }
-    .btn:active { transform: scale(.94); }
-    .btn[disabled] { opacity: .55; pointer-events: none; }
-
-    .btn-scan {
-      background: linear-gradient(135deg, var(--orange-2) 0%, var(--orange) 48%, var(--red) 100%);
-      box-shadow: 0 10px 28px var(--glow), 0 1px 0 rgba(255,255,255,.25) inset;
-      font-size: 22px;
-      margin-bottom: 14px;
-    }
-    .btn-scan:active { box-shadow: 0 4px 14px var(--glow); }
-
-    .btn-ghost {
-      margin-top: 12px;
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      min-height: 48px;
-      font-weight: 700;
-      font-size: 16px;
-    }
-
-    .btn-allegro {
-      background: linear-gradient(135deg, #ff9a1f, #ff7a00);
-      box-shadow: 0 8px 22px rgba(255,122,0,.35);
-      font-size: 18px;
-      margin-bottom: 10px;
-    }
-    .btn-ebay {
-      background: linear-gradient(135deg, #ff4d2e, #e10600);
-      box-shadow: 0 8px 22px rgba(225,6,0,.32);
-      font-size: 18px;
-    }
-
-    label.field {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: .02em;
-      text-transform: uppercase;
-      margin: 2px 0 8px;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      appearance: none;
-      border: 1px solid var(--line);
-      background: var(--bg-2);
-      color: var(--text);
-      border-radius: 16px;
-      min-height: 52px;
-      padding: 12px 16px;
-      font: inherit;
-      font-size: 17px;
-      font-weight: 600;
-      outline: none;
-      transition: border-color .2s, box-shadow .2s;
-    }
-    input[type="text"]::placeholder { color: #6f635b; font-weight: 500; }
-    input[type="text"]:focus {
-      border-color: rgba(255,122,0,.7);
-      box-shadow: 0 0 0 4px rgba(255,122,0,.18);
-    }
-
-    .found {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .found b {
-      font-size: 20px;
-      letter-spacing: -0.03em;
-      word-break: break-all;
-    }
-    .found small {
-      color: var(--muted);
-      font-weight: 700;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-      flex: none;
-    }
-
-    .pills {
-      display: flex;
-      gap: 8px;
-      margin: 12px 0 2px;
-      flex-wrap: wrap;
-    }
-    .pill {
-      border: 1px solid var(--line);
-      background: var(--bg-2);
-      color: var(--text);
-      border-radius: 99px;
-      padding: 8px 12px;
-      font: inherit;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform .2s cubic-bezier(.34, 1.56, .64, 1), background .2s, border-color .2s;
-    }
-    .pill:active { transform: scale(.96); }
-    .pill.on {
-      background: linear-gradient(135deg, var(--orange), var(--red));
-      border-color: transparent;
-      color: #fff;
-    }
-    .hint {
-      margin: 10px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .hist-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-    .hist-head h2 {
-      margin: 0;
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-    .clear {
-      border: 0;
-      background: none;
-      color: var(--muted);
-      font: inherit;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      padding: 6px 4px;
-    }
-
-    .hist-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-    .hist-list button {
-      width: 100%;
-      text-align: left;
-      border: 1px solid var(--line);
-      background: var(--bg-2);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 12px 14px;
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
-    }
-    .hist-list button:active { transform: scale(.97); }
-    .hist-list .q { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .hist-list .tag {
-      flex: none;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-
-    .msg {
-      margin: 0 0 12px;
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: rgba(225, 6, 0, .14);
-      color: #ffc4b8;
-      font-size: 14px;
-      font-weight: 600;
-    }
-    .msg[hidden] { display: none; }
-
-    .pop { animation: pop .45s cubic-bezier(.34, 1.56, .64, 1); }
-    @keyframes pop {
-      from { transform: scale(.92); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    footer {
-      margin-top: auto;
-      padding-top: 28px;
-      text-align: center;
-      color: #6f635b;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    /* ---- v2 ---- */
-    .cam-tools {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      display: flex;
-      gap: 8px;
-    }
-    .cam-tools button {
-      border: 0;
-      width: 44px;
-      height: 44px;
-      border-radius: 99px;
-      background: rgba(0,0,0,.55);
-      color: #fff;
-      font-size: 20px;
-      cursor: pointer;
-    }
-    .cam-tools button.on { background: var(--orange); }
-    .cam-tools button[hidden] { display: none; }
-    .laser {
-      position: absolute;
-      left: 8%;
-      right: 8%;
-      top: 50%;
-      height: 2px;
-      background: var(--red);
-      box-shadow: 0 0 10px var(--red);
-      animation: laser 1.6s ease-in-out infinite;
-    }
-    @keyframes laser { 0%,100% { transform: translateY(-38px); } 50% { transform: translateY(38px); } }
-    .viewfinder.hit::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: rgba(255,176,32,.55);
-      animation: hit .45s ease-out forwards;
-    }
-    @keyframes hit { from { opacity: 1; } to { opacity: 0; } }
-
-    .btn-photo {
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,122,0,.45);
-      color: var(--text);
-      font-size: 17px;
-      min-height: 52px;
-      margin: -4px 0 14px;
-      position: relative;
-      overflow: hidden;
-    }
-    .btn-photo input {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      width: 100%;
-      height: 100%;
-      cursor: pointer;
-      font-size: 100px;
-    }
-
-    .msg.ok { background: rgba(255,176,32,.14); color: #ffe1a8; }
-
-    .product {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .product img {
-      width: 64px;
-      height: 64px;
-      flex: none;
-      object-fit: contain;
-      background: #fff;
-      border-radius: 12px;
-    }
-    .product img[hidden] { display: none; }
-    .product .pname { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
-    .product .pcode { color: var(--muted); font-size: 13px; font-weight: 700; margin-top: 2px; }
-    .lookup {
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 600;
-      margin: 0 0 12px;
-    }
-    .lookup[hidden], #guesses[hidden], #product[hidden], #foundRow[hidden] { display: none; }
-    .spin {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      margin-right: 6px;
-      vertical-align: -2px;
-      border: 2px solid rgba(255,122,0,.3);
-      border-top-color: var(--orange);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
+    [hidden] { display: none !important; }
+    .pop { animation: rise .45s var(--ease) both; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .note {
-      margin: 12px 0 0;
-      color: var(--muted);
-      font-size: 12.5px;
-      font-weight: 500;
-    }
-    .pill { text-align: left; }
+    @keyframes fade { from { opacity: 0; } }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    @keyframes laser { 0%,100% { transform: translateY(-34px); opacity: .6; } 50% { transform: translateY(34px); opacity: 1; } }
+    @keyframes flash { 0% { opacity: .55; } 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
   </style>
 </head>
 <body>
   <div class="flare" aria-hidden="true"></div>
-  <div class="wrap">
-    <header>
+  <main class="wrap">
+    <div class="top">
       <div class="brand">
         <svg class="flame" viewBox="0 0 32 36" aria-hidden="true">
-          <defs>
-            <linearGradient id="fg" x1="8" y1="0" x2="24" y2="36" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#ffd56a"/>
-              <stop offset=".45" stop-color="#ff7a00"/>
-              <stop offset="1" stop-color="#e10600"/>
-            </linearGradient>
-          </defs>
+          <defs><linearGradient id="fg" x1="8" y1="0" x2="24" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#ffd56a"/><stop offset=".45" stop-color="#ff7a00"/><stop offset="1" stop-color="#e10600"/></linearGradient></defs>
           <path fill="url(#fg)" d="M16.2 1.4c1.3 6.2-2.6 8.4-1.3 13.2 4.4-3.2 10.2 1.2 10.2 8.6 0 6.4-4.1 11.2-9.1 11.2s-9.1-4.8-9.1-11.2c0-5.4 2.9-8.7 5.4-12.8 1.3 3.2 3.4 4.4 3.9-9z"/>
         </svg>
         <h1>Blister<span>Scan</span></h1>
       </div>
-      <p class="sub">Skanuj blister i znajdź najniższą cenę</p>
-      <div class="stripe" aria-hidden="true"></div>
-
-    <p id="error" class="msg" hidden></p>
-
-    <section id="scanner" class="panel" hidden>
-      <div class="viewfinder" id="viewfinder">
-        <video id="video" autoplay muted playsinline webkit-playsinline></video>
-        <div class="frame"><i></i></div>
-        <div class="laser" aria-hidden="true"></div>
-        <div class="cam-tools">
-          <button type="button" id="torchBtn" hidden aria-label="Latarka">🔦</button>
-        </div>
-      </div>
-      <p id="scanStatus">Celuj w kod kreskowy na blisterze</p>
-      <button type="button" class="btn btn-ghost" id="cancelBtn">Anuluj</button>
-    </section>
-
-    <button type="button" class="btn btn-scan" id="scanBtn">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
-        <path d="M7 12h10" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
-      </svg>
-      Skanuj
-    </button>
-
-    <label class="btn btn-photo" id="photoBtn">
-      📷 Zrób zdjęcie kodu
-      <input type="file" id="photoInput" accept="image/*" capture="environment">
-    </label>
-
-    <div class="panel">
-      <label class="field" for="nameInput">Albo wpisz nazwę, kod modelu lub cyfry</label>
-      <input id="nameInput" type="text" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="np. Twin Mill albo HKL22">
+      <span class="tag">Hot Wheels</span>
     </div>
+    <p class="lead">Zeskanuj blister – pokażę <b>model</b>, <b>czy to TH / STH</b> i <b>najtańsze oferty</b>.</p>
 
-    <section id="results" class="panel pop" hidden>
-      <div class="product" id="product" hidden>
-        <img id="pimg" alt="" hidden referrerpolicy="no-referrer">
-        <div>
-          <div class="pname" id="pname"></div>
-          <div class="pcode" id="pcode"></div>
-        </div>
+    <section class="card">
+      <button type="button" class="btn btn-primary" id="scanBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+        Skanuj blister
+      </button>
+      <div class="row">
+        <label class="btn btn-ghost" id="photoBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>
+          Zdjęcie blistra
+          <input type="file" id="photoInput" accept="image/*" hidden>
+        </label>
       </div>
-      <div class="found" id="foundRow">
-        <b id="queryLabel"></b>
-        <small id="queryKind"></small>
+      <div class="search">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" type="text" enterkeyhint="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Nazwa albo kod, np. HTC28" aria-label="Nazwa modelu">
+        <button type="button" class="x" id="qClear" aria-label="Wyczyść" hidden>✕</button>
+        <div class="sugg" id="sugg" hidden></div>
       </div>
-      <p class="lookup" id="lookup" hidden></p>
-      <div id="guesses" hidden>
-        <p class="hint" style="margin-top:0">Które to autko? Kliknij:</p>
-        <div class="pills" id="guessPills" style="margin-bottom:12px"></div>
-      </div>
-      <a class="btn btn-allegro" id="allegroBtn" target="_blank" rel="noopener noreferrer">Allegro – najtaniej</a>
-      <a class="btn btn-ebay" id="ebayBtn" target="_blank" rel="noopener noreferrer">eBay – najtaniej</a>
-      <div id="hwOption" hidden>
-        <p class="hint">Szukaj też jako</p>
-        <div class="pills">
-          <button type="button" class="pill" id="pillPlain"></button>
-          <button type="button" class="pill" id="pillHw"></button>
-        </div>
-      </div>
-      <p class="note" id="priceNote">Ceny sprawdzisz po kliknięciu – Allegro i eBay pokażą najtańsze na górze.</p>
+      <p class="hint">Najlepiej: nazwa pod autkiem w ramce skanera. Kod kreskowy łapię automatycznie.</p>
     </section>
 
-    <section id="history" class="panel" hidden>
-      <div class="hist-head">
-        <h2>Ostatnie skany</h2>
-        <button type="button" class="clear" id="clearBtn">Wyczyść</button>
+    <div class="status" id="status" hidden><span class="spin"></span><div><span id="statusText"></span><div class="bar" id="statusBarWrap" hidden><i id="statusBar"></i></div></div></div>
+    <div class="toast" id="toast" hidden></div>
+
+    <section class="card result" id="result" hidden>
+      <div class="r-media"><span class="ph">🏎️</span><img id="rImg" alt="" referrerpolicy="no-referrer"><span class="src" id="rSrc"></span></div>
+      <div class="r-body">
+        <span class="badge norm" id="rBadge"><span class="dot"></span><span id="rBadgeText">Zwykły</span></span>
+        <h2 class="r-name" id="rName"></h2>
+        <div class="r-meta" id="rMeta"></div>
+        <p class="r-note" id="rNote"></p>
+        <div class="alts" id="rAlts" hidden></div>
+        <details class="check" id="rCheck">
+          <summary>Sprawdź sam: TH czy STH?</summary>
+          <p>Zaznacz, co widzisz na swoim blistrze – odznaka zmieni się od razu.</p>
+          <label class="ck"><input type="checkbox" data-k="th"><div><b>Srebrny płomień w kółku <span class="k th">TH</span></b><span>Mały logo-płomień w kółku na karcie, za autkiem.</span></div></label>
+          <label class="ck"><input type="checkbox" data-k="sth"><div><b>Złoty płomień w kółku <span class="k sth">STH</span></b><span>Na karcie za autkiem jest złote logo zamiast srebrnego.</span></div></label>
+          <label class="ck"><input type="checkbox" data-k="sth"><div><b>Gumowe opony „Real Riders” <span class="k sth">STH</span></b><span>Opony z prawdziwej gumy, często z napisem GOOD YEAR / HW.</span></div></label>
+          <label class="ck"><input type="checkbox" data-k="sth"><div><b>Błyszczący lakier Spectraflame <span class="k sth">STH</span></b><span>Lakier lśni jak metal i mieni się w świetle.</span></div></label>
+          <label class="ck"><input type="checkbox" data-k="sth"><div><b>Napis „TH” na autku <span class="k sth">STH</span></b><span>Mały znaczek TH gdzieś na karoserii.</span></div></label>
+        </details>
       </div>
-      <ul class="hist-list" id="histList"></ul>
     </section>
 
-    <footer>Tip: zwykłe Hot Wheelsy mają często ten sam kod kreskowy. Pewniej: wpisz kod modelu z tyłu blistra (np. HKL22).</footer>
+    <section class="card" id="prices" hidden>
+      <div class="sec-h"><h3>Najtańsze oferty</h3><small id="pTime"></small></div>
+      <div class="sum" id="pSum"></div>
+      <div id="offers"></div>
+      <div class="sec-h" style="margin-top:14px"><h3 style="font-size:16px">Sprawdź też</h3></div>
+      <div class="links">
+        <a class="lcard" id="lAllegro" target="_blank" rel="noopener noreferrer"><span class="logo al">allegro</span><b>Allegro →</b><span>od najtańszych</span></a>
+        <a class="lcard" id="lEbay" target="_blank" rel="noopener noreferrer"><span class="logo eb">ebay</span><b>eBay →</b><span>od najtańszych</span></a>
+      </div>
+      <p class="fine">Ceny bez dostawy, z ogłoszeń Allegro Lokalnie i OLX (na żywo). Allegro.pl i eBay blokują pobieranie cen przez inne strony, więc otwierają się w nowej karcie.</p>
+    </section>
+
+    <section id="history" hidden>
+      <div class="sec-h"><h3>Ostatnie skany</h3><button type="button" class="linkbtn" id="clearBtn">Wyczyść</button></div>
+      <div class="hgrid" id="histList"></div>
+    </section>
+
+    <footer>BlisterScan v3 · dane modeli: Hot Wheels Wiki</footer>
+  </main>
+
+  <div class="scanner" id="scanner" hidden>
+    <video id="video" autoplay muted playsinline webkit-playsinline></video>
+    <div class="guide" id="guide"><div class="lbl">Nazwa autka albo kod kreskowy w ramce</div><div class="laser"></div></div>
+    <div class="seen" id="seen"></div>
+    <div class="scan-top">
+      <button type="button" class="round" id="closeBtn" aria-label="Zamknij">✕</button>
+      <div class="scan-status" id="scanStatus">Włączam aparat…</div>
+      <button type="button" class="round" id="torchBtn" aria-label="Latarka" hidden>🔦</button>
+    </div>
+    <div class="scan-bottom">
+      <button type="button" class="shutter" id="shutter" aria-label="Czytaj teraz"></button>
+      <small>Czytam sam – albo stuknij, żeby przeczytać cały kadr</small>
+    </div>
+    <div class="flash" id="flash"></div>
   </div>
 
+  <script src="hw-match.js"></script>
   <script>
   (function () {
     "use strict";
-    var STORAGE = "blisterscan-history-v1";
+    var V = "3";
+    var STORAGE = "blisterscan-history-v3";
+    var PROXY = "https://r.jina.ai/";
+    var TESS_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
     var ZXW_URL = "https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.4/dist/iife/reader/index.js";
     var WASM_MIRRORS = ["https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.4/dist/reader/", "https://unpkg.com/zxing-wasm@2.2.4/dist/reader/"];
     var ZXJS_URL = "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
-    var LOOKUP_PROXY = "https://r.jina.ai/";
     var FORMATS = ["EAN-13", "UPC-A", "EAN-8", "UPC-E", "Code128"];
+    var WIKI_IMG = "https://static.wikia.nocookie.net/hotwheels/images/";
 
     function $(id) { return document.getElementById(id); }
-    var video = $("video"), viewfinder = $("viewfinder"), scanner = $("scanner"), scanBtn = $("scanBtn");
-    var cancelBtn = $("cancelBtn"), torchBtn = $("torchBtn"), scanStatus = $("scanStatus");
-    var photoInput = $("photoInput"), nameInput = $("nameInput"), results = $("results");
-    var queryLabel = $("queryLabel"), queryKind = $("queryKind"), allegroBtn = $("allegroBtn"), ebayBtn = $("ebayBtn");
-    var hwOption = $("hwOption"), pillPlain = $("pillPlain"), pillHw = $("pillHw");
-    var historyBox = $("history"), histList = $("histList"), clearBtn = $("clearBtn"), errorBox = $("error");
-    var product = $("product"), pimg = $("pimg"), pname = $("pname"), pcode = $("pcode");
-    var lookupBox = $("lookup"), guesses = $("guesses"), guessPills = $("guessPills");
+    var scanBtn = $("scanBtn"), photoInput = $("photoInput"), qIn = $("q"), qClear = $("qClear"), sugg = $("sugg");
+    var statusBox = $("status"), statusText = $("statusText"), statusBar = $("statusBar"), statusBarWrap = $("statusBarWrap"), toast = $("toast");
+    var result = $("result"), rImg = $("rImg"), rSrc = $("rSrc"), rBadge = $("rBadge"), rBadgeText = $("rBadgeText"), rName = $("rName"), rMeta = $("rMeta"), rNote = $("rNote"), rAlts = $("rAlts"), rCheck = $("rCheck");
+    var prices = $("prices"), offersBox = $("offers"), pSum = $("pSum"), pTime = $("pTime"), lAllegro = $("lAllegro"), lEbay = $("lEbay");
+    var historyBox = $("history"), histList = $("histList"), clearBtn = $("clearBtn");
+    var scanner = $("scanner"), video = $("video"), guide = $("guide"), seen = $("seen"), scanStatus = $("scanStatus"), closeBtn = $("closeBtn"), torchBtn = $("torchBtn"), shutter = $("shutter"), flash = $("flash");
 
-    var stream = null, scanning = false, loopTimer = 0, torchOn = false;
-    var current = null, nameSaveTimer = 0, lookupSeq = 0;
-    var canvas = document.createElement("canvas");
-    var ctx = canvas.getContext("2d", { willReadFrequently: true });
-    var lastCode = "", lastCount = 0;
-
-    // ---------- helpers ----------
-    function showError(text, ok) {
-      errorBox.hidden = !text;
-      errorBox.textContent = text || "";
-      errorBox.classList.toggle("ok", !!ok);
+    function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+    function showStatus(text, pct) {
+      statusBox.hidden = !text; statusText.textContent = text || "";
+      statusBarWrap.hidden = pct == null; if (pct != null) statusBar.style.width = Math.round(pct * 100) + "%";
     }
+    function showToast(text, ok) { toast.hidden = !text; toast.textContent = text || ""; toast.classList.toggle("ok", !!ok); }
     function loadScript(src) {
       return new Promise(function (resolve, reject) {
-        var s = document.createElement("script");
-        s.src = src; s.async = true; s.crossOrigin = "anonymous";
-        s.onload = function () { resolve(); };
-        s.onerror = function () { reject(new Error("load " + src)); };
+        var s = document.createElement("script"); s.src = src; s.async = true; s.crossOrigin = "anonymous";
+        s.onload = function () { resolve(); }; s.onerror = function () { reject(new Error("load " + src)); };
         document.head.appendChild(s);
       });
     }
-    function withTimeout(p, ms) {
-      return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error("timeout")); }, ms); })]);
+    function withTimeout(p, ms) { return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error("timeout")); }, ms); })]); }
+    function fetchText(url, ms, headers) {
+      var ctl = window.AbortController ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ctl) ctl.abort(); }, ms);
+      return fetch(url, { signal: ctl ? ctl.signal : undefined, headers: headers || {} })
+        .then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.text(); })
+        .finally(function () { clearTimeout(timer); });
     }
     function validCheck(code) {
-      // EAN-13 / UPC-A / EAN-8 checksum; other lengths pass
       if (!/^\d+$/.test(code)) return true;
       if ([8, 12, 13].indexOf(code.length) === -1) return true;
       var d = code.split("").map(Number), check = d.pop(), sum = 0;
       d.reverse().forEach(function (n, i) { sum += n * (i % 2 === 0 ? 3 : 1); });
       return (10 - (sum % 10)) % 10 === check;
     }
+    function wikiImg(p, w) { return p ? WIKI_IMG + p.split("/").map(encodeURIComponent).join("/") + "/revision/latest/scale-to-width-down/" + (w || 400) : ""; }
+    function fmtPrice(v) { return (Math.round(v * 100) / 100).toFixed(v % 1 ? 2 : 0).replace(".", ",") + " zł"; }
 
-    // ---------- decoders ----------
-    var engine = null; // { name, decode(imageData) -> Promise<string|null> }
-    var enginePromise = null;
+    // ---------- baza modeli ----------
+    var DB = null;
+    var dbPromise = fetch("hw-db.json?v=" + V).then(function (r) { return r.json(); }).then(function (d) { DB = HWMatch.prepare(d); return DB; })
+      .catch(function () { DB = HWMatch.prepare({ cars: [] }); return DB; });
 
+    // ---------- kod kreskowy ----------
+    var engine = null, enginePromise = null;
     function getEngine() {
       if (engine) return Promise.resolve(engine);
       if (enginePromise) return enginePromise;
       enginePromise = (async function () {
-        // 1) native BarcodeDetector (Chrome/Android)
         if ("BarcodeDetector" in window) {
           try {
             var sup = await BarcodeDetector.getSupportedFormats();
             var want = ["ean_13", "upc_a", "ean_8", "upc_e", "code_128"].filter(function (f) { return sup.indexOf(f) !== -1; });
             if (want.length) {
               var det = new BarcodeDetector({ formats: want });
-              engine = { name: "native", decode: async function (img) {
-                var r = await det.detect(img);
-                return r && r.length ? r[0].rawValue : null;
-              } };
+              engine = { name: "native", decode: async function (img) { var r = await det.detect(img); return r && r.length ? r[0].rawValue : null; } };
               return engine;
             }
           } catch (e) {}
         }
-        // 2) zxing-cpp WebAssembly (best on iPhone)
         try {
           if (!window.ZXingWASM) await withTimeout(loadScript(ZXW_URL), 12000);
           var ready = false;
           for (var mi = 0; mi < WASM_MIRRORS.length && !ready; mi++) {
             try {
               (function (base) {
-                ZXingWASM.__p = ZXingWASM.prepareZXingModule({
-                  overrides: { locateFile: function (path, prefix) { return /\.wasm$/.test(path) ? base + path : prefix + path; } },
-                  fireImmediately: true
-                });
+                ZXingWASM.__p = ZXingWASM.prepareZXingModule({ overrides: { locateFile: function (path, prefix) { return /\.wasm$/.test(path) ? base + path : prefix + path; } }, fireImmediately: true });
               })(WASM_MIRRORS[mi]);
-              await withTimeout(ZXingWASM.__p, 15000);
-              ready = true;
-            } catch (e) { console.warn("wasm mirror failed", WASM_MIRRORS[mi], e); }
+              await withTimeout(ZXingWASM.__p, 15000); ready = true;
+            } catch (e) { console.warn("wasm mirror failed", e); }
           }
           if (!ready) throw new Error("wasm");
           engine = { name: "wasm", decode: async function (img) {
@@ -671,21 +396,15 @@
           } };
           return engine;
         } catch (e) { console.warn("wasm failed", e); }
-        // 3) ZXing JS fallback
         try {
           if (!window.ZXing) await withTimeout(loadScript(ZXJS_URL), 12000);
-          var Z = window.ZXing;
-          var hints = new Map();
+          var Z = window.ZXing, hints = new Map();
           hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_E, Z.BarcodeFormat.CODE_128]);
           hints.set(Z.DecodeHintType.TRY_HARDER, true);
           var mfr = new Z.MultiFormatReader(); mfr.setHints(hints);
           engine = { name: "js", decode: async function (img) {
-            var c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
-            c.getContext("2d").putImageData(img, 0, 0);
-            try {
-              var bmp = new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(c)));
-              return mfr.decode(bmp, hints).getText();
-            } catch (e) { return null; }
+            var c = document.createElement("canvas"); c.width = img.width; c.height = img.height; c.getContext("2d").putImageData(img, 0, 0);
+            try { return mfr.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(c))), hints).getText(); } catch (e) { return null; }
           } };
           return engine;
         } catch (e) { console.warn("zxing js failed", e); }
@@ -694,55 +413,85 @@
       })();
       return enginePromise;
     }
-    // preload decoder in background so first scan is quick
-    setTimeout(function () { getEngine().catch(function () {}); }, 300);
 
-    // ---------- camera ----------
+    // ---------- OCR (Tesseract.js) ----------
+    var ocrWorker = null, ocrPromise = null, ocrProgress = null;
+    function getOcr() {
+      if (ocrWorker) return Promise.resolve(ocrWorker);
+      if (ocrPromise) return ocrPromise;
+      ocrPromise = (async function () {
+        if (!window.Tesseract) await withTimeout(loadScript(TESS_URL), 20000);
+        var w = await withTimeout(Tesseract.createWorker("eng", 1, {
+          logger: function (m) { if (ocrProgress && m && typeof m.progress === "number" && /load|init/i.test(m.status || "")) ocrProgress(m.progress); }
+        }), 60000);
+        await w.setParameters({ tessedit_pageseg_mode: "11", tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-&.' " , user_defined_dpi: "300" });
+        ocrWorker = w; return w;
+      })().catch(function (e) { ocrPromise = null; throw e; });
+      return ocrPromise;
+    }
+    // grayscale + rozciągnięcie kontrastu
+    function enhance(c) {
+      var cx = c.getContext("2d", { willReadFrequently: true });
+      var im = cx.getImageData(0, 0, c.width, c.height), d = im.data, n = d.length / 4, hist = new Uint32Array(256), i;
+      for (i = 0; i < d.length; i += 4) { var g = (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000 | 0; d[i] = g; hist[g]++; }
+      var lo = 0, hi = 255, acc = 0;
+      for (i = 0; i < 256; i++) { acc += hist[i]; if (acc > n * 0.01) { lo = i; break; } }
+      acc = 0; for (i = 255; i >= 0; i--) { acc += hist[i]; if (acc > n * 0.01) { hi = i; break; } }
+      var sc = 255 / Math.max(1, hi - lo);
+      for (i = 0; i < d.length; i += 4) { var v = (d[i] - lo) * sc; v = v < 0 ? 0 : v > 255 ? 255 : v; d[i] = d[i + 1] = d[i + 2] = v; }
+      cx.putImageData(im, 0, 0);
+      return c;
+    }
+    function crop(src, sx, sy, sw, sh, targetW, maxW) {
+      var s = targetW ? targetW / sw : 1;
+      if (maxW && sw * s > maxW) s = maxW / sw;
+      var c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(sw * s)); c.height = Math.max(1, Math.round(sh * s));
+      var cx = c.getContext("2d", { willReadFrequently: true });
+      cx.imageSmoothingQuality = "high";
+      cx.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      return c;
+    }
+    async function ocrCanvas(c) {
+      var w = await getOcr();
+      var r = await w.recognize(c);
+      return (r && r.data && r.data.text) || "";
+    }
+    function bestFrom(text, min) {
+      if (!DB) return null;
+      var m = HWMatch.matchText(text, DB, { min: min || 0.8 });
+      return m.length ? m : null;
+    }
+
+    // ---------- skaner na żywo ----------
+    var stream = null, scanning = false, torchOn = false, bcTimer = 0, ocrTimer = 0, ocrBusy = false, lastBc = "", lastOcr = "";
+    var frame = document.createElement("canvas"), fctx = frame.getContext("2d", { willReadFrequently: true });
+
     function stopCamera() {
-      scanning = false;
-      clearTimeout(loopTimer);
+      scanning = false; clearTimeout(bcTimer); clearTimeout(ocrTimer);
       if (stream) { stream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} }); stream = null; }
       try { video.pause(); } catch (e) {}
-      video.srcObject = null;
-      torchOn = false; torchBtn.classList.remove("on"); torchBtn.hidden = true;
-      scanner.hidden = true;
-      scanBtn.hidden = false;
+      video.srcObject = null; torchOn = false; torchBtn.classList.remove("on"); torchBtn.hidden = true;
+      scanner.hidden = true; document.body.style.overflow = "";
     }
-
     function camError(e) {
       var n = e && e.name;
-      if (n === "NotAllowedError" || n === "SecurityError")
-        return "Brak zgody na aparat 🙁 Na iPhonie: Ustawienia → Safari → Aparat → Zezwalaj (albo kliknij „aA” przy adresie → Ustawienia strony → Aparat). Możesz też użyć „Zrób zdjęcie kodu”.";
-      if (n === "NotFoundError" || n === "OverconstrainedError") return "Nie widzę aparatu w tym urządzeniu. Użyj „Zrób zdjęcie kodu” albo wpisz nazwę.";
+      if (n === "NotAllowedError" || n === "SecurityError") return "Brak zgody na aparat. Na iPhonie: Ustawienia → Safari → Aparat → Zezwalaj (albo „aA” przy adresie → Ustawienia witryny → Aparat). Możesz też użyć „Zdjęcie blistra”.";
+      if (n === "NotFoundError" || n === "OverconstrainedError") return "Nie widzę aparatu. Użyj „Zdjęcie blistra” albo wpisz nazwę.";
       if (n === "NotReadableError") return "Aparat jest zajęty przez inną aplikację. Zamknij ją i spróbuj znowu.";
-      return "Nie udało się włączyć aparatu. Użyj „Zrób zdjęcie kodu” albo wpisz nazwę.";
+      return "Nie udało się włączyć aparatu. Użyj „Zdjęcie blistra” albo wpisz nazwę.";
     }
-
     async function openCamera() {
-      showError("");
-      if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showError("Ta przeglądarka nie daje aparatu na żywo. Użyj „Zrób zdjęcie kodu” albo wpisz nazwę.");
-        return;
+      showToast("");
+      if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showToast("Ta przeglądarka nie daje aparatu na żywo. Użyj „Zdjęcie blistra”."); return; }
+      var gum = navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } });
+      scanner.hidden = false; document.body.style.overflow = "hidden";
+      scanStatus.textContent = "Włączam aparat…"; seen.textContent = ""; guide.classList.remove("hit");
+      try { stream = await gum; } catch (e) {
+        if (e && e.name === "OverconstrainedError") { try { stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true }); } catch (e2) { e = e2; } }
+        if (!stream) { stopCamera(); showToast(camError(e)); return; }
       }
-      // getUserMedia called straight from the tap (no await before it) – needed on iOS
-      var gum = navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-      });
-      scanBtn.hidden = true;
-      scanner.hidden = false;
-      scanStatus.textContent = "Włączam aparat…";
-      try {
-        stream = await gum;
-      } catch (e) {
-        if (e && e.name === "OverconstrainedError") {
-          try { stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true }); } catch (e2) { e = e2; }
-        }
-        if (!stream) { stopCamera(); showError(camError(e)); return; }
-      }
-      video.setAttribute("playsinline", ""); video.setAttribute("muted", "");
-      video.playsInline = true; video.muted = true;
-      video.srcObject = stream;
+      video.playsInline = true; video.muted = true; video.srcObject = stream;
       try { await video.play(); } catch (e) {}
       var track = stream.getVideoTracks()[0];
       try {
@@ -750,356 +499,381 @@
         if (caps.focusMode && caps.focusMode.indexOf("continuous") !== -1) track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(function () {});
         if (caps.torch) torchBtn.hidden = false;
       } catch (e) {}
-      scanning = true;
-      lastCode = ""; lastCount = 0;
-      scanStatus.textContent = "Wczytuję skaner…";
-      try {
-        await getEngine();
-      } catch (e) {
-        stopCamera();
-        showError("Skaner się nie wczytał (brak internetu?). Odśwież stronę albo wpisz nazwę.");
-        return;
-      }
-      if (!scanning) return;
-      scanStatus.textContent = "Celuj w kod kreskowy – trzymaj 15–25 cm od blistra";
-      loop();
+      scanning = true; lastBc = ""; lastOcr = "";
+      scanStatus.textContent = "Wczytuję czytnik…";
+      getEngine().then(function () { if (scanning) bcLoop(); }).catch(function () {});
+      ocrProgress = function (p) { if (scanning && !ocrWorker) scanStatus.textContent = "Wczytuję czytnik nazw… " + Math.round(p * 100) + "%"; };
+      getOcr().then(function () { if (scanning) { scanStatus.textContent = "Ustaw nazwę autka w ramce"; ocrLoop(); } })
+        .catch(function () { if (scanning) scanStatus.textContent = "Czytnik nazw się nie wczytał – celuj w kod kreskowy"; });
     }
-
-    async function loop() {
+    // prostokąt ramki w pikselach wideo (object-fit: cover)
+    function guideRect() {
+      var vw = video.videoWidth, vh = video.videoHeight, cw = video.clientWidth, ch = video.clientHeight;
+      var s = Math.max(cw / vw, ch / vh), ox = (cw - vw * s) / 2, oy = (ch - vh * s) / 2;
+      var g = guide.getBoundingClientRect(), v = video.getBoundingClientRect();
+      var x = (g.left - v.left - ox) / s, y = (g.top - v.top - oy) / s, w = g.width / s, h = g.height / s;
+      x = Math.max(0, x); y = Math.max(0, y); w = Math.min(vw - x, w); h = Math.min(vh - y, h);
+      return { x: x, y: y, w: w, h: h };
+    }
+    async function bcLoop() {
       if (!scanning) return;
       try {
         if (video.readyState >= 2 && video.videoWidth) {
-          var vw = video.videoWidth, vh = video.videoHeight;
-          // centre crop (barcode area), max 1280 wide
-          var cw = Math.round(vw * 0.9), ch = Math.round(vh * 0.6);
-          var sx = Math.round((vw - cw) / 2), sy = Math.round((vh - ch) / 2);
-          var scale = Math.min(1, 1280 / cw);
-          canvas.width = Math.round(cw * scale); canvas.height = Math.round(ch * scale);
-          ctx.drawImage(video, sx, sy, cw, ch, 0, 0, canvas.width, canvas.height);
-          var img = engine.name === "native" ? canvas : ctx.getImageData(0, 0, canvas.width, canvas.height);
+          var vw = video.videoWidth, vh = video.videoHeight, cw = Math.round(vw * 0.9), ch = Math.round(vh * 0.7);
+          var sc = Math.min(1, 1280 / cw);
+          frame.width = Math.round(cw * sc); frame.height = Math.round(ch * sc);
+          fctx.drawImage(video, (vw - cw) / 2, (vh - ch) / 2, cw, ch, 0, 0, frame.width, frame.height);
+          var img = engine.name === "native" ? frame : fctx.getImageData(0, 0, frame.width, frame.height);
           var text = await engine.decode(img);
           if (text && scanning && validCheck(text)) {
-            // need the same code twice in a row for 1D codes (avoids misreads)
-            if (text === lastCode) lastCount++; else { lastCode = text; lastCount = 1; }
-            if (lastCount >= 2 || engine.name === "wasm") { onFound(text, "code"); return; }
+            if (text === lastBc || engine.name === "wasm") { found({ barcode: text, via: "kod kreskowy" }); return; }
+            lastBc = text;
           }
         }
       } catch (e) { console.warn(e); }
-      if (scanning) loopTimer = setTimeout(loop, 90);
+      if (scanning) bcTimer = setTimeout(bcLoop, 120);
     }
-
+    async function ocrLoop() {
+      if (!scanning) return;
+      if (!ocrBusy && video.readyState >= 2 && video.videoWidth) {
+        ocrBusy = true;
+        try {
+          var g = guideRect();
+          var c = enhance(crop(video, g.x, g.y, g.w, g.h, Math.max(900, Math.min(1400, g.w)), 1400));
+          var text = await ocrCanvas(c);
+          if (!scanning) return;
+          var clean = text.replace(/\s+/g, " ").trim();
+          seen.textContent = clean ? "Widzę: " + clean.slice(0, 42) : "";
+          var m = bestFrom(text, 0.82);
+          if (m) {
+            var top = m[0];
+            if (top.score >= 0.95 || lastOcr === top.car.n) { guide.classList.add("hit"); found({ matches: m, via: "nazwa z blistra" }); return; }
+            lastOcr = top.car.n;
+          }
+        } catch (e) { console.warn("ocr", e); }
+        finally { ocrBusy = false; }
+      }
+      if (scanning) ocrTimer = setTimeout(ocrLoop, 250);
+    }
+    // migawka: cały kadr
+    shutter.addEventListener("click", async function () {
+      if (!scanning || !video.videoWidth) return;
+      flash.classList.remove("go"); void flash.offsetWidth; flash.classList.add("go");
+      var c = crop(video, 0, 0, video.videoWidth, video.videoHeight, 1600, 1600);
+      stopCamera();
+      await analyzeCanvas(c, "zdjęcie z aparatu");
+    });
     torchBtn.addEventListener("click", function () {
       if (!stream) return;
-      var t = stream.getVideoTracks()[0];
-      torchOn = !torchOn;
-      t.applyConstraints({ advanced: [{ torch: torchOn }] }).then(function () {
-        torchBtn.classList.toggle("on", torchOn);
-      }).catch(function () { torchOn = false; torchBtn.hidden = true; });
+      var t = stream.getVideoTracks()[0]; torchOn = !torchOn;
+      t.applyConstraints({ advanced: [{ torch: torchOn }] }).then(function () { torchBtn.classList.toggle("on", torchOn); }).catch(function () { torchOn = false; torchBtn.hidden = true; });
+    });
+    closeBtn.addEventListener("click", stopCamera);
+    scanBtn.addEventListener("click", openCamera);
+
+    // ---------- zdjęcie ----------
+    async function fileToCanvas(file) {
+      var src = null;
+      if (window.createImageBitmap) { try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); } catch (e) { try { src = await createImageBitmap(file); } catch (e2) { src = null; } } }
+      if (!src) src = await new Promise(function (res, rej) { var im = new Image(); im.onload = function () { res(im); }; im.onerror = rej; im.src = URL.createObjectURL(file); });
+      var w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
+      return crop(src, 0, 0, w, h, Math.min(2000, w), 2000);
+    }
+    async function analyzeCanvas(c, via) {
+      showToast(""); hideSugg();
+      var t0 = performance.now();
+      // 1) kod kreskowy (szybko)
+      showStatus("Szukam kodu kreskowego…");
+      var code = null;
+      try {
+        var eng = await getEngine();
+        var c1 = crop(c, 0, 0, c.width, c.height, Math.min(1600, c.width), 1600);
+        code = await eng.decode(eng.name === "native" ? c1 : c1.getContext("2d").getImageData(0, 0, c1.width, c1.height));
+        if (code && !validCheck(code)) code = null;
+      } catch (e) {}
+      // 2) nazwa z karty (OCR)
+      var matches = null, txt = "";
+      try {
+        ocrProgress = function (p) { showStatus("Wczytuję czytnik nazw (tylko za 1. razem)…", p); };
+        if (!ocrWorker) showStatus("Wczytuję czytnik nazw (tylko za 1. razem)…", 0);
+        await getOcr();
+        showStatus("Czytam nazwę z blistra…");
+        var a = enhance(crop(c, 0, 0, c.width, c.height, 1600, 1600));
+        txt = await ocrCanvas(a);
+        matches = bestFrom(txt, 0.8);
+        if (!matches || matches[0].score < 0.9) {
+          showStatus("Czytam dokładniej dół karty…");
+          var y0 = Math.round(c.height * 0.45);
+          var b = enhance(crop(c, 0, y0, c.width, c.height - y0, 2000, 2000));
+          var txt2 = await ocrCanvas(b);
+          var m2 = bestFrom(txt2, 0.8);
+          if (m2 && (!matches || m2[0].score > matches[0].score)) matches = m2;
+          txt += "\n" + txt2;
+        }
+      } catch (e) { console.warn("ocr fail", e); }
+      showStatus("");
+      console.log("analyze", Math.round(performance.now() - t0) + "ms", code, txt.replace(/\s+/g, " ").slice(0, 200));
+      if (matches) return found({ matches: matches, barcode: code, via: via || "zdjęcie" });
+      if (code) return found({ barcode: code, via: "kod kreskowy" });
+      showToast("Nie mogę odczytać nazwy ani kodu. Zrób zdjęcie bliżej i prosto (nazwa pod autkiem ma być ostra) albo wpisz nazwę.");
+    }
+    photoInput.addEventListener("change", async function () {
+      var file = photoInput.files && photoInput.files[0]; photoInput.value = "";
+      if (!file) return;
+      if (scanning) stopCamera();
+      try { await dbPromise; await analyzeCanvas(await fileToCanvas(file), "zdjęcie"); }
+      catch (e) { showStatus(""); showToast("Nie udało się otworzyć zdjęcia. Spróbuj jeszcze raz."); }
     });
 
-    // ---------- photo fallback ----------
-    async function imageToData(file) {
-      var src;
-      if (window.createImageBitmap) {
-        try { src = await createImageBitmap(file); } catch (e) { src = null; }
+    // ---------- kod kreskowy -> nazwa (Open Products Facts + wyszukiwarka) ----------
+    function lookupBarcode(code) {
+      var c13 = code.length === 12 ? "0" + code : code;
+      var opf = fetchText("https://world.openproductsfacts.org/api/v2/product/" + c13 + ".json?fields=product_name,brands", 4000)
+        .then(function (t) { var d = JSON.parse(t); return d && d.product && d.product.product_name ? d.product.product_name : ""; }).catch(function () { return ""; });
+      var web = fetchText(PROXY + "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(code), 9000)
+        .then(function (t) { var out = [], re = /##\s*\[([^\]]+)\]/g, m; while ((m = re.exec(t))) if (/hot\s*wheels|mattel/i.test(m[1])) out.push(m[1]); return out.join("\n"); }).catch(function () { return ""; });
+      return Promise.all([opf, web]).then(function (r) { return r[0] + "\n" + r[1]; });
+    }
+
+    // ---------- wynik ----------
+    var current = null, priceSeq = 0;
+    function rarityOf(car, code) {
+      if (code && DB.sthSet[code]) return { cls: "sth", text: "Super Treasure Hunt", sure: true };
+      if (code && DB.thSet[code]) return { cls: "th", text: "Treasure Hunt", sure: true };
+      if (car.sth && car.sth.length) return { cls: "sth maybe", text: "Może być STH", years: car.sth };
+      if (car.th && car.th.length) return { cls: "th maybe", text: "Może być TH", years: car.th };
+      return { cls: "norm", text: "Zwykły" };
+    }
+    function setBadge(r) {
+      rBadge.className = "badge " + r.cls; rBadgeText.textContent = r.text;
+    }
+    function updateFromChecks() {
+      if (!current) return;
+      var boxes = rCheck.querySelectorAll("input"), th = false, sth = false;
+      Array.prototype.forEach.call(boxes, function (b) { if (b.checked) { if (b.dataset.k === "sth") sth = true; else th = true; } });
+      if (sth) setBadge({ cls: "sth", text: "STH – sprawdzone" });
+      else if (th) setBadge({ cls: "th", text: "TH – sprawdzone" });
+      else setBadge(current.rarity);
+      current.badge = sth ? "sth" : th ? "th" : current.rarity.cls.split(" ")[0];
+      saveHistory();
+    }
+    rCheck.addEventListener("change", updateFromChecks);
+
+    async function found(f) {
+      if (scanning) { if (navigator.vibrate) try { navigator.vibrate(60); } catch (e) {} stopCamera(); }
+      await dbPromise;
+      var matches = f.matches, code = null;
+      if (!matches && f.barcode) {
+        showStatus("Sprawdzam kod " + f.barcode + "…");
+        var t = await lookupBarcode(f.barcode);
+        showStatus("");
+        matches = t ? bestFrom(t, 0.8) : null;
+        if (!matches) {
+          showToast("Kod " + f.barcode + " przeczytany, ale nie wiem jaki to model. Zeskanuj nazwę pod autkiem (ramka w skanerze) albo wpisz ją.");
+          return;
+        }
       }
-      if (!src) {
-        src = await new Promise(function (res, rej) {
-          var im = new Image();
-          im.onload = function () { res(im); };
-          im.onerror = rej;
-          im.src = URL.createObjectURL(file);
+      if (!matches || !matches.length) return;
+      code = matches[0].code || null;
+      showCar(matches[0].car, { via: f.via, code: code, barcode: f.barcode, alts: matches.slice(1, 4) });
+    }
+
+    function showCar(car, o) {
+      o = o || {};
+      showToast(""); hideSugg();
+      var rar = rarityOf(car, o.code);
+      current = { car: car, rarity: rar, code: o.code || "", badge: rar.cls.split(" ")[0], min: null };
+      rName.textContent = car.n;
+      var VIA = { "nazwa z blistra": "Rozpoznane z nazwy", "kod kreskowy": "Rozpoznane z kodu", "zdjęcie": "Rozpoznane ze zdjęcia", "zdjęcie z aparatu": "Rozpoznane ze zdjęcia", "wpisane": "Wpisane", "historia": "Z historii" };
+      rSrc.textContent = o.via ? (VIA[o.via] || o.via) : "";
+      rSrc.hidden = !o.via;
+      rImg.classList.remove("ok");
+      if (car.i) { rImg.hidden = false; rImg.onload = function () { rImg.classList.add("ok"); }; rImg.onerror = function () { rImg.hidden = true; }; rImg.src = wikiImg(car.i, 500); }
+      else { rImg.hidden = true; rImg.removeAttribute("src"); }
+      var chips = [];
+      if (car.s && car.s.length) chips.push("<span class='chip'>Seria <b>" + esc(car.s[0].split(" / ")[0]) + "</b></span>");
+      if (car.y && car.y.length) chips.push("<span class='chip'>Rok <b>" + esc(car.y.join(", ")) + "</b></span>");
+      if (o.code) chips.push("<span class='chip'>Kod <b>" + esc(o.code) + "</b></span>");
+      else if (car.t && car.t.length) chips.push("<span class='chip'>Kody <b>" + esc(car.t.slice(0, 3).join(" · ")) + "</b></span>");
+      if (o.barcode) chips.push("<span class='chip'>EAN <b>" + esc(o.barcode) + "</b></span>");
+      rMeta.innerHTML = chips.join("");
+      setBadge(rar);
+      if (rar.sure) rNote.innerHTML = "Ten kod modelu to <b>" + esc(rar.text) + "</b> wg Hot Wheels Wiki.";
+      else if (rar.years) rNote.innerHTML = "Ten model był <b>" + (rar.cls.indexOf("sth") === 0 ? "Super Treasure Huntem" : "Treasure Huntem") + "</b> w " + esc(rar.years.join(", ")) +
+        ". Zwykła wersja też istnieje – sprawdź na blistrze (lista niżej).";
+      else rNote.innerHTML = "Tego modelu nie ma na listach TH/STH 2021–2026. Rzadkie egzemplarze i tak rozpoznasz po liście niżej.";
+      rCheck.open = !!rar.years;
+      Array.prototype.forEach.call(rCheck.querySelectorAll("input"), function (b) { b.checked = false; });
+      if (o.alts && o.alts.length) {
+        rAlts.hidden = false;
+        rAlts.innerHTML = "To nie ten? ";
+        o.alts.forEach(function (a) {
+          var b = document.createElement("button"); b.type = "button"; b.textContent = a.car.n;
+          b.addEventListener("click", function () { showCar(a.car, { via: o.via, alts: [] }); });
+          rAlts.appendChild(b);
         });
+      } else rAlts.hidden = true;
+      result.hidden = false; result.classList.remove("pop"); void result.offsetWidth; result.classList.add("pop");
+      saveHistory();
+      loadPrices(car.n);
+      setTimeout(function () { result.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60);
+    }
+
+    // ---------- ceny ----------
+    function parseAllegroLokalnie(md) {
+      var out = [], re = /\[!\[Image \d+:[^\]]*\]\((https:\/\/a\.allegroimg\.com\/[^)\s]+)\)\s*###\s*([\s\S]*?)\]\((https:\/\/allegrolokalnie\.pl\/oferta\/[^)\s]+)\)/g, m;
+      while ((m = re.exec(md))) {
+        var body = m[2], title = body.split(/\s+-\s+\[x\]|\s+- \[ \]/)[0].trim();
+        var pm = /(Kup teraz|Licytacja)\s+(\d[\d\s]*(?:,\d{1,2})?)\s*zł/.exec(body);
+        if (!pm) continue;
+        var price = parseFloat(pm[2].replace(/\s/g, "").replace(",", "."));
+        if (!(price > 0)) continue;
+        out.push({ src: "al", title: title, price: price, auction: pm[1] === "Licytacja", url: m[3], img: m[1].replace(/\/s\d+x\d+\//, "/s360/") });
       }
-      var w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
-      var out = [];
-      [2000, 1200].forEach(function (max) {
-        var s = Math.min(1, max / Math.max(w, h));
-        var c = document.createElement("canvas");
-        c.width = Math.round(w * s); c.height = Math.round(h * s);
-        var cx = c.getContext("2d", { willReadFrequently: true });
-        cx.drawImage(src, 0, 0, c.width, c.height);
-        out.push({ canvas: c, data: cx.getImageData(0, 0, c.width, c.height) });
+      return out;
+    }
+    function parseOlx(txt) {
+      var j = JSON.parse(txt), out = [];
+      (j.data || []).forEach(function (o) {
+        var p = (o.params || []).filter(function (x) { return x.key === "price"; })[0];
+        var v = p && p.value && p.value.value;
+        if (!(v > 0) || (p.value.currency && p.value.currency !== "PLN")) return;
+        var ph = o.photos && o.photos[0] && o.photos[0].link;
+        out.push({ src: "olx", title: o.title, price: v, url: o.url, img: ph ? ph.replace("{width}", "300").replace("{height}", "300") : "" });
       });
       return out;
     }
-
-    photoInput.addEventListener("change", async function () {
-      var file = photoInput.files && photoInput.files[0];
-      photoInput.value = "";
-      if (!file) return;
-      if (scanning) stopCamera();
-      showError("Szukam kodu na zdjęciu…", true);
-      try {
-        var eng = await getEngine();
-        var imgs = await imageToData(file);
-        var text = null;
-        for (var i = 0; i < imgs.length && !text; i++) {
-          text = await eng.decode(eng.name === "native" ? imgs[i].canvas : imgs[i].data);
-        }
-        if (text) { onFound(text, "code"); }
-        else showError("Nie widzę kodu na zdjęciu. Zrób zdjęcie bliżej, prosto i ostro (cały kod w kadrze) albo wpisz nazwę.");
-      } catch (e) {
-        showError(e && e.message === "no-engine" ? "Skaner się nie wczytał (brak internetu?). Odśwież stronę." : "Nie udało się odczytać zdjęcia. Spróbuj jeszcze raz.");
-      }
-    });
-
-    // ---------- results ----------
-    function allegroUrl(q) { return "https://allegro.pl/listing?string=" + encodeURIComponent(q) + "&order=p"; }
-    function ebayUrl(q) { return "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(q) + "&_sop=15"; }
-
-    function setQuery(q) {
-      current.query = q;
-      queryLabel.textContent = q;
-      $("foundRow").hidden = !!current.name && q === current.name;
-      allegroBtn.href = allegroUrl(q);
-      ebayBtn.href = ebayUrl(q);
-      allegroBtn.textContent = "Allegro – najtaniej";
-      ebayBtn.textContent = "eBay – najtaniej";
-      Array.prototype.forEach.call(guessPills.children, function (b) { b.classList.toggle("on", b.dataset.q === q); });
+    function getAllegroLokalnie(q) {
+      return fetchText(PROXY + "https://allegrolokalnie.pl/oferty/q/" + encodeURIComponent(q) + "?sort=price-asc", 20000).then(parseAllegroLokalnie);
     }
-
-    function isModelCode(v) { return /^[A-Z]{3}\d{2}$/i.test(v) || /^[A-Z]\d{4}$/i.test(v); }
-    function isBarcode(v) { return /^\d{8,14}$/.test(v); }
-
-    function showResults(item, opts) {
-      opts = opts || {};
-      var wasHidden = results.hidden;
-      current = { kind: item.kind, base: item.base, query: item.query, name: item.name || "", img: item.img || "" };
-      queryKind.textContent = item.kind === "code" ? "kod" : (isModelCode(item.base) ? "model" : "nazwa");
-      // product box
-      product.hidden = !current.name;
-      pname.textContent = current.name;
-      pcode.textContent = item.kind === "code" ? "Kod: " + item.base : "";
-      pimg.hidden = !current.img;
-      if (current.img) pimg.src = current.img; else pimg.removeAttribute("src");
-      guesses.hidden = true; guessPills.innerHTML = "";
-      lookupBox.hidden = true;
-      setQuery(item.query);
-      if (item.kind === "name") {
-        hwOption.hidden = false;
-        pillPlain.textContent = item.base;
-        pillHw.textContent = "Hot Wheels " + item.base;
-        var usingHw = item.query.toLowerCase() === ("hot wheels " + item.base).toLowerCase();
-        pillPlain.classList.toggle("on", !usingHw);
-        pillHw.classList.toggle("on", usingHw);
+    function getOlx(q) {
+      return fetchText(PROXY + "https://www.olx.pl/api/v1/offers/?offset=0&limit=40&query=" + encodeURIComponent(q) + "&sort_by=filter_float_price:asc", 15000, { "X-Return-Format": "text" }).then(parseOlx);
+    }
+    function offerHtml(o, i) {
+      var lbl = o.src === "al" ? "<span class='logo al'>allegro lokalnie</span>" : "<span class='logo olx'>OLX</span>";
+      var img = o.img ? "<img src='" + esc(o.img) + "' alt='' loading='lazy' referrerpolicy='no-referrer'>" : "<span class='noimg'></span>";
+      return "<a class='offer" + (i === 0 ? " best" : "") + "' style='animation-delay:" + (i * 60) + "ms' href='" + esc(o.url) + "' target='_blank' rel='noopener noreferrer'>" + img +
+        "<div class='t'><div class='tt'>" + esc(o.title) + "</div><div class='s'><span class='rank'>" + (i + 1) + "</span>" + lbl + "</div></div>" +
+        "<div class='p'><b>" + fmtPrice(o.price) + "</b><small>" + (o.auction ? "licytacja" : i === 0 ? "najtaniej" : o.src === "olx" ? "ogłoszenie" : "kup teraz") + "</small></div></a>";
+    }
+    function loadPrices(name) {
+      var seq = ++priceSeq, q = "hot wheels " + name;
+      prices.hidden = false;
+      lAllegro.href = "https://allegro.pl/listing?string=" + encodeURIComponent(q) + "&order=p";
+      lEbay.href = "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(q) + "&_sop=15";
+      pSum.innerHTML = ""; pTime.textContent = "szukam…";
+      offersBox.innerHTML = "<div class='skel'></div><div class='skel'></div><div class='skel'></div>";
+      var cacheKey = "bs-offers:" + q.toLowerCase(), cached = null;
+      try { cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null"); } catch (e) {}
+      if (cached && Date.now() - cached.t < 15 * 60 * 1000) { renderOffers(cached.r, name, cached.ms, true); return; }
+      var t0 = performance.now();
+      var settled = function (p) { return p.then(function (v) { return { ok: true, v: v }; }, function (e) { return { ok: false, e: e }; }); };
+      var res = { al: null, olx: null };
+      var al = settled(getAllegroLokalnie(q)).then(function (r) { res.al = r; if (seq === priceSeq) renderOffers(res, name, performance.now() - t0, false, true); });
+      var ol = settled(getOlx(q)).then(function (r) { res.olx = r; if (seq === priceSeq) renderOffers(res, name, performance.now() - t0, false, true); });
+      Promise.all([al, ol]).then(function () {
+        if (seq !== priceSeq) return;
+        var ms = performance.now() - t0;
+        renderOffers(res, name, ms, false, false);
+        if ((res.al && res.al.ok) || (res.olx && res.olx.ok)) try { sessionStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), r: res, ms: ms })); } catch (e) {}
+      });
+    }
+    function renderOffers(res, name, ms, fromCache, partial) {
+      var all = [], sum = [];
+      [["al", "Allegro Lokalnie", "al"], ["olx", "OLX", "olx"]].forEach(function (s) {
+        var r = res[s[0]];
+        if (!r) { sum.push("<span class='chip'><span class='logo " + s[2] + "'>" + s[1] + "</span> szukam…</span>"); return; }
+        if (!r.ok) { sum.push("<span class='chip'><span class='logo " + s[2] + "'>" + s[1] + "</span> brak połączenia</span>"); return; }
+        var good = r.v.filter(function (o) { return HWMatch.offerMatches(o.title, name); }).sort(function (a, b) { return a.price - b.price; });
+        all = all.concat(good);
+        sum.push("<span class='chip'><span class='logo " + s[2] + "'>" + s[1] + "</span> " + (good.length ? "od <b>" + fmtPrice(good[0].price) + "</b> · " + good.length + " ofert" : "brak ofert") + "</span>");
+      });
+      all.sort(function (a, b) { return (a.auction - b.auction) || (a.price - b.price); });
+      pSum.innerHTML = sum.join("");
+      var top = all.slice(0, 3);
+      if (top.length) {
+        offersBox.innerHTML = top.map(offerHtml).join("") + (partial ? "<div class='skel' style='height:40px'></div>" : "");
+        if (current && current.car.n === name) { current.min = top[0].price; saveHistory(); }
+      } else if (partial) {
+        offersBox.innerHTML = "<div class='skel'></div><div class='skel'></div>";
       } else {
-        hwOption.hidden = true;
+        offersBox.innerHTML = "<div class='empty'>Nie znalazłem teraz ofert z ceną dla tego modelu. Sprawdź Allegro i eBay poniżej.</div>";
       }
-      results.hidden = false;
-      if (opts.animate || wasHidden) {
-        results.classList.remove("pop"); void results.offsetWidth; results.classList.add("pop");
-      }
-      if (opts.save) saveHistory(current);
-      if (opts.scroll) results.scrollIntoView({ behavior: "smooth", block: "start" });
+      pTime.textContent = partial ? "szukam…" : (fromCache ? "przed chwilą" : "w " + (ms / 1000).toFixed(1).replace(".", ",") + " s");
     }
 
-    // ---------- model lookup ----------
-    function cleanTitle(t) {
-      t = String(t || "").replace(/\*\*/g, "").replace(/\b\d{12,13}\b/g, " ").replace(/\s+/g, " ").trim();
-      t = t.split(/\s*[|–]\s*|\s-\s|\s\[|\s\(|\s\.\.\.|…|, (?=[A-Z0-9])/)[0];
-      t = t.replace(/\b(new|nowy|nowa|ebay|amazon|2\d{3})\b/gi, "").replace(/#\d+/g, "").replace(/\b\d+\/\d+\b/g, "")
-           .replace(/\s+\w$/, "").replace(/[\s:,-]+$/, "").replace(/\s+/g, " ").trim();
-      if (t.length > 60) t = t.slice(0, 60).replace(/\s\S*$/, "");
-      if (!/hot\s*wheels/i.test(t)) t = "Hot Wheels " + t;
-      return t.replace(/^.*?hot\s*wheels/i, "Hot Wheels").trim();
+    // ---------- wpisywanie + podpowiedzi ----------
+    var suggIdx = -1, suggList = [];
+    function hideSugg() { sugg.hidden = true; suggIdx = -1; }
+    function renderSugg() {
+      var v = qIn.value.trim(); qClear.hidden = !v;
+      if (!DB || v.length < 2) { hideSugg(); return; }
+      suggList = HWMatch.search(v, DB, 6);
+      if (!suggList.length) { sugg.innerHTML = "<button type='button' disabled><span>Nie znam takiego modelu</span><small>Enter = szukaj ofert</small></button>"; sugg.hidden = false; return; }
+      sugg.innerHTML = suggList.map(function (s, i) {
+        var c = s.car, tag = c.sth ? " · STH" : c.th ? " · TH" : "";
+        return "<button type='button' data-i='" + i + "'><span>" + esc(c.n) + "</span><small>" + esc((c.y || []).slice(-1)[0] || "") + tag + "</small></button>";
+      }).join("");
+      sugg.hidden = false;
     }
+    qIn.addEventListener("input", function () { dbPromise.then(renderSugg); });
+    qIn.addEventListener("focus", function () { if (qIn.value.trim().length >= 2) renderSugg(); });
+    sugg.addEventListener("mousedown", function (e) { e.preventDefault(); });
+    sugg.addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-i]"); if (!b) return;
+      var s = suggList[+b.dataset.i]; qIn.blur(); hideSugg(); qIn.value = ""; qClear.hidden = true;
+      showCar(s.car, { via: "wpisane", code: s.code });
+    });
+    qIn.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      var v = qIn.value.trim(); if (!v) return;
+      qIn.blur(); qIn.value = ""; qClear.hidden = true;
+      dbPromise.then(function () {
+        var s = HWMatch.search(v, DB, 1);
+        if (s.length && s[0].score >= 0.9) return showCar(s[0].car, { via: "wpisane", code: s[0].code });
+        if (/^\d{8,14}$/.test(v)) return found({ barcode: v, via: "kod kreskowy" });
+        // nieznany model – pokaż oferty dla wpisanego tekstu
+        showCar({ n: v.replace(/^hot\s*wheels\s*/i, ""), y: [], s: [], t: [] }, { via: "wpisane" });
+      });
+    });
+    qIn.addEventListener("blur", function () { setTimeout(hideSugg, 150); });
+    qClear.addEventListener("click", function () { qIn.value = ""; qClear.hidden = true; hideSugg(); qIn.focus(); });
 
-    function fetchJson(url, ms, headers) {
-      var ctl = window.AbortController ? new AbortController() : null;
-      var timer = setTimeout(function () { if (ctl) ctl.abort(); }, ms);
-      return fetch(url, { signal: ctl ? ctl.signal : undefined, headers: headers || {} })
-        .then(function (r) { if (!r.ok && r.status !== 404) throw new Error("http " + r.status); return r.json(); })
-        .finally(function () { clearTimeout(timer); });
-    }
-
-    function lookupOpenProducts(code) {
-      var c = code.length === 12 ? "0" + code : code;
-      return fetchJson("https://world.openproductsfacts.org/api/v2/product/" + c + ".json?fields=product_name,brands,image_front_small_url,image_url", 4000)
-        .then(function (d) {
-          if (!d || d.status !== 1 || !d.product || !d.product.product_name) return null;
-          var p = d.product;
-          var name = String(p.product_name).trim();
-          // skip useless generic names like "Hot Wheel"
-          if (name.replace(/hot\s*wheels?|mattel|matchbox|car|auto/gi, "").replace(/[^a-z0-9]/gi, "").length < 4) return null;
-          if (p.brands && name.toLowerCase().indexOf(p.brands.split(",")[0].toLowerCase()) === -1) name = p.brands.split(",")[0] + " " + name;
-          return { names: [name], img: p.image_front_small_url || p.image_url || "" };
-        }).catch(function () { return null; });
-    }
-
-    function lookupWeb(code) {
-      var url = LOOKUP_PROXY + "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(code);
-      return fetchJson(url, 9000, { "Accept": "application/json" }).then(function (d) {
-        var content = d && d.data && d.data.content || "";
-        var titles = [], seen = {};
-        var re = /##\s*\[([^\]]+)\]/g, m;
-        while ((m = re.exec(content))) {
-          var raw = m[1];
-          if (!/hot\s*wheels|mattel|matchbox/i.test(raw)) continue;
-          var t = cleanTitle(raw);
-          var k = t.toLowerCase();
-          if (t.length < 14 || seen[k]) continue;
-          seen[k] = 1; titles.push(t);
-          if (titles.length >= 5) break;
-        }
-        return titles.length ? { names: titles, img: "" } : null;
-      }).catch(function () { return null; });
-    }
-
-    async function lookupCode(code) {
-      var seq = ++lookupSeq;
-      lookupBox.hidden = false;
-      lookupBox.innerHTML = '<span class="spin"></span>Sprawdzam, jaki to model…';
-      var opf = lookupOpenProducts(code);
-      var web = lookupWeb(code);
-      var a = await opf;
-      if (seq !== lookupSeq || !current || current.base !== code) return;
-      var b = await web;
-      if (seq !== lookupSeq || !current || current.base !== code) return;
-      var res = null;
-      if (a && b) res = { names: a.names.concat(b.names.filter(function (n) { return n.toLowerCase() !== a.names[0].toLowerCase(); })).slice(0, 5), img: a.img };
-      else res = a || b;
-      if (!res) {
-        lookupBox.textContent = "Nie znalazłem nazwy dla tego kodu. Wpisz nazwę albo kod modelu z tyłu blistra (np. HKL22) w pole wyżej.";
-        return;
-      }
-      lookupBox.hidden = true;
-      var best = res.names[0];
-      current.name = best; current.img = res.img || "";
-      product.hidden = false;
-      pname.textContent = best;
-      pcode.textContent = "Kod: " + code + (res.names.length > 1 ? " · możliwe kilka modeli" : "");
-      if (res.img) { pimg.src = res.img; pimg.hidden = false; }
-      if (res.names.length > 1) {
-        guesses.hidden = false;
-        guessPills.innerHTML = "";
-        res.names.forEach(function (n) {
-          var b2 = document.createElement("button");
-          b2.type = "button"; b2.className = "pill"; b2.textContent = n; b2.dataset.q = n;
-          b2.addEventListener("click", function () {
-            pname.textContent = n; current.name = n; setQuery(n); saveHistory(current);
-          });
-          guessPills.appendChild(b2);
-        });
-      }
-      setQuery(best);
-      saveHistory(current);
-    }
-
-    // ---------- history ----------
-    function loadHistory() {
-      try {
-        var raw = localStorage.getItem(STORAGE);
-        var list = raw ? JSON.parse(raw) : [];
-        return Array.isArray(list) ? list : [];
-      } catch (e) { return []; }
-    }
-    function saveHistory(item) {
-      var row = { kind: item.kind, base: item.base, query: item.query, name: item.name || "", img: item.img || "", t: Date.now() };
-      var list = loadHistory().filter(function (x) { return !(x.kind === row.kind && x.base === row.base); });
+    // ---------- historia ----------
+    function loadHistory() { try { return JSON.parse(localStorage.getItem(STORAGE) || "[]"); } catch (e) { return []; } }
+    function saveHistory() {
+      if (!current) return;
+      var c = current.car, row = { n: c.n, i: c.i || "", b: current.badge, m: current.min, t: Date.now(), code: current.code };
+      var list = loadHistory().filter(function (x) { return x.n !== row.n; });
       list.unshift(row);
-      try { localStorage.setItem(STORAGE, JSON.stringify(list.slice(0, 10))); } catch (e) {}
+      try { localStorage.setItem(STORAGE, JSON.stringify(list.slice(0, 12))); } catch (e) {}
       renderHistory();
     }
     function renderHistory() {
       var list = loadHistory();
-      histList.innerHTML = "";
-      if (!list.length) { historyBox.hidden = true; return; }
-      historyBox.hidden = false;
-      list.forEach(function (item) {
-        var li = document.createElement("li");
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.innerHTML = '<span class="q"></span><span class="tag"></span>';
-        btn.querySelector(".q").textContent = item.name || item.query;
-        btn.querySelector(".tag").textContent = item.kind === "code" ? "kod" : "nazwa";
-        btn.addEventListener("click", function () {
-          nameInput.value = item.kind === "name" ? item.base : "";
-          showResults({ kind: item.kind, base: item.base || item.query, query: item.query, name: item.name, img: item.img }, { animate: true, scroll: true });
-          if (item.kind === "code" && !item.name) lookupCode(item.base);
-        });
-        li.appendChild(btn);
-        histList.appendChild(li);
+      historyBox.hidden = !list.length;
+      histList.innerHTML = list.map(function (h, i) {
+        var b = h.b === "sth" ? "<span class='mini sth'>STH</span>" : h.b === "th" ? "<span class='mini th'>TH</span>" : "<span class='mini norm'>ZWYKŁY</span>";
+        return "<button type='button' class='hcard' data-i='" + i + "'><div class='im'>" + (h.i ? "<img src='" + esc(wikiImg(h.i, 200)) + "' alt='' loading='lazy' referrerpolicy='no-referrer' onerror='this.remove()'>" : "🏎️") +
+          "</div><div class='nm'>" + esc(h.n) + "</div><div class='ft'>" + b + (h.m ? "<b>od " + fmtPrice(h.m) + "</b>" : "") + "</div></button>";
+      }).join("");
+    }
+    histList.addEventListener("click", function (e) {
+      var b = e.target.closest(".hcard"); if (!b) return;
+      var h = loadHistory()[+b.dataset.i]; if (!h) return;
+      dbPromise.then(function () {
+        var car = DB.cars.filter(function (c) { return c.n === h.n; })[0] || { n: h.n, y: [], s: [], t: [], i: h.i };
+        showCar(car, { via: "historia", code: h.code });
       });
-    }
-
-    // ---------- found ----------
-    function normCode(v) {
-      v = String(v || "").trim();
-      return /^0\d{12}$/.test(v) ? v.slice(1) : v;
-    }
-
-    function onFound(text, kind) {
-      var value = normCode(text);
-      if (!value) return;
-      if (kind === "code") {
-        try { if (navigator.vibrate) navigator.vibrate([60, 40, 60]); } catch (e) {}
-        viewfinder.classList.remove("hit"); void viewfinder.offsetWidth; viewfinder.classList.add("hit");
-      }
-      stopCamera();
-      showError("");
-      nameInput.value = "";
-      showResults({ kind: "code", base: value, query: value }, { animate: true, save: true, scroll: true });
-      lookupCode(value);
-    }
-
-    function applyName(value, save, animate) {
-      showError("");
-      if (isBarcode(value)) {
-        value = normCode(value);
-        if (save) { showResults({ kind: "code", base: value, query: value }, { animate: true, save: true }); lookupCode(value); }
-        return;
-      }
-      var q = isModelCode(value) ? "Hot Wheels " + value.toUpperCase() : value;
-      showResults({ kind: "name", base: value, query: q }, { save: !!save, animate: !!animate });
-    }
-
-    scanBtn.addEventListener("click", openCamera);
-    cancelBtn.addEventListener("click", stopCamera);
-
-    nameInput.addEventListener("input", function () {
-      var value = nameInput.value.trim();
-      clearTimeout(nameSaveTimer);
-      if (!value) {
-        if (current && current.kind === "name") { results.hidden = true; current = null; }
-        return;
-      }
-      if (isBarcode(value)) return; // wait for Enter
-      var first = !current || current.kind !== "name" || results.hidden;
-      applyName(value, false, first);
-      nameSaveTimer = setTimeout(function () { if (current) saveHistory(current); }, 900);
-    });
-    nameInput.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        var value = nameInput.value.trim();
-        if (!value) return;
-        clearTimeout(nameSaveTimer);
-        applyName(value, true, false);
-        nameInput.blur();
-      }
-    });
-    nameInput.addEventListener("blur", function () {
-      var value = nameInput.value.trim();
-      if (!value || !current || current.kind !== "name") return;
-      clearTimeout(nameSaveTimer);
-      saveHistory(current);
-    });
-
-    pillPlain.addEventListener("click", function () {
-      if (!current || current.kind !== "name") return;
-      showResults({ kind: "name", base: current.base, query: current.base }, { save: true });
-    });
-    pillHw.addEventListener("click", function () {
-      if (!current || current.kind !== "name") return;
-      var b = current.base;
-      showResults({ kind: "name", base: b, query: /^hot\s*wheels/i.test(b) ? b : "Hot Wheels " + b }, { save: true });
     });
     clearBtn.addEventListener("click", function () { localStorage.removeItem(STORAGE); renderHistory(); });
 
     document.addEventListener("visibilitychange", function () { if (document.hidden && scanning) stopCamera(); });
     window.addEventListener("pagehide", function () { if (scanning) stopCamera(); });
+    // wczytaj skaner kodów w tle
+    setTimeout(function () { getEngine().catch(function () {}); }, 400);
 
-    window.__bs = { onFound: onFound, getEngine: getEngine };
+    window.__bs = { found: found, showCar: showCar, analyzeCanvas: analyzeCanvas, getOcr: getOcr, getEngine: getEngine, db: function () { return DB; }, parseAllegroLokalnie: parseAllegroLokalnie, parseOlx: parseOlx };
     renderHistory();
   })();
   </script>

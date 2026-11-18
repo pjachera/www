@@ -42,14 +42,19 @@
     db.cars.forEach(function (c) {
       (c.sx || []).forEach(function (x) {
         var m = /^(.*?)\s+(\d{1,2})\/(\d{1,2})$/.exec(x); if (!m) return;
-        var sk = key(m[1]); if (!sk) return;
-        var e = db.series[sk] || (db.series[sk] = { name: m[1], k: sk, f: fold(sk), items: [] });
+        var sname = m[1].replace(/\s+Series$/i, ""), sk = key(sname); if (!sk) return;
+        var e = db.series[sk] || (db.series[sk] = { name: sname, k: sk, f: fold(sk), items: [] });
         e.items.push({ car: c, n: +m[2], of: +m[3] });
       });
     });
     db.seriesList = Object.keys(db.series).map(function (k) { return db.series[k]; });
     db.thSet = {}; (db.thc || []).forEach(function (t) { db.thSet[t] = 1; });
     db.sthSet = {}; (db.sthc || []).forEach(function (t) { db.sthSet[t] = 1; });
+    db.ssSet = {}; Object.keys(db.ssm || {}).forEach(function (t) { db.ssSet[t] = db.ssm[t]; });
+    db.ssRe = (db.ssn || []).map(function (n) {
+      var b = n.replace(/\s+Series$/i, "").replace(/[.'’]/g, "").replace(/[^A-Za-z0-9& ]/g, " ").trim().replace(/\s+/g, "\\s+").toUpperCase();
+      return b.length >= 3 ? new RegExp("\\b" + b + "\\s+SERIES\\b", "g") : null;
+    }).filter(function (x) { return x; });
     db.__ready = true;
     return db;
   }
@@ -112,7 +117,7 @@
     var nums = [];
     while ((m = re.exec(up))) {
       var a = dg(m[1]), b = dg(m[2]);
-      if ((b === 5 || b === 10) && a >= 1 && a <= b) nums.push({ n: a, of: b, at: m.index });
+      if (b >= 3 && b <= 12 && a >= 1 && a <= b) nums.push({ n: a, of: b, at: m.index });
     }
     if (!nums.length) return [];
     var nt = norm(up).replace(/'/g, "").split(" ").filter(function (x) { return x; });
@@ -136,6 +141,14 @@
     return out;
   }
 
+  // Napisy z karty, które NIE są nazwą modelu: "SILVER SERIES", "SILVER LABEL", "<seria> SERIES"
+  function stripSeriesWords(text, db) {
+    var u = String(text || "").toUpperCase().replace(/[’`]/g, "'");
+    u = u.replace(/\bSILVER\s*(SERIES|LABEL)\b/g, " ").replace(/\bS[I1L]LVER\s*S[EF]R[I1L]ES\b/g, " ");
+    (db.ssRe || []).forEach(function (re) { u = u.replace(re, " "); });
+    return u.replace(/\bSERIES\b/g, " ");
+  }
+
   // Tekst z OCR / tytułu -> najlepsze dopasowania [{car, score, raw}]
   function matchText(text, db, opts) {
     opts = opts || {};
@@ -144,7 +157,7 @@
     var best = {};
     // kod modelu (tył blistra) – najpewniejszy sygnał
     extractCodes(text, db).forEach(function (cd) { best[cd.car.n] = { car: cd.car, score: cd.score, raw: cd.raw, code: cd.code, via: "kod", sure: cd.sure }; });
-    var lines = String(text || "").split(/\n|\s{3,}|[|]/);
+    var lines = stripSeriesWords(text, db).split(/\n|\s{3,}|[|]/);
     lines.forEach(function (line) {
       var toks = norm(line).split(" ").filter(function (t) { return t; });
       for (var i = 0; i < toks.length; i++) {
@@ -224,6 +237,6 @@
     return hit / toks.length >= (toks.length <= 2 ? 1 : 0.75);
   }
 
-  root.HWMatch = { extractCodes: extractCodes, matchSeries: matchSeries, norm: norm, key: key, fold: fold, sim: sim, prepare: prepare, matchText: matchText, search: search, offerMatches: offerMatches };
+  root.HWMatch = { stripSeriesWords: stripSeriesWords, extractCodes: extractCodes, matchSeries: matchSeries, norm: norm, key: key, fold: fold, sim: sim, prepare: prepare, matchText: matchText, search: search, offerMatches: offerMatches };
   if (typeof module !== "undefined" && module.exports) module.exports = root.HWMatch;
 })(typeof window !== "undefined" ? window : globalThis);

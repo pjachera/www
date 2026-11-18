@@ -98,6 +98,8 @@
     .badge.maybe { border-style: dashed; }
     .chips { display: flex; flex-wrap: wrap; gap: 5px; }
     .chip { font-size: 12.5px; font-weight: 650; color: var(--ink2); background: var(--paper2); border: 1px solid var(--line); padding: 4px 8px; border-radius: 8px; white-space: nowrap; }
+    .chip.silver { background: linear-gradient(135deg,#f6f8fa,#b3bbc5 52%,#eef1f4); border-color: #9aa3ae; color: #2b323a; }
+    .chip.silver b { color: #12161b; }
     .chip b { color: var(--ink); font-weight: 800; }
 
     /* arkusz "Więcej" */
@@ -303,11 +305,11 @@
   </div>
 </div>
 
-<script src="hw-match.js"></script>
+<script src="hw-match.js?v=6"></script>
 <script>
 (function () {
   "use strict";
-  var V = "4";
+  var V = "6";
   var STORAGE = "blisterscan-history-v3";
   var PROXY = "https://r.jina.ai/";
   var TESS_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
@@ -716,16 +718,28 @@
   }
   rCheck.addEventListener("change", updateFromChecks);
 
+  var pendingBc = null;
+  function bcMem() { try { return JSON.parse(localStorage.getItem("blisterscan-bc") || "{}"); } catch (e) { return {}; } }
+  function bcRemember(car) {
+    if (!pendingBc || Date.now() - pendingBc.t > 120000) return;
+    var m = bcMem(); m[pendingBc.code] = car.n; pendingBc = null;
+    try { localStorage.setItem("blisterscan-bc", JSON.stringify(m)); } catch (e) {}
+  }
   async function found(f, fromPhoto) {
     await dbPromise;
     var matches = f.matches;
+    if (!matches && f.barcode) {
+      var known = bcMem()[f.barcode], kc = known && DB.cars.filter(function (c) { return c.n === known; })[0];
+      if (kc) matches = [{ car: kc, score: 1, raw: f.barcode, via: "pamięć" }];
+    }
     if (!matches && f.barcode) {
       showStatus("Sprawdzam kod " + f.barcode + "…");
       var t = await lookupBarcode(f.barcode);
       showStatus("");
       matches = t ? bestFrom(t, 0.8) : null;
       if (!matches) {
-        showToast("Kod kreskowy " + f.barcode + " przeczytany, ale nie wiem jaki to model. Pokaż nazwę z przodu albo kod z tyłu blistra.", false, 6000);
+        pendingBc = { code: f.barcode, t: Date.now() };
+        showToast("Kod kreskowy nie mówi mi, jaki to model (np. Silver Series). Pokaż nazwę z przodu albo kod z tyłu (np. HTB68) – zapamiętam ten kod kreskowy.", false, 7000);
         return;
       }
     }
@@ -740,23 +754,28 @@
     o = o || {};
     showToast(""); hideSugg();
     var rar = rarityOf(car, o.code);
+    if (o.via !== "kod kreskowy" && o.via !== "pamięć" && o.via !== "historia") bcRemember(car);
     current = { car: car, rarity: rar, code: o.code || "", badge: rar.cls.split(" ")[0], min: null, minSrc: "" };
     rName.textContent = car.n; sName.textContent = car.n;
     rImg.classList.remove("ok");
     if (car.i) { rImg.hidden = false; rImg.onload = function () { rImg.classList.add("ok"); }; rImg.onerror = function () { rImg.hidden = true; }; rImg.src = wikiImg(car.i, 300); }
     else { rImg.hidden = true; rImg.removeAttribute("src"); }
-    var chips = [];
-    if (car.s && car.s.length) chips.push("<span class='chip'><b>" + esc(car.s[0].split(" / ")[0]) + "</b></span>");
+    var chips = [], ssName = (o.code && DB.ssSet && DB.ssSet[o.code]) || "", ssMaybe = !ssName && car.ss && car.ss.length ? car.ss[car.ss.length - 1].replace(/\s+Series$/i, "") : "";
+    if (ssName) chips.push("<span class='chip silver'>Silver Series · <b>" + esc(ssName) + "</b></span>");
+    else if (ssMaybe) chips.push("<span class='chip silver'>Może być Silver Series · <b>" + esc(ssMaybe) + "</b></span>");
+    if (car.s && car.s.length && !ssName) chips.push("<span class='chip'><b>" + esc(car.s[0].split(" / ")[0]) + "</b></span>");
     if (car.y && car.y.length) chips.push("<span class='chip'>Rok <b>" + esc(car.y[car.y.length - 1]) + "</b></span>");
     if (o.code) chips.push("<span class='chip'>Kod <b>" + esc(o.code) + "</b></span>");
     else if (car.t && car.t.length) chips.push("<span class='chip'>Kod <b>" + esc(car.t[0]) + "</b></span>");
     rMeta.innerHTML = chips.join("");
     setBadge(rar);
-    var VIA = { "kod z tyłu": "z kodu na tyle blistra", "nazwa z blistra": "z nazwy na blistrze", "seria i numer": "z serii i numeru (mniej pewne)", "kod kreskowy": "z kodu kreskowego", "wpisane": "z wpisanej nazwy", "historia": "z historii", "zdjęcie": "ze zdjęcia" };
+    var VIA = { "kod z tyłu": "z kodu na tyle blistra", "nazwa z blistra": "z nazwy na blistrze", "seria i numer": "z serii i numeru (mniej pewne)", "kod kreskowy": "z kodu kreskowego", "pamięć": "z zapamiętanego kodu kreskowego", "wpisane": "z wpisanej nazwy", "historia": "z historii", "zdjęcie": "ze zdjęcia" };
     var via = o.via && VIA[o.via] ? "Rozpoznano " + VIA[o.via] + ". " : "";
     if (rar.sure) rNote.innerHTML = via + "Ten kod modelu to <b>" + esc(rar.text) + "</b> wg Hot Wheels Wiki.";
     else if (rar.years) rNote.innerHTML = via + "Ten model był <b>" + (rar.cls.indexOf("sth") === 0 ? "Super Treasure Huntem" : "Treasure Huntem") + "</b> w " + esc(rar.years.join(", ")) + ". Zwykła wersja też istnieje – sprawdź na blistrze (lista niżej). Kod z tyłu blistra rozstrzyga od razu.";
     else rNote.innerHTML = via + "Tego modelu nie ma na listach TH/STH 2019–2026. Rzadkie egzemplarze i tak rozpoznasz po liście niżej.";
+    if (ssName) rNote.innerHTML += " To seria <b>Silver Series</b> (" + esc(ssName) + ") – srebrne logo Hot Wheels na karcie.";
+    else if (ssMaybe) rNote.innerHTML += " Ten model był też w Silver Series (" + esc(ssMaybe) + ").";
     Array.prototype.forEach.call(rCheck.querySelectorAll("input"), function (b) { b.checked = false; });
     if (o.alts && o.alts.length) {
       rAlts.hidden = false; rAlts.innerHTML = "<p class='note' style='margin:8px 0 0'>To nie ten?</p>";

@@ -1,62 +1,89 @@
-<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mega Skaner</title>
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#000">
+<title>Żyro</title>
 <style>
-body{margin:0;background:#000;color:#fff;font-family:system-ui,sans-serif}
-#wrap{position:relative;width:100vw;height:62vh;overflow:hidden}
-video,#ov{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-#bar{display:flex;gap:6px;padding:8px;overflow-x:auto}
-#bar button{flex:1;padding:12px 8px;border:0;border-radius:20px;background:#222;color:#fff;font-size:15px;white-space:nowrap}
-#bar button.on{background:#0a7;font-weight:700}
-#out{padding:10px 14px;font-size:16px;white-space:pre-wrap;max-height:28vh;overflow:auto}
-#st{position:absolute;left:8px;top:8px;background:#0008;padding:4px 10px;border-radius:12px;font-size:13px}
-#start{position:absolute;inset:0;margin:auto;width:200px;height:60px;font-size:20px;border:0;border-radius:30px;background:#0a7;color:#fff}
-a{color:#4df}
-</style></head><body>
-<div id="wrap"><video id="v" playsinline muted></video><canvas id="ov"></canvas><div id="st">Mega Skaner</div><button id="start">▶ START</button></div>
-<div id="bar">
-<button data-m="obj" class="on">🔎 Obiekty (AI)</button>
-<button data-m="qr">▦ QR / kody</button>
-<button data-m="ocr">🔤 Tekst</button>
-<button data-m="col">🎨 Kolor</button>
-</div>
-<div id="out">Wybierz tryb i celuj aparatem.</div>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",sans-serif;overflow:hidden;touch-action:none}
+#bg{position:fixed;inset:-20%;filter:blur(60px) saturate(140%);will-change:transform}
+.orb{position:absolute;border-radius:50%;opacity:.85;mix-blend-mode:screen}
+.o1{width:55vmax;height:55vmax;left:5%;top:0;background:radial-gradient(circle,#ff2d55 0,transparent 65%)}
+.o2{width:50vmax;height:50vmax;right:0;top:20%;background:radial-gradient(circle,#5e5ce6 0,transparent 65%)}
+.o3{width:45vmax;height:45vmax;left:25%;bottom:0;background:radial-gradient(circle,#30d5c8 0,transparent 65%)}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;perspective:1100px}
+#card{position:relative;width:min(78vw,340px);aspect-ratio:3/4;border-radius:38px;transform-style:preserve-3d;will-change:transform;
+ background:linear-gradient(160deg,rgba(255,255,255,.22),rgba(255,255,255,.04));
+ box-shadow:0 40px 80px -20px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.25);
+ backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%)}
+.layer{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transform-style:preserve-3d;pointer-events:none}
+#ring{width:62%;aspect-ratio:1;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);transform:translateZ(40px)}
+#ring2{width:44%;aspect-ratio:1;border-radius:50%;border:1px solid rgba(255,255,255,.2);transform:translateZ(70px)}
+#dot{width:26%;aspect-ratio:1;border-radius:50%;transform:translateZ(110px);
+ background:radial-gradient(circle at 35% 30%,#fff 0,#e9e9ff 18%,#9b8cff 45%,#3a2fb8 80%);
+ box-shadow:0 20px 40px rgba(60,40,200,.55),inset -6px -10px 20px rgba(0,0,0,.35)}
+#title{position:absolute;left:0;right:0;bottom:12%;text-align:center;transform:translateZ(60px)}
+#title h1{font-size:30px;font-weight:700;letter-spacing:-.02em}
+#title p{font-size:13px;opacity:.65;margin-top:4px;letter-spacing:.02em}
+#angle{position:absolute;top:9%;left:0;right:0;text-align:center;transform:translateZ(50px);font-variant-numeric:tabular-nums;font-size:13px;opacity:.7;letter-spacing:.08em}
+#glare{position:absolute;inset:0;border-radius:38px;pointer-events:none;mix-blend-mode:overlay;
+ background:radial-gradient(circle at var(--gx,50%) var(--gy,30%),rgba(255,255,255,.75),transparent 55%)}
+#start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(0,0,0,.35);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:9;transition:opacity .6s ease}
+#start button{font:600 17px -apple-system,sans-serif;color:#000;background:#fff;border:0;border-radius:999px;padding:15px 34px;box-shadow:0 10px 30px rgba(255,255,255,.2);transition:transform .2s}
+#start button:active{transform:scale(.95)}
+#start p{opacity:.6;font-size:14px}
+#hint{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;font-size:12px;opacity:.45}
+</style>
+</head>
+<body>
+<div id="bg"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
+<div id="stage"><div id="card">
+ <div class="layer"><div id="ring"></div></div>
+ <div class="layer"><div id="ring2"></div></div>
+ <div class="layer"><div id="dot"></div></div>
+ <div id="angle">0° · 0°</div>
+ <div id="title"><h1>Żyro</h1><p>Przechyl telefon</p></div>
+ <div id="glare"></div>
+</div></div>
+<div id="start"><button id="go">Zacznij</button><p>Animacja reaguje na ruch telefonu</p></div>
+<div id="hint">Na komputerze rusz myszką</div>
 <script>
-const PL={person:'człowiek',bicycle:'rower',car:'samochód',motorcycle:'motocykl',bus:'autobus',truck:'ciężarówka',dog:'pies',cat:'kot',bird:'ptak',horse:'koń',cow:'krowa',sheep:'owca',bottle:'butelka',cup:'kubek',fork:'widelec',knife:'nóż',spoon:'łyżka',bowl:'miska',banana:'banan',apple:'jabłko',orange:'pomarańcza',chair:'krzesło',couch:'kanapa','potted plant':'roślina',bed:'łóżko','dining table':'stół',tv:'telewizor',laptop:'laptop',mouse:'myszka',remote:'pilot',keyboard:'klawiatura','cell phone':'telefon',book:'książka',clock:'zegar',vase:'wazon',scissors:'nożyczki','teddy bear':'miś','toothbrush':'szczoteczka',backpack:'plecak',umbrella:'parasol',handbag:'torebka',tie:'krawat',suitcase:'walizka',ball:'piłka','sports ball':'piłka',kite:'latawiec',pizza:'pizza',donut:'pączek',cake:'ciasto',sandwich:'kanapka',carrot:'marchewka',broccoli:'brokuł','hot dog':'hot dog',refrigerator:'lodówka',oven:'piekarnik',microwave:'mikrofalówka',sink:'zlew',toilet:'toaleta','wine glass':'kieliszek','traffic light':'sygnalizacja','stop sign':'znak stop',bench:'ławka',train:'pociąg',airplane:'samolot',boat:'łódź',skateboard:'deskorolka',skis:'narty',snowboard:'snowboard','tennis racket':'rakieta','baseball bat':'kij','hair drier':'suszarka',toaster:'toster',elephant:'słoń',bear:'niedźwiedź',zebra:'zebra',giraffe:'żyrafa',frisbee:'frisbee','fire hydrant':'hydrant','parking meter':'parkometr'};
-const v=document.getElementById('v'),ov=document.getElementById('ov'),o=ov.getContext('2d'),out=document.getElementById('out'),st=document.getElementById('st');
-const tmp=document.createElement('canvas'),tx=tmp.getContext('2d',{willReadFrequently:true});
-let mode='obj',model=null,busy=false,ocrW=null;
-document.querySelectorAll('#bar button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#bar button').forEach(x=>x.classList.remove('on'));b.classList.add('on');mode=b.dataset.m;o.clearRect(0,0,ov.width,ov.height);
- out.textContent=mode==='ocr'?'Celuj w tekst i stuknij w obraz, żeby odczytać.':mode==='col'?'Środek ekranu = kolor.':'Celuj aparatem…'});
-document.getElementById('start').onclick=async e=>{e.target.remove();
- const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});v.srcObject=s;await v.play();
- st.textContent='Ładuję AI…';cocoSsd.load({base:'lite_mobilenet_v2'}).then(m=>{model=m;st.textContent='AI gotowe ✅'});loop();};
-function map(x,y){const vw=v.videoWidth,vh=v.videoHeight,W=ov.width,H=ov.height,s=Math.max(W/vw,H/vh);return[x*s+(W-vw*s)/2,y*s+(H-vh*s)/2,s]}
-async function loop(){
- ov.width=ov.clientWidth;ov.height=ov.clientHeight;
- if(!busy&&v.videoWidth){busy=true;try{
-  if(mode==='obj'&&model){const p=await model.detect(v);o.clearRect(0,0,ov.width,ov.height);o.lineWidth=3;o.font='bold 18px system-ui';
-   p.forEach(d=>{const[x,y,s]=map(d.bbox[0],d.bbox[1]);o.strokeStyle='#0f8';o.strokeRect(x,y,d.bbox[2]*s,d.bbox[3]*s);const t=(PL[d.class]||d.class)+' '+Math.round(d.score*100)+'%';o.fillStyle='#0f8';o.fillRect(x,y-24,o.measureText(t).width+10,24);o.fillStyle='#000';o.fillText(t,x+5,y-6)});
-   out.textContent=p.length?'Widzę: '+[...new Set(p.map(d=>PL[d.class]||d.class))].join(', '):'Nic nie rozpoznaję…'}
-  else if(mode==='qr'){const w=480,h=Math.round(w*v.videoHeight/v.videoWidth);tmp.width=w;tmp.height=h;tx.drawImage(v,0,0,w,h);
-   let txt=null;if('BarcodeDetector' in window){try{const r=await new BarcodeDetector().detect(tmp);if(r[0])txt=r[0].rawValue+'  ('+r[0].format+')'}catch(e){}}
-   if(!txt){const c=jsQR(tx.getImageData(0,0,w,h).data,w,h);if(c)txt=c.data}
-   if(txt){out.innerHTML='';const isU=/^https?:\/\//.test(txt);if(isU){const a=document.createElement('a');a.href=txt.split('  (')[0];a.target='_blank';a.textContent=txt;out.append('Znaleziono: ',a)}else out.textContent='Znaleziono: '+txt;if(navigator.vibrate)navigator.vibrate(60)}}
-  else if(mode==='col'){tmp.width=tmp.height=10;tx.drawImage(v,v.videoWidth/2-10,v.videoHeight/2-10,20,20,0,0,10,10);const d=tx.getImageData(0,0,10,10).data;let r=0,g=0,b=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2]}r=Math.round(r/100);g=Math.round(g/100);b=Math.round(b/100);
-   const hex='#'+[r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');o.clearRect(0,0,ov.width,ov.height);o.strokeStyle='#fff';o.lineWidth=3;o.strokeRect(ov.width/2-25,ov.height/2-25,50,50);o.fillStyle=hex;o.fillRect(10,ov.height-70,60,60);
-   out.innerHTML=`<b style="font-size:26px">${hex.toUpperCase()}</b>  RGB(${r}, ${g}, ${b}) — ${nazwa(r,g,b)}`}
- }catch(e){out.textContent='Błąd: '+e.message}busy=false}
- requestAnimationFrame(loop);
+const card=document.getElementById('card'),bg=document.getElementById('bg'),glare=document.getElementById('glare'),
+dot=document.getElementById('dot'),ang=document.getElementById('angle'),start=document.getElementById('start');
+let tx=0,ty=0,x=0,y=0,vx=0,vy=0,base=null;
+const K=0.08,D=0.78; // sprężyna jak w iOS
+function orient(e){
+  if(e.beta==null)return;
+  if(!base)base={b:e.beta,g:e.gamma};
+  let b=e.beta-base.b,g=e.gamma-base.g;
+  tx=Math.max(-1,Math.min(1,g/30));ty=Math.max(-1,Math.min(1,b/30));
 }
-function nazwa(r,g,b){const mx=Math.max(r,g,b),mn=Math.min(r,g,b);if(mx<50)return'czarny';if(mn>200)return'biały';if(mx-mn<25)return'szary';
- let h=0,d=mx-mn;if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360;
- return h<15?'czerwony':h<40?'pomarańczowy':h<65?'żółty':h<160?'zielony':h<200?'turkusowy':h<255?'niebieski':h<290?'fioletowy':h<340?'różowy':'czerwony'}
-ov.onclick=async()=>{if(mode!=='ocr'||!v.videoWidth)return;out.textContent='Czytam tekst… ⏳';
- tmp.width=v.videoWidth;tmp.height=v.videoHeight;tx.drawImage(v,0,0);
- try{if(!ocrW)ocrW=await Tesseract.createWorker('pol+eng');const{data}=await ocrW.recognize(tmp);out.textContent=data.text.trim()||'Nie widzę tekstu.';
-  if(data.text.trim()){const b=document.createElement('button');b.textContent='📋 Kopiuj';b.style.cssText='display:block;margin-top:8px;padding:8px 16px;border-radius:14px;border:0';b.onclick=()=>navigator.clipboard.writeText(data.text);out.append(b)}}
- catch(e){out.textContent='Błąd OCR: '+e.message}};
-</script></body></html>
+function mouse(e){const p=e.touches?e.touches[0]:e;tx=(p.clientX/innerWidth)*2-1;ty=(p.clientY/innerHeight)*2-1}
+addEventListener('mousemove',mouse);
+addEventListener('touchmove',e=>{if(!window._gyro)mouse(e)},{passive:true});
+async function go(){
+  try{if(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission){
+    const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')throw 0}}catch(e){}
+  addEventListener('deviceorientation',e=>{if(e.beta!=null){window._gyro=1;document.getElementById('hint').style.display='none'}orient(e)});
+  start.style.opacity=0;setTimeout(()=>start.remove(),600);
+  if(navigator.vibrate)navigator.vibrate(8);
+}
+document.getElementById('go').onclick=go;
+card.addEventListener('click',()=>{base=null;card.animate([{scale:1},{scale:.96},{scale:1}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'})});
+let t0=performance.now();
+function loop(t){
+  vx=(vx+(tx-x)*K)*D;vy=(vy+(ty-y)*K)*D;x+=vx;y+=vy;
+  const breathe=Math.sin((t-t0)/1400)*0.04;
+  card.style.transform=`rotateY(${x*18}deg) rotateX(${-y*18}deg) scale(${1+breathe*0.3})`;
+  bg.style.transform=`translate3d(${-x*40}px,${-y*40}px,0) rotate(${(t-t0)/400}deg)`;
+  glare.style.setProperty('--gx',(50+x*45)+'%');glare.style.setProperty('--gy',(30+y*45)+'%');
+  dot.style.transform=`translateZ(110px) translate(${x*28}px,${y*28}px)`;
+  ang.textContent=`${Math.round(x*30)}° · ${Math.round(y*30)}°`;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

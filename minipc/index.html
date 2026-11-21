@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1c20">
+<title>Mini PC</title>
+<style>
+  :root {
+    --body: #1c1e23;
+    --body-2: #14161a;
+    --bezel: #0b0c0e;
+    --key: #2b2e35;
+    --key-hi: #3a3e47;
+    --key-tx: #e8eaef;
+    --accent: #6cb6ff;
+    --accent-2: #8ee0c0;
+    --bar: #1a1d24;
+    --danger: #ff8b6b;
+    --screen-bg: #0a1628;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%;
+    background: #0b0d10;
+    color: #e8eaef;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+  }
+  body {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  }
+  .pc {
+    width: min(720px, 100%);
+    height: 100%;
+    max-height: 100dvh;
+    background:
+      linear-gradient(180deg, #2c3038 0%, var(--body) 18%, var(--body-2) 100%);
+    border-radius: 22px;
+    box-shadow:
+      0 30px 70px rgba(0,0,0,.55),
+      inset 0 1px 0 rgba(255,255,255,.14),
+      inset 0 -1px 0 rgba(0,0,0,.4);
+    display: flex;
+    flex-direction: column;
+    padding: 10px 12px 12px;
+    min-height: 0;
+  }
+  .lid-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 8px 8px;
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #8b909c;
+    flex: 0 0 auto;
+  }
+  .lid-bar .dots { display: flex; gap: 6px; }
+  .lid-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: #3a3e46; }
+  .lid-bar .dot.r { background: #ff6b6b; }
+  .lid-bar .dot.y { background: #e6c15a; }
+  .lid-bar .dot.g { background: #62c08a; }
+
+  .bezel {
+    flex: 1 1 auto;
+    min-height: 0;
+    background: var(--bezel);
+    border-radius: 14px;
+    padding: 8px 8px 6px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 0 0 1px rgba(0,0,0,.5);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .screen {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background:
+      radial-gradient(1200px 500px at 20% -10%, #3a6aa5 0%, transparent 50%),
+      radial-gradient(900px 400px at 110% 20%, #5a3d8c 0%, transparent 45%),
+      radial-gradient(700px 400px at 50% 120%, #1b4d6e 0%, transparent 50%),
+      linear-gradient(160deg, #173155 0%, #0c1a30 55%, #14243c 100%);
+    cursor: none;
+  }
+  .screen.native-cursor { cursor: default; }
+  .wallpaper-icons {
+    position: absolute;
+    top: 10px; left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1;
+  }
+  .desk-icon {
+    width: 64px;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font: 10px/1.2 system-ui, sans-serif;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0,0,0,.6);
+    cursor: inherit;
+    padding: 4px;
+    border-radius: 8px;
+  }
+  .desk-icon:hover, .desk-icon:focus { background: rgba(255,255,255,.12); outline: 0; }
+  .desk-icon .ic {
+    width: 36px; height: 36px; margin: 0 auto 4px;
+    border-radius: 9px;
+    display: grid; place-items: center;
+    font-size: 20px;
+    background: linear-gradient(180deg, #7ec0ff, #3a7fd9);
+    box-shadow: 0 4px 10px rgba(0,0,0,.3);
+  }
+
+  .window {
+    position: absolute;
+    inset: 8px 8px 36px 8px;
+    background: #11141a;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.06);
+    z-index: 2;
+  }
+  .win-title {
+    flex: 0 0 auto;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    background: #1c2028;
+    font-size: 12px;
+    color: #c5c9d2;
+  }
+  .win-title .traffic { display: flex; gap: 5px; }
+  .win-title .traffic i {
+    width: 8px; height: 8px; border-radius: 50%; display: block;
+    background: #3e4450;
+  }
+  .chrome {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    background: var(--bar);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .tabs {
+    display: flex; align-items: stretch; gap: 2px;
+    padding: 4px 6px 0; min-height: 28px; overflow: hidden;
+  }
+  .tab {
+    max-width: 160px; min-width: 72px; flex: 1;
+    height: 24px; border: 0; border-radius: 7px 7px 0 0;
+    background: transparent; color: #9aa0ab;
+    font: 11px/24px system-ui, sans-serif;
+    padding: 0 8px; text-align: left;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: inherit;
+  }
+  .tab.on { background: #252a33; color: #fff; }
+  .tab-add {
+    width: 24px; min-width: 24px; flex: 0 0 24px;
+    height: 22px; margin: 1px 0 0 4px;
+    border: 0; border-radius: 6px;
+    background: transparent; color: #9aa0ab;
+    font-size: 16px; line-height: 20px; cursor: inherit;
+  }
+  .tab-add:hover, .tab:hover { background: #2a303a; color: #fff; }
+  .nav {
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 8px 8px;
+  }
+  .nav button.tool {
+    width: 28px; height: 28px; border: 0; border-radius: 7px;
+    background: transparent; color: #d5d8df;
+    font-size: 15px; cursor: inherit;
+    display: grid; place-items: center;
+  }
+  .nav button.tool:disabled { opacity: .35; }
+  .nav button.tool:hover:not(:disabled) { background: #2c313b; }
+  .addr-wrap {
+    flex: 1; min-width: 0; height: 30px;
+    display: flex; align-items: center;
+    background: #0e1014;
+    border: 1px solid #2c313b;
+    border-radius: 15px;
+    padding: 0 4px 0 10px;
+  }
+  .addr-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(108,182,255,.2); }
+  #addr {
+    flex: 1; min-width: 0; height: 28px;
+    border: 0; outline: 0; background: transparent;
+    color: #e8eaef; font-size: 16px; /* 16px = no iOS zoom */
+    padding: 0 8px 0 0;
+  }
+  #addr::placeholder { color: #6d7380; font-size: 13px; }
+  .go, .open-ext {
+    height: 24px; border: 0; border-radius: 12px;
+    font: 600 11px/24px system-ui, sans-serif;
+    padding: 0 9px; cursor: inherit; white-space: nowrap;
+  }
+  .go { background: #2b3544; color: #d6e8ff; margin-right: 2px; }
+  .open-ext {
+    background: linear-gradient(180deg, #4ea2ff, #2b7fe0);
+    color: #fff; margin-left: 4px; flex: 0 0 auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .open-ext:hover, .go:hover { filter: brightness(1.08); }
+  .quick {
+    display: flex; gap: 6px; padding: 0 8px 7px; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .quick::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto; height: 22px; padding: 0 9px;
+    border: 1px solid #333944; border-radius: 11px;
+    background: #1a1e26; color: #c9ced8;
+    font: 11px/20px system-ui, sans-serif; cursor: inherit;
+  }
+  .chip:hover { background: #262c36; color: #fff; }
+
+  .view {
+    flex: 1 1 auto; min-height: 0; position: relative; background: #fff;
+  }
+  #frame {
+    width: 100%; height: 100%; border: 0; background: #fff; display: block;
+  }
+  .overlay {
+    position: absolute; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    background: linear-gradient(180deg, #f4f6fa, #e6eaf1);
+    color: #222; text-align: center; padding: 16px;
+    z-index: 3;
+  }
+  .overlay.show { display: flex; }
+  .overlay .card {
+    max-width: 340px;
+  }
+  .overlay h2 { margin: 0 0 8px; font-size: 18px; }
+  .overlay p { margin: 0 0 14px; font-size: 13px; color: #444; line-height: 1.45; }
+  .overlay .open-ext { height: 34px; padding: 0 14px; font-size: 13px; line-height: 34px; border-radius: 17px; }
+
+  .hint {
+    position: absolute; left: 8px; right: 8px; bottom: 8px;
+    display: none;
+    background: rgba(20,22,28,.92); color: #fff;
+    border-radius: 10px; padding: 8px 10px;
+    font-size: 12px; z-index: 4;
+    align-items: center; gap: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,.3);
+  }
+  .hint.show { display: flex; }
+  .hint button { margin-left: auto; border: 0; background: #2c313b; color: #fff; border-radius: 8px; height: 24px; padding: 0 8px; font-size: 11px; cursor: inherit; }
+
+  .taskbar {
+    flex: 0 0 30px; height: 30px;
+    display: flex; align-items: center;
+    padding: 0 8px;
+    background: rgba(12,16,24,.78);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 0 0 8px 8px;
+    margin-top: 0;
+    position: relative; z-index: 5;
+  }
+  .tb-app {
+    height: 22px; padding: 0 8px; border: 0; border-radius: 6px;
+    background: rgba(108,182,255,.2); color: #fff;
+    font: 11px system-ui, sans-serif; cursor: inherit;
+  }
+  .clock { margin-left: auto; font-size: 12px; font-variant-numeric: tabular-nums; color: #e8eaef; }
+
+  .cursor {
+    position: absolute; left: 0; top: 0; width: 18px; height: 22px;
+    pointer-events: none; z-index: 50; transform: translate(-2px, -1px);
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,.6));
+    display: none;
+  }
+  .cursor.show { display: block; }
+
+  .hinge {
+    flex: 0 0 auto;
+    height: 10px;
+    margin: 0 28px;
+    background: linear-gradient(180deg, #0f1114, #2a2d33 40%, #15171b);
+    border-radius: 0 0 8px 8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+  }
+
+  .deck {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 4px 2px;
+  }
+  .kb {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .kb-row {
+    display: flex; justify-content: center; gap: 4px; margin: 0 0 4px;
+  }
+  .key {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 32px;
+    max-width: 52px;
+    border: 0;
+    border-radius: 6px;
+    background: linear-gradient(180deg, var(--key-hi), var(--key));
+    color: var(--key-tx);
+    box-shadow: 0 2px 0 #0d0f13, inset 0 1px 0 rgba(255,255,255,.08);
+    font: 600 12px/1 system-ui, sans-serif;
+    padding: 0;
+    cursor: pointer;
+    position: relative;
+  }
+  .key:active, .key.down {
+    transform: translateY(1px);
+    box-shadow: 0 1px 0 #0d0f13, inset 0 1px 0 rgba(255,255,255,.05);
+    filter: brightness(.92);
+  }
+  .key.wide { flex: 1.4 1 0; max-width: 72px; font-size: 10px; color: #b4b9c4; }
+  .key.wider { flex: 1.8 1 0; max-width: 96px; font-size: 10px; color: #b4b9c4; }
+  .key.space { flex: 6 1 0; max-width: none; }
+  .key.toggle.on {
+    background: linear-gradient(180deg, #4a90d9, #2f6fb4);
+    color: #fff;
+  }
+  .key .sub {
+    display: block; font-size: 8px; font-weight: 500; color: #8ee0c0; margin-top: 1px;
+  }
+  .key.alt-mode { color: var(--accent-2); }
+
+  .pad-row {
+    display: flex; align-items: stretch; gap: 8px;
+    padding: 0 10px;
+  }
+  .trackpad {
+    flex: 1;
+    height: 88px;
+    border-radius: 14px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.04), transparent 40%),
+      #1a1c21;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.07),
+      inset 0 2px 8px rgba(0,0,0,.45);
+    touch-action: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .trackpad::after {
+    content: "Trackpad";
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+    color: rgba(255,255,255,.18);
+    pointer-events: none;
+  }
+  .trackpad.held { background: #1e2127; }
+  .scrollstrip {
+    width: 36px; flex: 0 0 36px;
+    border-radius: 12px;
+    background: #1a1c21;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.07), inset 0 2px 8px rgba(0,0,0,.45);
+    touch-action: none;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,.28);
+    font-size: 14px; letter-spacing: -2px;
+    user-select: none;
+  }
+
+  @media (max-height: 700px) {
+    .key { height: 28px; }
+    .trackpad { height: 68px; }
+    .lid-bar { padding-bottom: 4px; }
+  }
+  @media (max-height: 600px) {
+    .key { height: 24px; font-size: 11px; }
+    .kb-row { gap: 3px; margin-bottom: 3px; }
+    .trackpad { height: 54px; }
+    .quick { display: none; }
+  }
+  @media (min-width: 700px) and (min-height: 800px) {
+    .key { height: 38px; font-size: 13px; }
+    .trackpad { height: 110px; }
+  }
+</style>
+</head>
+<body>
+  <div class="pc" id="pc">
+    <div class="lid-bar">
+      <span class="dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></span>
+      <span>Mini PC</span>
+      <span style="letter-spacing:0;text-transform:none;opacity:.7">v1</span>
+    </div>
+    <div class="bezel">
+      <div class="screen" id="screen">
+        <div class="wallpaper-icons">
+          <button class="desk-icon" type="button" id="iconBrowser" title="Przeglądarka">
+            <div class="ic">🌐</div>
+            Przeglądarka
+          </button>
+        </div>
+        <section class="window" id="browserWin">
+          <div class="win-title">
+            <span class="traffic"><i></i><i></i><i></i></span>
+            <span id="winName">Przeglądarka</span>
+          </div>
+          <div class="chrome">
+            <div class="tabs" id="tabs"></div>
+            <div class="nav">
+              <button class="tool" id="btnBack" type="button" title="Wstecz" aria-label="Wstecz">←</button>
+              <button class="tool" id="btnFwd" type="button" title="Dalej" aria-label="Dalej">→</button>
+              <button class="tool" id="btnReload" type="button" title="Odśwież" aria-label="Odśwież">↻</button>
+              <form class="addr-wrap" id="addrForm">
+                <input id="addr" type="text" spellcheck="false" autocorrect="off" autocapitalize="none" autocomplete="off" placeholder="Wpisz adres lub szukaj w sieci" inputmode="url">
+                <button class="go" type="submit">Idź</button>
+              </form>
+              <button class="open-ext" id="btnExt" type="button" title="Otwórz w nowej karcie">Otwórz w nowej karcie ↗</button>
+            </div>
+            <div class="quick">
+              <button class="chip" type="button" data-url="https://www.wikipedia.org/">Wikipedia</button>
+              <button class="chip" type="button" data-url="https://pjachera.github.io/www/blisterscan/">BlisterScan</button>
+              <button class="chip" type="button" data-url="https://example.com/">example.com</button>
+              <button class="chip" type="button" data-url="https://html.duckduckgo.com/html/">DuckDuckGo</button>
+            </div>
+          </div>
+          <div class="view">
+            <iframe id="frame" title="Strona" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <div class="overlay" id="home">
+              <div class="card">
+                <h2>Witaj w Mini PC</h2>
+                <p>Wpisz adres w pasku u góry albo kliknij skrót. Wiele stron (np. Google, YouTube, Allegro) blokuje wbudowane okienko — wtedy użyj przycisku <strong>Otwórz w nowej karcie ↗</strong>.</p>
+                <button class="chip" type="button" data-url="https://www.wikipedia.org/">Wikipedia</button>
+                <button class="chip" type="button" data-url="https://pjachera.github.io/www/blisterscan/">BlisterScan</button>
+                <button class="chip" type="button" data-url="https://example.com/">example.com</button>
+              </div>
+            </div>
+            <div class="hint" id="hint">
+              <span>Jeśli strona się nie pokazuje, jest zablokowana w ramce.</span>
+              <button type="button" id="hintOpen">Otwórz ↗</button>
+              <button type="button" id="hintHide">OK</button>
+            </div>
+          </div>
+        </section>
+        <svg class="cursor" id="cursor" viewBox="0 0 18 22" aria-hidden="true">
+          <path d="M1 1 L1 17 L5.5 13.2 L9.2 21 L12.2 19.6 L8.4 12 L14.5 11.6 Z" fill="#fff" stroke="#111" stroke-width="1.2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="taskbar">
+        <button class="tb-app" type="button" id="tbBrowser">🌐 Przeglądarka</button>
+        <div class="clock" id="clock">00:00</div>
+      </div>
+    </div>
+    <div class="hinge"></div>
+    <div class="deck">
+      <div class="kb" id="kb"></div>
+      <div class="pad-row">
+        <div class="trackpad" id="pad" role="application" aria-label="Trackpad"></div>
+        <div class="scrollstrip" id="scroll" title="Przewijanie">↕</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const screen = $("screen");
+  const frame = $("frame");
+  const addr = $("addr");
+  const home = $("home");
+  const hint = $("hint");
+  const cursorEl = $("cursor");
+  const pad = $("pad");
+  const scrollStrip = $("scroll");
+
+  const POLISH = { a:"ą", c:"ć", e:"ę", l:"ł", n:"ń", o:"ó", s:"ś", x:"ź", z:"ż" };
+
+  /* ---------- clock (Europe/Warsaw) ---------- */
+  function tickClock() {
+    try {
+      $("clock").textContent = new Date().toLocaleTimeString("pl-PL", {
+        timeZone: "Europe/Warsaw", hour: "2-digit", minute: "2-digit"
+      });
+    } catch (e) {
+      const d = new Date();
+      $("clock").textContent = String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+    }
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  /* ---------- tabs / browser ---------- */
+  let tabs = [];
+  let active = 0;
+  let loadTimer = null;
+  let loadGen = 0;
+
+  function newTab(url, title) {
+    return { url: url || "", title: title || "Nowa karta", history: url ? [url] : [], idx: url ? 0 : -1 };
+  }
+
+  function current() { return tabs[active]; }
+
+  function renderTabs() {
+    const el = $("tabs");
+    el.innerHTML = "";
+    tabs.forEach((t, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "tab" + (i === active ? " on" : "");
+      b.textContent = t.title;
+      b.addEventListener("click", () => selectTab(i));
+      el.appendChild(b);
+    });
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "tab-add";
+    add.title = "Nowa karta";
+    add.textContent = "+";
+    add.addEventListener("click", () => {
+      tabs.push(newTab("", "Nowa karta"));
+      selectTab(tabs.length - 1);
+    });
+    el.appendChild(add);
+    const c = current();
+    $("btnBack").disabled = !c || c.idx <= 0;
+    $("btnFwd").disabled = !c || c.idx < 0 || c.idx >= c.history.length - 1;
+  }
+
+  function toUrl(raw) {
+    const q = String(raw || "").trim();
+    if (!q) return "";
+    if (/^https?:\/\//i.test(q)) return q;
+    if (/^about:/i.test(q)) return q;
+    // domain-like: example.com, www.x.pl/path, localhost:3000
+    if (/^([\w-]+\.)+[\w-]{2,}(:\d+)?([/?#].*)?$/i.test(q) || /^localhost(:\d+)?([/?#].*)?$/i.test(q)) {
+      return "https://" + q;
+    }
+    return "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q);
+  }
+
+  function hostTitle(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ""); }
+    catch (e) { return "Karta"; }
+  }
+
+  function showHome(on) {
+    home.classList.toggle("show", !!on);
+    if (on) {
+      frame.removeAttribute("src");
+      addr.value = "";
+      $("winName").textContent = "Przeglądarka";
+    }
+  }
+
+  function navigate(url, opts) {
+    const push = !opts || opts.push !== false;
+    const t = current();
+    if (!t) return;
+    hint.classList.remove("show");
+    if (!url) {
+      t.url = ""; t.title = "Nowa karta";
+      if (push) { t.history = []; t.idx = -1; }
+      showHome(true);
+      renderTabs();
+      return;
+    }
+    showHome(false);
+    t.url = url;
+    t.title = hostTitle(url);
+    if (push) {
+      t.history = t.history.slice(0, t.idx + 1);
+      t.history.push(url);
+      t.idx = t.history.length - 1;
+    }
+    addr.value = url;
+    $("winName").textContent = t.title;
+    const gen = ++loadGen;
+    if (loadTimer) clearTimeout(loadTimer);
+    try { frame.src = url; } catch (e) { frame.src = url; }
+    loadTimer = setTimeout(() => {
+      if (gen !== loadGen) return;
+      // Cross-origin success and X-Frame block look the same.
+      // If the frame is still blank-ish after a while, nudge the user.
+      hint.classList.add("show");
+    }, 3500);
+    renderTabs();
+  }
+
+  function selectTab(i) {
+    active = i;
+    const t = current();
+    if (!t || !t.url) showHome(true);
+    else {
+      showHome(false);
+      addr.value = t.url;
+      $("winName").textContent = t.title;
+      ++loadGen;
+      frame.src = t.url;
+    }
+    renderTabs();
+    addr.focus();
+  }
+
+  frame.addEventListener("load", () => {
+    if (loadTimer) { clearTimeout(loadTimer); loadTimer = null; }
+    // Same-origin pages we can read. Cross-origin: leave hint hidden unless it later times out.
+    try {
+      const doc = frame.contentDocument;
+      if (doc && current() && current().url) {
+        const title = (doc.title || "").trim();
+        if (title) { current().title = title.slice(0, 40); $("winName").textContent = current().title; renderTabs(); }
+      }
+    } catch (e) { /* cross-origin — page may still be visible */ }
+  });
+  frame.addEventListener("error", () => hint.classList.add("show"));
+
+  $("addrForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const url = toUrl(addr.value);
+    if (url) navigate(url);
+  });
+  $("btnBack").addEventListener("click", () => {
+    const t = current();
+    if (t && t.idx > 0) { t.idx--; navigate(t.history[t.idx], { push: false }); }
+  });
+  $("btnFwd").addEventListener("click", () => {
+    const t = current();
+    if (t && t.idx < t.history.length - 1) { t.idx++; navigate(t.history[t.idx], { push: false }); }
+  });
+  $("btnReload").addEventListener("click", () => {
+    const t = current();
+    if (t && t.url) { frame.src = "about:blank"; setTimeout(() => { frame.src = t.url; }, 30); }
+    else showHome(true);
+  });
+  function openExternal() {
+    const t = current();
+    const url = (t && t.url) || toUrl(addr.value);
+    if (url) window.open(url, "_blank", "noopener,noreferrer");
+  }
+  $("btnExt").addEventListener("click", openExternal);
+  $("hintOpen").addEventListener("click", openExternal);
+  $("hintHide").addEventListener("click", () => hint.classList.remove("show"));
+
+  document.querySelectorAll("[data-url]").forEach((b) => {
+    b.addEventListener("click", () => navigate(b.getAttribute("data-url")));
+  });
+  $("iconBrowser").addEventListener("click", () => addr.focus());
+  $("tbBrowser").addEventListener("click", () => addr.focus());
+
+  tabs = [newTab("", "Start")];
+  renderTabs();
+  showHome(true);
+
+  /* ---------- focus target for virtual keyboard ---------- */
+  let lastField = addr;
+  document.addEventListener("focusin", (e) => {
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) {
+      lastField = e.target;
+    }
+  });
+
+  function typeInto(text) {
+    const el = (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA"))
+      ? document.activeElement
+      : lastField;
+    if (!el) return;
+    el.focus();
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const v = el.value || "";
+    el.value = v.slice(0, start) + text + v.slice(end);
+    const pos = start + text.length;
+    try { el.setSelectionRange(pos, pos); } catch (e) {}
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  function backspace() {
+    const el = (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA"))
+      ? document.activeElement
+      : lastField;
+    if (!el) return;
+    el.focus();
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const v = el.value || "";
+    if (start !== end) {
+      el.value = v.slice(0, start) + v.slice(end);
+      try { el.setSelectionRange(start, start); } catch (e) {}
+    } else if (start > 0) {
+      el.value = v.slice(0, start - 1) + v.slice(end);
+      try { el.setSelectionRange(start - 1, start - 1); } catch (e) {}
+    }
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  function hitEnter() {
+    const el = document.activeElement || lastField;
+    if (el === addr || lastField === addr) {
+      $("addrForm").requestSubmit();
+    } else if (el && el.form) {
+      el.form.requestSubmit();
+    }
+  }
+
+  /* ---------- on-screen keyboard ---------- */
+  let shift = false, alt = false, caps = false;
+
+  const ROWS = [
+    [
+      { id:"esc", label:"Esc", wide:"wide", special:"esc" },
+      ...["1","2","3","4","5","6","7","8","9","0"].map((k) => ({ key:k })),
+      { id:"bksp", label:"⌫", wide:"wider", special:"bksp" }
+    ],
+    [
+      { id:"tab", label:"Tab", wide:"wide", special:"tab" },
+      ..."qwertyuiop".split("").map((k) => ({ key:k })),
+    ],
+    [
+      { id:"caps", label:"Caps", wide:"wider", special:"caps" },
+      ..."asdfghjkl".split("").map((k) => ({ key:k })),
+      { id:"enter", label:"Enter", wide:"wider", special:"enter" }
+    ],
+    [
+      { id:"shift", label:"Shift", wide:"wider", special:"shift" },
+      ..."zxcvbnm".split("").map((k) => ({ key:k })),
+      { id:"shift2", label:"Shift", wide:"wider", special:"shift" }
+    ],
+    [
+      { id:"alt", label:"Alt  PL", wide:"wider", special:"alt" },
+      { id:"space", label:"", wide:"space", special:"space" },
+      { id:"alt2", label:"Alt  PL", wide:"wider", special:"alt" },
+      { id:"left", label:"←", special:"left" },
+      { id:"right", label:"→", special:"right" }
+    ]
+  ];
+
+  const kb = $("kb");
+
+  function letterFor(base) {
+    const lower = base.toLowerCase();
+    let ch = lower;
+    if (alt && POLISH[lower]) ch = POLISH[lower];
+    if (shift || caps) ch = ch.toUpperCase();
+    return ch;
+  }
+
+  function renderKb() {
+    kb.innerHTML = "";
+    ROWS.forEach((row) => {
+      const r = document.createElement("div");
+      r.className = "kb-row";
+      row.forEach((item) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "key" + (item.wide ? " " + item.wide : "");
+        if (item.special === "shift" && shift) b.classList.add("toggle", "on");
+        if (item.special === "caps" && caps) b.classList.add("toggle", "on");
+        if (item.special === "alt" && alt) b.classList.add("toggle", "on");
+        if (item.key) {
+          const ch = letterFor(item.key);
+          b.textContent = ch;
+          if (alt && POLISH[item.key]) b.classList.add("alt-mode");
+          else if (!alt && POLISH[item.key]) {
+            b.innerHTML = ch + '<span class="sub">' + ((shift||caps) ? POLISH[item.key].toUpperCase() : POLISH[item.key]) + "</span>";
+          }
+        } else {
+          b.textContent = item.label;
+        }
+        b.dataset.special = item.special || "";
+        b.dataset.key = item.key || "";
+        r.appendChild(b);
+      });
+      kb.appendChild(r);
+    });
+  }
+  renderKb();
+
+  function onKey(itemSpecial, itemKey) {
+    if (itemSpecial === "bksp") { backspace(); return; }
+    if (itemSpecial === "enter") { hitEnter(); return; }
+    if (itemSpecial === "space") { typeInto(" "); return; }
+    if (itemSpecial === "tab") { typeInto("\t"); return; }
+    if (itemSpecial === "esc") { addr.blur(); return; }
+    if (itemSpecial === "shift") { shift = !shift; renderKb(); return; }
+    if (itemSpecial === "caps") { caps = !caps; renderKb(); return; }
+    if (itemSpecial === "alt") { alt = !alt; renderKb(); return; }
+    if (itemSpecial === "left" || itemSpecial === "right") {
+      const el = document.activeElement && document.activeElement.tagName === "INPUT" ? document.activeElement : lastField;
+      if (el) {
+        el.focus();
+        const pos = el.selectionStart ?? el.value.length;
+        const n = itemSpecial === "left" ? Math.max(0, pos - 1) : Math.min(el.value.length, pos + 1);
+        try { el.setSelectionRange(n, n); } catch (e) {}
+      }
+      return;
+    }
+    if (itemKey) {
+      typeInto(letterFor(itemKey));
+      if (shift) { shift = false; renderKb(); }
+    }
+  }
+
+  kb.addEventListener("pointerdown", (e) => {
+    const b = e.target.closest(".key");
+    if (!b) return;
+    e.preventDefault(); // keep address bar focused (don't blur)
+    b.classList.add("down");
+    onKey(b.dataset.special, b.dataset.key);
+  });
+  kb.addEventListener("pointerup", (e) => {
+    const b = e.target.closest(".key");
+    if (b) b.classList.remove("down");
+  });
+  kb.addEventListener("pointerleave", (e) => {
+    const b = e.target.closest(".key");
+    if (b) b.classList.remove("down");
+  });
+
+  /* physical keyboard also works natively on the focused field.
+     Map Alt (AltGr / Option) as Polish letters when address is focused. */
+  addr.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") return; // form submit
+    if ((e.altKey || e.ctrlKey) && !e.metaKey && POLISH[e.key.toLowerCase()]) {
+      e.preventDefault();
+      const ch = e.shiftKey ? POLISH[e.key.toLowerCase()].toUpperCase() : POLISH[e.key.toLowerCase()];
+      typeInto(ch);
+    }
+  });
+
+  /* ---------- cursor + trackpad ---------- */
+  let cx = 40, cy = 40;
+  let cursorVisible = false;
+
+  function placeCursor() {
+    const w = screen.clientWidth, h = screen.clientHeight;
+    cx = Math.max(0, Math.min(w - 2, cx));
+    cy = Math.max(0, Math.min(h - 2, cy));
+    cursorEl.style.left = cx + "px";
+    cursorEl.style.top = cy + "px";
+    cursorEl.classList.add("show");
+    cursorVisible = true;
+  }
+
+  function hideCursorSoon() {
+    /* keep visible while using trackpad; real mouse uses it too over the screen */
+  }
+
+  function pointFromCursor() {
+    const r = screen.getBoundingClientRect();
+    return { x: r.left + cx, y: r.top + cy };
+  }
+
+  function elementUnderCursor() {
+    cursorEl.style.display = "none";
+    const p = pointFromCursor();
+    const el = document.elementFromPoint(p.x, p.y);
+    cursorEl.style.display = "";
+    return el;
+  }
+
+  function clickAtCursor() {
+    const el = elementUnderCursor();
+    if (!el) return;
+    if (el === frame || el.closest && el.closest("#frame") || el.tagName === "IFRAME") {
+      try { frame.contentWindow && frame.contentWindow.focus(); } catch (e) {}
+      frame.focus();
+      return;
+    }
+    if (typeof el.focus === "function" && el.matches && el.matches("input, textarea, button, a, select, [tabindex]")) {
+      el.focus();
+    }
+    const p = pointFromCursor();
+    const opts = { bubbles: true, cancelable: true, view: window, clientX: p.x, clientY: p.y };
+    el.dispatchEvent(new PointerEvent("pointerdown", opts));
+    el.dispatchEvent(new MouseEvent("mousedown", opts));
+    el.dispatchEvent(new PointerEvent("pointerup", opts));
+    el.dispatchEvent(new MouseEvent("mouseup", opts));
+    el.dispatchEvent(new MouseEvent("click", opts));
+  }
+
+  function scrollAtCursor(dy, dx) {
+    const el = elementUnderCursor();
+    if (el && (el === frame || el.tagName === "IFRAME")) {
+      try { frame.contentWindow.scrollBy(dx || 0, dy); return; } catch (e) { /* blocked */ }
+      return;
+    }
+    let node = el;
+    while (node && node !== screen) {
+      const st = node.scrollHeight && node.clientHeight && (node.scrollHeight - node.clientHeight > 2);
+      const xst = node.scrollWidth && node.clientWidth && (node.scrollWidth - node.clientWidth > 2);
+      if (st || xst) { node.scrollBy({ top: dy, left: dx || 0, behavior: "auto" }); return; }
+      node = node.parentElement;
+    }
+  }
+
+  /* real mouse over the screen moves the fake cursor too */
+  screen.addEventListener("pointermove", (e) => {
+    if (e.pointerType === "touch") return;
+    if (e.target === pad || scrollStrip.contains(e.target)) return;
+    const r = screen.getBoundingClientRect();
+    cx = e.clientX - r.left;
+    cy = e.clientY - r.top;
+    placeCursor();
+  }, true);
+
+  /* Trackpad state */
+  const pointers = new Map();
+  let padMode = null; // "move" | "scroll" | "pending"
+  let lastTap = 0;
+  let moved = false;
+  let startAvg = null;
+
+  function avgPointers() {
+    let x = 0, y = 0, n = 0;
+    pointers.forEach((p) => { x += p.x; y += p.y; n++; });
+    return n ? { x: x / n, y: y / n } : null;
+  }
+
+  pad.addEventListener("pointerdown", (e) => {
+    pad.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    pad.classList.add("held");
+    moved = false;
+    startAvg = avgPointers();
+    padMode = pointers.size >= 2 ? "scroll" : "pending";
+    placeCursor();
+    e.preventDefault();
+  });
+
+  pad.addEventListener("pointermove", (e) => {
+    if (!pointers.has(e.pointerId)) return;
+    const prev = pointers.get(e.pointerId);
+    const dx = e.clientX - prev.x;
+    const dy = e.clientY - prev.y;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size >= 2) {
+      padMode = "scroll";
+      // use average delta of this pointer only approximately
+      scrollAtCursor(-dy * 1.6, -dx * 1.2);
+      moved = true;
+      return;
+    }
+    if (Math.abs(dx) + Math.abs(dy) > 2) {
+      padMode = "move";
+      moved = true;
+      cx += dx * 1.35;
+      cy += dy * 1.35;
+      placeCursor();
+    }
+  });
+
+  function padUp(e) {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId);
+    if (pointers.size === 0) {
+      pad.classList.remove("held");
+      if (padMode !== "scroll" && !moved) {
+        const now = Date.now();
+        clickAtCursor();
+        lastTap = now;
+      }
+      padMode = null;
+    }
+  }
+  pad.addEventListener("pointerup", padUp);
+  pad.addEventListener("pointercancel", padUp);
+
+  pad.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    scrollAtCursor(e.deltaY, e.deltaX);
+  }, { passive: false });
+
+  let scrollLastY = null;
+  scrollStrip.addEventListener("pointerdown", (e) => {
+    scrollStrip.setPointerCapture(e.pointerId);
+    scrollLastY = e.clientY;
+    e.preventDefault();
+  });
+  scrollStrip.addEventListener("pointermove", (e) => {
+    if (scrollLastY == null) return;
+    const dy = e.clientY - scrollLastY;
+    scrollLastY = e.clientY;
+    scrollAtCursor(dy * 2, 0);
+  });
+  scrollStrip.addEventListener("pointerup", () => { scrollLastY = null; });
+  scrollStrip.addEventListener("pointercancel", () => { scrollLastY = null; });
+
+  /* keyboard arrows can also nudge cursor when address is not typing... skip, keep simple */
+
+  placeCursor();
+})();
+</script>
+</body>
+</html>

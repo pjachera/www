@@ -158,8 +158,41 @@
     border: 0; outline: 0; background: transparent;
     color: #eef0f4; font-size: 16px;
     padding: 0 8px 0 0;
+    cursor: text;
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
+    pointer-events: auto;
   }
   #addr::placeholder { color: #6d7380; font-size: 13px; }
+  .paste-btn {
+    height: 26px; border: 0; border-radius: 13px;
+    background: #2b3544; color: #cfe8ff;
+    font: 600 12px/26px system-ui, sans-serif;
+    padding: 0 10px; cursor: pointer; white-space: nowrap;
+    flex: 0 0 auto; margin-right: 2px;
+  }
+  .paste-btn:hover { filter: brightness(1.08); }
+  #pasteHint {
+    display: none;
+    margin: 0 8px 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #2b3544;
+    color: #fff;
+    font-size: 12px;
+  }
+  #pasteHint.show { display: block; }
+  .iframe-tip {
+    position: absolute; left: 8px; right: 8px; bottom: 8px;
+    display: none;
+    z-index: 4;
+    background: rgba(20,22,28,.92); color: #fff;
+    border-radius: 10px; padding: 8px 10px;
+    font-size: 12px;
+    pointer-events: none;
+  }
+  .iframe-tip.show { display: block; }
   .go, .open-ext {
     height: 26px; border: 0; border-radius: 13px;
     font: 600 12px/26px system-ui, sans-serif;
@@ -185,14 +218,21 @@
   }
   .chip:hover { background: #262c36; color: #fff; }
 
-  .view { flex: 1 1 auto; min-height: 0; position: relative; background: #fff; }
-  #frame { width: 100%; height: 100%; border: 0; background: #fff; display: block; }
+  .view {
+    flex: 1 1 auto; min-height: 0; position: relative; background: #fff;
+    pointer-events: auto; touch-action: auto; z-index: 1;
+  }
+  #frame {
+    width: 100%; height: 100%; border: 0; background: #fff; display: block;
+    pointer-events: auto; touch-action: auto; position: relative; z-index: 0;
+  }
   .overlay {
     position: absolute; inset: 0;
     display: none; align-items: center; justify-content: center;
     padding: 16px; z-index: 3; text-align: center;
+    pointer-events: none;
   }
-  .overlay.show { display: flex; }
+  .overlay.show { display: flex; pointer-events: auto; }
   #home {
     background: linear-gradient(180deg, #f4f6fa, #e6eaf1);
     color: #1a1a1a;
@@ -233,12 +273,13 @@
 
   .cursor {
     position: absolute; left: 0; top: 0; width: 18px; height: 22px;
-    pointer-events: none !important; z-index: 80;
+    pointer-events: none !important;
+    z-index: 4;
     transform: translate(-2px, -1px);
     filter: drop-shadow(0 1px 1px rgba(0,0,0,.65));
     display: none;
   }
-  .cursor.show { display: block; }
+  .cursor.show { display: block; pointer-events: none !important; }
 
   .hinge {
     flex: 0 0 8px;
@@ -389,7 +430,7 @@
     <div class="lid">
       <span class="dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></span>
       <span>Mini PC</span>
-      <span style="letter-spacing:0;text-transform:none;opacity:.7">v2</span>
+      <span style="letter-spacing:0;text-transform:none;opacity:.7">v3</span>
     </div>
     <div class="bezel">
       <div class="screen" id="screen">
@@ -406,6 +447,7 @@
               <button class="tool" id="btnReload" type="button" title="Odśwież" aria-label="Odśwież">↻</button>
               <form class="addr-wrap" id="addrForm" action="#" method="get">
                 <input id="addr" type="text" spellcheck="false" autocorrect="off" autocapitalize="none" autocomplete="off" placeholder="Wpisz adres lub szukaj w sieci" inputmode="url">
+                <button class="paste-btn" id="btnPaste" type="button" title="Wklej link">Wklej</button>
                 <button class="go" id="btnGo" type="submit">Idź</button>
               </form>
               <button class="open-ext" id="btnExt" type="button" title="Otwórz w nowej karcie">
@@ -418,9 +460,11 @@
               <button class="chip" type="button" data-url="https://pjachera.github.io/www/blisterscan/">BlisterScan</button>
               <button class="chip" type="button" data-url="https://example.com/">example.com</button>
             </div>
+            <div id="pasteHint">Naciśnij Ctrl+V</div>
           </div>
           <div class="view">
-            <iframe id="frame" title="Strona" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <iframe id="frame" title="Strona" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+            <div class="iframe-tip" id="iframeTip">Kliknij i przewiń bezpośrednio na stronie.</div>
             <div class="overlay show" id="home">
               <div class="card">
                 <h2>Witaj w Mini PC</h2>
@@ -441,6 +485,7 @@
         </section>
         <div class="taskbar">
           <button class="tb-app" type="button" id="tbBrowser">🌐 Przeglądarka</button>
+          <button class="tb-app" type="button" id="tbPad" aria-pressed="false" title="Kursor z trackpada jest wyłączony — użyj myszy na stronie">Trackpad: wył.</button>
           <div class="clock" id="clock">00:00</div>
         </div>
         <svg class="cursor" id="cursor" viewBox="0 0 18 22" aria-hidden="true">
@@ -605,19 +650,14 @@
 
     var gen = ++loadGen;
     var knownBlocked = isBlockedUrl(url);
-    if (knownBlocked) {
-      showBlocked(true, url);
+    // Overlay only when the site is known to block iframes — never cover a working page.
+    showBlocked(!!knownBlocked, url);
+    if (!knownBlocked) {
+      try { frame.src = url; } catch (e) { frame.setAttribute("src", url); }
     } else {
-      showBlocked(false);
+      try { frame.removeAttribute("src"); } catch (e) {}
     }
-    try { frame.src = url; } catch (e) { frame.setAttribute("src", url); }
-
-    loadTimer = setTimeout(function () {
-      if (gen !== loadGen) return;
-      if (knownBlocked) { showBlocked(true, url); return; }
-      // No load event after 2s — likely blocked or failed.
-      showBlocked(true, url);
-    }, 2000);
+    if (loadTimer) { clearTimeout(loadTimer); loadTimer = null; }
     renderTabs();
   }
 
@@ -689,6 +729,72 @@
   renderTabs();
   showHome(true);
 
+  /* ---------- paste links into the address bar ---------- */
+  function looksLikeUrl(raw) {
+    var q = String(raw || "").trim();
+    if (!q) return false;
+    if (/^https?:\/\//i.test(q)) return true;
+    if (/^([\w-]+\.)+[\w-]{2,}(:\d+)?([/?#].*)?$/i.test(q)) return true;
+    if (/^localhost(:\d+)?([/?#].*)?$/i.test(q)) return true;
+    return false;
+  }
+
+  function extractPasted(raw) {
+    var text = String(raw || "").trim();
+    var m = text.match(/https?:\/\/[^\s]+/i);
+    if (m) return m[0].replace(/[),.;]+$/, "");
+    return text.replace(/^\s+|\s+$/g, "");
+  }
+
+  var pasteHintTimer = null;
+  function showPasteHint(msg) {
+    var el = $("pasteHint");
+    el.textContent = msg || "Naciśnij Ctrl+V";
+    el.classList.add("show");
+    if (pasteHintTimer) clearTimeout(pasteHintTimer);
+    pasteHintTimer = setTimeout(function () { el.classList.remove("show"); }, 4000);
+  }
+
+  function applyPastedText(raw) {
+    var text = extractPasted(raw);
+    if (!text) return;
+    addr.focus();
+    addr.value = text;
+    try { addr.setSelectionRange(text.length, text.length); } catch (e) {}
+    addr.dispatchEvent(new Event("input", { bubbles: true }));
+    if (looksLikeUrl(text)) navigate(toUrl(text));
+  }
+
+  function pasteFromClipboard() {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(function (text) {
+        if (text) applyPastedText(text);
+        else { showPasteHint("Naciśnij Ctrl+V"); addr.focus(); }
+      }).catch(function () {
+        showPasteHint("Naciśnij Ctrl+V");
+        addr.focus();
+      });
+      return;
+    }
+    showPasteHint("Naciśnij Ctrl+V");
+    addr.focus();
+  }
+
+  $("btnPaste").addEventListener("click", function (e) {
+    e.preventDefault();
+    pasteFromClipboard();
+  });
+
+  document.addEventListener("paste", function (e) {
+    var text = "";
+    try {
+      text = (e.clipboardData || window.clipboardData).getData("text/plain") || "";
+    } catch (err) {}
+    if (!text) return;
+    e.preventDefault();
+    applyPastedText(text);
+  }, true);
+
   /* ---------- virtual keyboard types into the address bar ---------- */
   function typeInto(text) {
     addr.focus();
@@ -747,7 +853,7 @@
     [
       { label:"Alt  PL", wide:"wider", special:"alt" },
       { label:"", wide:"space", special:"space" },
-      { label:"Alt  PL", wide:"wider", special:"alt" },
+      { label:"Wklej", wide:"wider", special:"paste" },
       { label:"←", special:"left" },
       { label:"→", special:"right" }
     ]
@@ -805,6 +911,7 @@
   function onKey(special, key) {
     if (special === "bksp") { backspace(); return; }
     if (special === "enter") { hitEnter(); return; }
+    if (special === "paste") { pasteFromClipboard(); return; }
     if (special === "space") { typeInto(" "); return; }
     if (special === "tab") { typeInto("www."); return; }
     if (special === "esc") { addr.value = ""; addr.focus(); return; }
@@ -840,17 +947,41 @@
   kb.addEventListener("pointerleave", keyUp);
 
   addr.addEventListener("keydown", function (e) {
-    if ((e.altKey) && !e.metaKey && POLISH[e.key.toLowerCase()]) {
+    // Never block clipboard shortcuts (Ctrl/Cmd+V, C, X, A).
+    if (e.ctrlKey || e.metaKey) return;
+    if ((e.altKey) && POLISH[e.key.toLowerCase()]) {
       e.preventDefault();
       var ch = e.shiftKey ? POLISH[e.key.toLowerCase()].toUpperCase() : POLISH[e.key.toLowerCase()];
       typeInto(ch);
     }
   });
 
-  /* ---------- fake cursor + trackpad ---------- */
+  /* ---------- optional fake cursor + trackpad (off by default so the mouse can use the page) ---------- */
   var cx = 80, cy = 80;
+  var padEnabled = false;
+  var iframeTipTimer = null;
+
+  function setPadEnabled(on) {
+    padEnabled = !!on;
+    var btn = $("tbPad");
+    btn.setAttribute("aria-pressed", padEnabled ? "true" : "false");
+    btn.textContent = padEnabled ? "Trackpad: wł." : "Trackpad: wył.";
+    btn.title = padEnabled
+      ? "Kursor z trackpada jest włączony"
+      : "Kursor z trackpada jest wyłączony — klikaj i przewijaj bezpośrednio na stronie";
+    if (!padEnabled) cursorEl.classList.remove("show");
+  }
+  $("tbPad").addEventListener("click", function () { setPadEnabled(!padEnabled); });
+
+  function showIframeTip() {
+    var tip = $("iframeTip");
+    tip.classList.add("show");
+    if (iframeTipTimer) clearTimeout(iframeTipTimer);
+    iframeTipTimer = setTimeout(function () { tip.classList.remove("show"); }, 2500);
+  }
 
   function placeCursor() {
+    if (!padEnabled) { cursorEl.classList.remove("show"); return; }
     var w = screenEl.clientWidth, h = screenEl.clientHeight;
     if (w < 2 || h < 2) return;
     cx = Math.max(0, Math.min(w - 2, cx));
@@ -881,6 +1012,7 @@
     if (!el) return;
     if (el.tagName === "IFRAME" || el === frame) {
       try { frame.focus(); } catch (e) {}
+      showIframeTip();
       return;
     }
     if (el.matches && el.matches("input, textarea, button, a, select, [tabindex]")) {
@@ -899,7 +1031,8 @@
     dx = dx || 0;
     var el = elementUnderCursor();
     if (el && (el === frame || el.tagName === "IFRAME")) {
-      try { frame.contentWindow.scrollBy(dx, dy); } catch (e) {}
+      try { frame.contentWindow.scrollBy(dx, dy); return; } catch (e) {}
+      showIframeTip();
       return;
     }
     var node = el;
@@ -912,21 +1045,15 @@
     }
   }
 
-  screenEl.addEventListener("pointermove", function (e) {
-    if (e.pointerType === "touch") return;
-    if (e.target === pad || (scrollStrip && scrollStrip.contains(e.target))) return;
-    var r = screenEl.getBoundingClientRect();
-    cx = e.clientX - r.left;
-    cy = e.clientY - r.top;
-    placeCursor();
-  }, true);
-
   var pointers = {};
   var pointerCount = 0;
   var padMode = null;
   var movedDist = 0;
 
   pad.addEventListener("pointerdown", function (e) {
+    if (!padEnabled) {
+      setPadEnabled(true);
+    }
     try { pad.setPointerCapture(e.pointerId); } catch (err) {}
     pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
     pointerCount++;
@@ -991,8 +1118,8 @@
   scrollStrip.addEventListener("pointerup", scrollEnd);
   scrollStrip.addEventListener("pointercancel", scrollEnd);
 
-  placeCursor();
-  window.addEventListener("resize", placeCursor);
+  setPadEnabled(false);
+  window.addEventListener("resize", function () { if (padEnabled) placeCursor(); });
 })();
 </script>
 </body>

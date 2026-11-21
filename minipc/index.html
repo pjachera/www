@@ -5,297 +5,64 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#16181c">
+<meta name="theme-color" content="#14161b">
 <title>Mini PC</title>
 <style>
-  :root {
-    --key: #2c3038;
-    --key-hi: #3c414c;
-    --key-tx: #eef0f4;
-    --accent: #5eb0ff;
-    --good: #7ee0b0;
-  }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0;
     width: 100%; height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
-    background: #08090b;
+    background: #14161b;
     color: #eef0f4;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
-  body {
+  body, .pc {
     width: 100vw;
     height: 100vh;
     height: 100dvh;
   }
   .pc {
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    max-width: 100vw;
-    max-height: 100dvh;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
-    background:
-      linear-gradient(180deg, #2e323a 0%, #1c1f25 14%, #14161b 100%);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
-  }
-  .lid {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 22px;
-    padding: 0 8px 4px;
-    font-size: 11px;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: #8d93a0;
-  }
-  .lid .dots { display: flex; gap: 6px; }
-  .lid .dot { width: 8px; height: 8px; border-radius: 50%; background: #3a3e46; }
-  .lid .dot.r { background: #ff6b6b; }
-  .lid .dot.y { background: #e6c15a; }
-  .lid .dot.g { background: #62c08a; }
-
-  .bezel {
-    flex: 65 1 0;
-    min-height: 0;
-    background: #0a0b0d;
-    border-radius: 12px;
-    padding: 7px;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 0 0 1px rgba(0,0,0,.5);
-    display: flex;
-    flex-direction: column;
+    padding: max(4px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    background: linear-gradient(180deg, #2e323a 0%, #1c1f25 16%, #14161b 100%);
   }
   .screen {
-    flex: 1 1 auto;
+    flex: 68 1 0;
     min-height: 0;
     position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    background:
-      radial-gradient(1200px 480px at 15% -10%, #3a6aa5 0%, transparent 50%),
-      radial-gradient(800px 400px at 110% 10%, #5a3d8c 0%, transparent 45%),
-      linear-gradient(160deg, #173155 0%, #0c1a30 55%, #14243c 100%);
-  }
-
-  .window {
-    position: absolute;
-    inset: 8px 8px 40px 8px;
-    background: #101318;
     border-radius: 10px;
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 16px 40px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.06);
-    z-index: 2;
-  }
-  .win-title {
-    flex: 0 0 26px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 10px;
-    background: #1b1f27;
-    font-size: 12px;
-    color: #c5c9d2;
-  }
-  .win-title .traffic { display: flex; gap: 5px; }
-  .win-title .traffic i {
-    width: 8px; height: 8px; border-radius: 50%; display: block; background: #3e4450;
-  }
-  .chrome {
-    flex: 0 0 auto;
-    background: #1a1e26;
-    border-bottom: 1px solid rgba(255,255,255,.06);
-  }
-  .tabs {
-    display: flex; align-items: flex-end; gap: 2px;
-    padding: 4px 6px 0; min-height: 26px; overflow: hidden;
-  }
-  .tab {
-    max-width: 180px; min-width: 90px; flex: 0 1 auto;
-    height: 24px; border: 0; border-radius: 7px 7px 0 0;
-    background: transparent; color: #9aa0ab;
-    font: 12px/24px system-ui, sans-serif;
-    padding: 0 10px; text-align: left;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .tab.on { background: #252a33; color: #fff; }
-  .tab-add {
-    width: 26px; flex: 0 0 26px; height: 22px; margin: 0 0 1px 4px;
-    border: 0; border-radius: 6px; background: transparent; color: #9aa0ab;
-    font-size: 16px; line-height: 20px;
-  }
-  .tab-add:hover, .tab:hover { background: #2a303a; color: #fff; }
-  .nav {
-    display: flex; align-items: center; gap: 6px;
-    padding: 6px 8px 8px;
-  }
-  .nav button.tool {
-    width: 30px; height: 30px; flex: 0 0 30px; border: 0; border-radius: 8px;
-    background: transparent; color: #d5d8df; font-size: 16px;
-    display: grid; place-items: center;
-  }
-  .nav button.tool:disabled { opacity: .35; }
-  .nav button.tool:hover:not(:disabled) { background: #2c313b; }
-  .addr-wrap {
-    flex: 1; min-width: 0; height: 32px;
-    display: flex; align-items: center;
-    background: #0e1014;
-    border: 1px solid #2c313b;
-    border-radius: 16px;
-    padding: 0 4px 0 10px;
-  }
-  .addr-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(94,176,255,.22); }
-  #addr {
-    flex: 1; min-width: 0; height: 30px;
-    border: 0; outline: 0; background: transparent;
-    color: #eef0f4; font-size: 16px;
-    padding: 0 8px 0 0;
-    cursor: text;
-    user-select: text;
-    -webkit-user-select: text;
-    -webkit-touch-callout: default;
-    pointer-events: auto;
-  }
-  #addr::placeholder { color: #6d7380; font-size: 13px; }
-  .paste-btn {
-    height: 26px; border: 0; border-radius: 13px;
-    background: #2b3544; color: #cfe8ff;
-    font: 600 12px/26px system-ui, sans-serif;
-    padding: 0 10px; cursor: pointer; white-space: nowrap;
-    flex: 0 0 auto; margin-right: 2px;
-  }
-  .paste-btn:hover { filter: brightness(1.08); }
-  #pasteHint {
-    display: none;
-    margin: 0 8px 6px;
-    padding: 6px 10px;
-    border-radius: 8px;
-    background: #2b3544;
-    color: #fff;
-    font-size: 12px;
-  }
-  #pasteHint.show { display: block; }
-  .iframe-tip {
-    position: absolute; left: 8px; right: 8px; bottom: 8px;
-    display: none;
-    z-index: 4;
-    background: rgba(20,22,28,.92); color: #fff;
-    border-radius: 10px; padding: 8px 10px;
-    font-size: 12px;
-    pointer-events: none;
-  }
-  .iframe-tip.show { display: block; }
-  .go, .open-ext {
-    height: 26px; border: 0; border-radius: 13px;
-    font: 600 12px/26px system-ui, sans-serif;
-    padding: 0 10px; cursor: pointer; white-space: nowrap;
-  }
-  .go { background: #2b3544; color: #d6e8ff; }
-  .open-ext {
-    background: linear-gradient(180deg, #4ea2ff, #2b7fe0);
-    color: #fff; flex: 0 0 auto;
-    box-shadow: 0 1px 3px rgba(0,0,0,.3);
-  }
-  .open-ext .short { display: none; }
-  .quick {
-    display: flex; gap: 6px; padding: 0 8px 7px; overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .quick::-webkit-scrollbar { display: none; }
-  .chip {
-    flex: 0 0 auto; height: 24px; padding: 0 10px;
-    border: 1px solid #333944; border-radius: 12px;
-    background: #1a1e26; color: #c9ced8;
-    font: 12px/22px system-ui, sans-serif; cursor: pointer;
-  }
-  .chip:hover { background: #262c36; color: #fff; }
-
-  .view {
-    flex: 1 1 auto; min-height: 0; position: relative; background: #fff;
-    pointer-events: auto; touch-action: auto; z-index: 1;
+    background: #000;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 0 0 1px rgba(0,0,0,.45);
   }
   #frame {
-    width: 100%; height: 100%; border: 0; background: #fff; display: block;
-    pointer-events: auto; touch-action: auto; position: relative; z-index: 0;
+    width: 100%; height: 100%;
+    border: 0; display: block; background: #000;
+    pointer-events: auto; touch-action: auto;
+    position: relative; z-index: 0;
   }
-  .overlay {
-    position: absolute; inset: 0;
-    display: none; align-items: center; justify-content: center;
-    padding: 16px; z-index: 3; text-align: center;
-    pointer-events: none;
-  }
-  .overlay.show { display: flex; pointer-events: auto; }
-  #home {
-    background: linear-gradient(180deg, #f4f6fa, #e6eaf1);
-    color: #1a1a1a;
-  }
-  #blocked {
-    background: rgba(12,16,24,.94);
-    color: #fff;
-  }
-  .overlay .card { max-width: 420px; }
-  .overlay h2 { margin: 0 0 8px; font-size: clamp(18px, 2.4vh, 24px); }
-  .overlay p { margin: 0 0 16px; font-size: clamp(13px, 1.6vh, 16px); line-height: 1.45; color: inherit; opacity: .9; }
-  #home .chip {
-    background: #1b2430; color: #fff; border-color: #1b2430;
-    height: 32px; padding: 0 14px; font-size: 13px; line-height: 30px; margin: 0 4px 6px;
-  }
-  #blocked .big {
-    display: inline-block; height: 44px; padding: 0 22px;
-    border: 0; border-radius: 22px;
-    background: linear-gradient(180deg, #4ea2ff, #2b7fe0);
-    color: #fff; font: 700 16px/44px system-ui, sans-serif;
-    box-shadow: 0 8px 20px rgba(0,80,180,.35); cursor: pointer;
-  }
-
-  .taskbar {
-    position: absolute; left: 0; right: 0; bottom: 0; height: 34px;
-    display: flex; align-items: center; padding: 0 10px; gap: 8px;
-    background: rgba(12,16,24,.82);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    z-index: 5;
-  }
-  .tb-app {
-    height: 24px; padding: 0 10px; border: 0; border-radius: 6px;
-    background: rgba(94,176,255,.22); color: #fff;
-    font: 12px system-ui, sans-serif; cursor: pointer;
-  }
-  .clock { margin-left: auto; font-size: 13px; font-variant-numeric: tabular-nums; }
-
   .cursor {
     position: absolute; left: 0; top: 0; width: 18px; height: 22px;
     pointer-events: none !important;
-    z-index: 4;
+    z-index: 2;
     transform: translate(-2px, -1px);
     filter: drop-shadow(0 1px 1px rgba(0,0,0,.65));
     display: none;
   }
   .cursor.show { display: block; pointer-events: none !important; }
 
-  .hinge {
-    flex: 0 0 8px;
-    margin: 0 40px;
-    background: linear-gradient(180deg, #0f1114, #2a2d33 45%, #15171b);
-    border-radius: 0 0 8px 8px;
-  }
-
   .deck {
-    flex: 35 1 0;
+    flex: 32 1 0;
     min-height: 0;
     display: flex;
     flex-direction: row;
     align-items: stretch;
     gap: 12px;
-    padding: 8px 4px 2px;
+    padding: 8px 2px 2px;
     overflow: hidden;
   }
   .kb {
@@ -322,29 +89,20 @@
     height: 100%;
     border: 0;
     border-radius: 7px;
-    background: linear-gradient(180deg, var(--key-hi), var(--key));
-    color: var(--key-tx);
+    background: linear-gradient(180deg, #3c414c, #2c3038);
+    color: #eef0f4;
     box-shadow: 0 2px 0 #0d0f13, inset 0 1px 0 rgba(255,255,255,.08);
     font: 600 clamp(11px, 1.6vh, 16px)/1 system-ui, sans-serif;
     padding: 0;
     cursor: pointer;
-    position: relative;
   }
-  .key:active, .key.down {
-    transform: translateY(1px);
-    filter: brightness(.92);
-  }
+  .key:active, .key.down { transform: translateY(1px); filter: brightness(.92); }
   .key.wide { flex: 1.45 1 0; max-width: 88px; font-size: clamp(9px, 1.2vh, 12px); color: #b4b9c4; }
   .key.wider { flex: 1.9 1 0; max-width: 110px; font-size: clamp(9px, 1.2vh, 12px); color: #b4b9c4; }
   .key.space { flex: 6.2 1 0; max-width: none; }
-  .key.toggle.on {
-    background: linear-gradient(180deg, #4a90d9, #2f6fb4);
-    color: #fff;
-  }
-  .key .sub {
-    display: block; font-size: clamp(7px, .9vh, 9px); font-weight: 500; color: var(--good); margin-top: 1px;
-  }
-  .key.alt-mode { color: var(--good); }
+  .key.toggle.on { background: linear-gradient(180deg, #4a90d9, #2f6fb4); color: #fff; }
+  .key .sub { display: block; font-size: clamp(7px, .9vh, 9px); font-weight: 500; color: #7ee0b0; margin-top: 1px; }
+  .key.alt-mode { color: #7ee0b0; }
   .key.punct { font-size: clamp(16px, 2.2vh, 22px); font-weight: 700; }
 
   .pad-wrap {
@@ -361,21 +119,9 @@
     flex: 1 1 auto;
     min-width: 0;
     border-radius: 16px;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.05), transparent 40%),
-      #1a1c21;
+    background: linear-gradient(180deg, rgba(255,255,255,.05), transparent 40%), #1a1c21;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), inset 0 2px 8px rgba(0,0,0,.45);
     touch-action: none;
-    position: relative;
-    overflow: hidden;
-  }
-  .trackpad::after {
-    content: "Trackpad";
-    position: absolute; inset: 0;
-    display: grid; place-items: center;
-    font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
-    color: rgba(255,255,255,.2);
-    pointer-events: none;
   }
   .trackpad.held { background: #1e2127; }
   .scrollstrip {
@@ -390,18 +136,10 @@
     user-select: none;
   }
 
-  @media (max-width: 820px) {
-    .open-ext .full { display: none; }
-    .open-ext .short { display: inline; }
-    .tab { min-width: 64px; }
-  }
-
-  /* Phones in portrait: stack keyboard then centered trackpad */
   @media (orientation: portrait) and (max-width: 900px) {
-    .lid { height: 18px; padding-bottom: 2px; }
-    .bezel { flex: 52 1 0; }
+    .screen { flex: 58 1 0; }
     .deck {
-      flex: 48 1 0;
+      flex: 42 1 0;
       flex-direction: column;
       gap: 6px;
       padding: 6px 0 0;
@@ -416,89 +154,22 @@
       margin: 0 auto;
       padding: 0;
     }
-    .window { inset: 6px 6px 38px 6px; }
-  }
-
-  @media (max-height: 500px) {
-    .lid, .hinge { display: none; }
-    .quick { display: none; }
   }
 </style>
 </head>
 <body>
-  <div class="pc" id="pc">
-    <div class="lid">
-      <span class="dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></span>
-      <span>Mini PC</span>
-      <span style="letter-spacing:0;text-transform:none;opacity:.7">v3</span>
+  <div class="pc">
+    <div class="screen" id="screen">
+      <iframe id="frame" title="" src="https://jessica-fine-location-demanding.trycloudflare.com" allow="fullscreen"></iframe>
+      <svg class="cursor" id="cursor" viewBox="0 0 18 22" aria-hidden="true">
+        <path d="M1 1 L1 17 L5.5 13.2 L9.2 21 L12.2 19.6 L8.4 12 L14.5 11.6 Z" fill="#fff" stroke="#111" stroke-width="1.2" stroke-linejoin="round"/>
+      </svg>
     </div>
-    <div class="bezel">
-      <div class="screen" id="screen">
-        <section class="window" id="browserWin">
-          <div class="win-title">
-            <span class="traffic"><i></i><i></i><i></i></span>
-            <span id="winName">Przeglądarka</span>
-          </div>
-          <div class="chrome">
-            <div class="tabs" id="tabs"></div>
-            <div class="nav">
-              <button class="tool" id="btnBack" type="button" title="Wstecz" aria-label="Wstecz">←</button>
-              <button class="tool" id="btnFwd" type="button" title="Dalej" aria-label="Dalej">→</button>
-              <button class="tool" id="btnReload" type="button" title="Odśwież" aria-label="Odśwież">↻</button>
-              <form class="addr-wrap" id="addrForm" action="#" method="get">
-                <input id="addr" type="text" spellcheck="false" autocorrect="off" autocapitalize="none" autocomplete="off" placeholder="Wpisz adres lub szukaj w sieci" inputmode="url">
-                <button class="paste-btn" id="btnPaste" type="button" title="Wklej link">Wklej</button>
-                <button class="go" id="btnGo" type="submit">Idź</button>
-              </form>
-              <button class="open-ext" id="btnExt" type="button" title="Otwórz w nowej karcie">
-                <span class="full">Otwórz w nowej karcie ↗</span>
-                <span class="short">Nowa karta ↗</span>
-              </button>
-            </div>
-            <div class="quick">
-              <button class="chip" type="button" data-url="https://pl.m.wikipedia.org/">Wikipedia</button>
-              <button class="chip" type="button" data-url="https://pjachera.github.io/www/blisterscan/">BlisterScan</button>
-              <button class="chip" type="button" data-url="https://example.com/">example.com</button>
-            </div>
-            <div id="pasteHint">Naciśnij Ctrl+V</div>
-          </div>
-          <div class="view">
-            <iframe id="frame" title="Strona" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
-            <div class="iframe-tip" id="iframeTip">Kliknij i przewiń bezpośrednio na stronie.</div>
-            <div class="overlay show" id="home">
-              <div class="card">
-                <h2>Witaj w Mini PC</h2>
-                <p>Wpisz adres u góry albo kliknij skrót. Google, YouTube i Allegro blokują to okienko — wtedy naciśnij <strong>Otwórz w nowej karcie ↗</strong>.</p>
-                <button class="chip" type="button" data-url="https://pl.m.wikipedia.org/">Wikipedia</button>
-                <button class="chip" type="button" data-url="https://pjachera.github.io/www/blisterscan/">BlisterScan</button>
-                <button class="chip" type="button" data-url="https://example.com/">example.com</button>
-              </div>
-            </div>
-            <div class="overlay" id="blocked">
-              <div class="card">
-                <h2>Ta strona nie pozwala się tu otworzyć</h2>
-                <p id="blockedWhy">Możesz otworzyć ją w nowej karcie przeglądarki.</p>
-                <button class="big" type="button" id="blockedOpen">Otwórz w nowej karcie ↗</button>
-              </div>
-            </div>
-          </div>
-        </section>
-        <div class="taskbar">
-          <button class="tb-app" type="button" id="tbBrowser">🌐 Przeglądarka</button>
-          <button class="tb-app" type="button" id="tbPad" aria-pressed="false" title="Kursor z trackpada jest wyłączony — użyj myszy na stronie">Trackpad: wył.</button>
-          <div class="clock" id="clock">00:00</div>
-        </div>
-        <svg class="cursor" id="cursor" viewBox="0 0 18 22" aria-hidden="true">
-          <path d="M1 1 L1 17 L5.5 13.2 L9.2 21 L12.2 19.6 L8.4 12 L14.5 11.6 Z" fill="#fff" stroke="#111" stroke-width="1.2" stroke-linejoin="round"/>
-        </svg>
-      </div>
-    </div>
-    <div class="hinge"></div>
     <div class="deck">
       <div class="kb" id="kb"></div>
       <div class="pad-wrap">
         <div class="trackpad" id="pad" role="application" aria-label="Trackpad"></div>
-        <div class="scrollstrip" id="scroll" title="Przewijanie">↕</div>
+        <div class="scrollstrip" id="scroll">↕</div>
       </div>
     </div>
   </div>
@@ -508,327 +179,71 @@
   var $ = function (id) { return document.getElementById(id); };
   var screenEl = $("screen");
   var frame = $("frame");
-  var addr = $("addr");
-  var home = $("home");
-  var blocked = $("blocked");
   var cursorEl = $("cursor");
   var pad = $("pad");
   var scrollStrip = $("scroll");
-
   var POLISH = { a:"ą", c:"ć", e:"ę", l:"ł", n:"ń", o:"ó", s:"ś", x:"ź", z:"ż" };
 
-  var BLOCKED_HOSTS = [
-    "google.com","google.pl","youtube.com","youtu.be","allegro.pl",
-    "facebook.com","instagram.com","tiktok.com","x.com","twitter.com",
-    "github.com","duckduckgo.com"
-  ];
-
-  function tickClock() {
-    try {
-      $("clock").textContent = new Date().toLocaleTimeString("pl-PL", {
-        timeZone: "Europe/Warsaw", hour: "2-digit", minute: "2-digit"
-      });
-    } catch (e) {
-      var d = new Date();
-      $("clock").textContent = String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
-    }
-  }
-  tickClock();
-  setInterval(tickClock, 1000);
-
-  function hostOf(url) {
-    try { return new URL(url).hostname.toLowerCase().replace(/^www\./, ""); }
-    catch (e) { return ""; }
-  }
-
-  function isBlockedUrl(url) {
-    var h = hostOf(url);
-    if (!h) return false;
-    if (h.endsWith(".github.io")) return false;
-    for (var i = 0; i < BLOCKED_HOSTS.length; i++) {
-      var b = BLOCKED_HOSTS[i];
-      if (h === b || h.endsWith("." + b)) return true;
-    }
-    return false;
-  }
-
-  function toUrl(raw) {
-    var q = String(raw || "").trim();
-    if (!q) return "";
-    if (/^https?:\/\//i.test(q)) return q;
-    if (/^about:/i.test(q)) return q;
-    if (/^([\w-]+\.)+[\w-]{2,}(:\d+)?([/?#].*)?$/i.test(q) || /^localhost(:\d+)?([/?#].*)?$/i.test(q)) {
-      return "https://" + q;
-    }
-    // DDG html blocks iframes (X-Frame-Options: SAMEORIGIN). Bing search pages usually allow framing.
-    return "https://www.bing.com/search?q=" + encodeURIComponent(q);
-  }
-
-  function prettyTitle(url) {
-    var h = hostOf(url);
-    return h || "Karta";
-  }
-
-  var tabs = [];
-  var active = 0;
-  var loadTimer = null;
-  var loadGen = 0;
-
-  function current() { return tabs[active]; }
-
-  function renderTabs() {
-    var el = $("tabs");
-    el.textContent = "";
-    tabs.forEach(function (t, i) {
-      var b = document.createElement("button");
-      b.type = "button";
-      b.className = "tab" + (i === active ? " on" : "");
-      b.textContent = t.title;
-      b.addEventListener("click", function () { selectTab(i); });
-      el.appendChild(b);
-    });
-    var add = document.createElement("button");
-    add.type = "button";
-    add.className = "tab-add";
-    add.title = "Nowa karta";
-    add.textContent = "+";
-    add.addEventListener("click", function () {
-      tabs.push({ url: "", title: "Nowa karta", history: [], idx: -1 });
-      selectTab(tabs.length - 1);
-    });
-    el.appendChild(add);
-    var c = current();
-    $("btnBack").disabled = !c || c.idx <= 0;
-    $("btnFwd").disabled = !c || c.idx < 0 || c.idx >= c.history.length - 1;
-  }
-
-  function showHome(on) {
-    home.classList.toggle("show", !!on);
-    if (on) {
-      blocked.classList.remove("show");
-      try { frame.removeAttribute("src"); } catch (e) {}
-      addr.value = "";
-      $("winName").textContent = "Przeglądarka";
-    }
-  }
-
-  function showBlocked(on, url) {
-    blocked.classList.toggle("show", !!on);
-    if (on) {
-      home.classList.remove("show");
-      var why = $("blockedWhy");
-      var h = hostOf(url);
-      why.textContent = h
-        ? (h + " blokuje wbudowane okienko. Otwórz stronę w nowej karcie.")
-        : "Możesz otworzyć ją w nowej karcie przeglądarki.";
-    }
-  }
-
-  function navigate(url, opts) {
-    var push = !opts || opts.push !== false;
-    var t = current();
-    if (!t) return;
-    if (loadTimer) { clearTimeout(loadTimer); loadTimer = null; }
-    if (!url) {
-      t.url = ""; t.title = "Nowa karta";
-      if (push) { t.history = []; t.idx = -1; }
-      showBlocked(false);
-      showHome(true);
-      renderTabs();
+  function typeInto(text) {
+    var el = document.activeElement;
+    if (el && el !== document.body && el !== frame && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) {
+      var start = el.selectionStart != null ? el.selectionStart : (el.value || "").length;
+      var end = el.selectionEnd != null ? el.selectionEnd : start;
+      var v = el.value || "";
+      el.value = v.slice(0, start) + text + v.slice(end);
+      try { el.setSelectionRange(start + text.length, start + text.length); } catch (e) {}
+      el.dispatchEvent(new Event("input", { bubbles: true }));
       return;
     }
-    t.url = url;
-    t.title = prettyTitle(url);
-    if (push) {
-      t.history = t.history.slice(0, t.idx + 1);
-      t.history.push(url);
-      t.idx = t.history.length - 1;
-    }
-    addr.value = url;
-    $("winName").textContent = t.title;
-    home.classList.remove("show");
-
-    var gen = ++loadGen;
-    var knownBlocked = isBlockedUrl(url);
-    // Overlay only when the site is known to block iframes — never cover a working page.
-    showBlocked(!!knownBlocked, url);
-    if (!knownBlocked) {
-      try { frame.src = url; } catch (e) { frame.setAttribute("src", url); }
-    } else {
-      try { frame.removeAttribute("src"); } catch (e) {}
-    }
-    if (loadTimer) { clearTimeout(loadTimer); loadTimer = null; }
-    renderTabs();
-  }
-
-  function selectTab(i) {
-    active = i;
-    var t = current();
-    if (!t || !t.url) showHome(true);
-    else navigate(t.url, { push: false });
-    renderTabs();
-    addr.focus();
-  }
-
-  frame.addEventListener("load", function () {
-    if (loadTimer) { clearTimeout(loadTimer); loadTimer = null; }
-    var t = current();
-    if (!t || !t.url) return;
-    if (isBlockedUrl(t.url)) {
-      showBlocked(true, t.url);
-      return;
-    }
-    showBlocked(false);
     try {
       var doc = frame.contentDocument;
-      if (doc && doc.title) {
-        t.title = String(doc.title).trim().slice(0, 40) || t.title;
-        $("winName").textContent = t.title;
-        renderTabs();
+      var t = doc && doc.activeElement;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) {
+        var s = t.selectionStart != null ? t.selectionStart : (t.value || "").length;
+        var e2 = t.selectionEnd != null ? t.selectionEnd : s;
+        var v2 = t.value || "";
+        t.value = v2.slice(0, s) + text + v2.slice(e2);
+        try { t.setSelectionRange(s + text.length, s + text.length); } catch (e3) {}
+        t.dispatchEvent(new Event("input", { bubbles: true }));
       }
-    } catch (e) { /* cross-origin but visible — OK */ }
-  });
-
-  $("addrForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var url = toUrl(addr.value);
-    if (url) navigate(url);
-    return false;
-  });
-  $("btnBack").addEventListener("click", function () {
-    var t = current();
-    if (t && t.idx > 0) { t.idx--; navigate(t.history[t.idx], { push: false }); }
-  });
-  $("btnFwd").addEventListener("click", function () {
-    var t = current();
-    if (t && t.idx < t.history.length - 1) { t.idx++; navigate(t.history[t.idx], { push: false }); }
-  });
-  $("btnReload").addEventListener("click", function () {
-    var t = current();
-    if (t && t.url) {
-      var u = t.url;
-      frame.src = "about:blank";
-      setTimeout(function () { navigate(u, { push: false }); }, 40);
-    } else showHome(true);
-  });
-
-  function openExternal() {
-    var t = current();
-    var url = (t && t.url) || toUrl(addr.value);
-    if (url) window.open(url, "_blank", "noopener,noreferrer");
-  }
-  $("btnExt").addEventListener("click", openExternal);
-  $("blockedOpen").addEventListener("click", openExternal);
-
-  document.querySelectorAll("[data-url]").forEach(function (b) {
-    b.addEventListener("click", function () { navigate(b.getAttribute("data-url")); });
-  });
-  $("tbBrowser").addEventListener("click", function () { addr.focus(); });
-
-  tabs = [{ url: "", title: "Start", history: [], idx: -1 }];
-  renderTabs();
-  showHome(true);
-
-  /* ---------- paste links into the address bar ---------- */
-  function looksLikeUrl(raw) {
-    var q = String(raw || "").trim();
-    if (!q) return false;
-    if (/^https?:\/\//i.test(q)) return true;
-    if (/^([\w-]+\.)+[\w-]{2,}(:\d+)?([/?#].*)?$/i.test(q)) return true;
-    if (/^localhost(:\d+)?([/?#].*)?$/i.test(q)) return true;
-    return false;
-  }
-
-  function extractPasted(raw) {
-    var text = String(raw || "").trim();
-    var m = text.match(/https?:\/\/[^\s]+/i);
-    if (m) return m[0].replace(/[),.;]+$/, "");
-    return text.replace(/^\s+|\s+$/g, "");
-  }
-
-  var pasteHintTimer = null;
-  function showPasteHint(msg) {
-    var el = $("pasteHint");
-    el.textContent = msg || "Naciśnij Ctrl+V";
-    el.classList.add("show");
-    if (pasteHintTimer) clearTimeout(pasteHintTimer);
-    pasteHintTimer = setTimeout(function () { el.classList.remove("show"); }, 4000);
-  }
-
-  function applyPastedText(raw) {
-    var text = extractPasted(raw);
-    if (!text) return;
-    addr.focus();
-    addr.value = text;
-    try { addr.setSelectionRange(text.length, text.length); } catch (e) {}
-    addr.dispatchEvent(new Event("input", { bubbles: true }));
-    if (looksLikeUrl(text)) navigate(toUrl(text));
-  }
-
-  function pasteFromClipboard() {
-    if (navigator.clipboard && navigator.clipboard.readText) {
-      navigator.clipboard.readText().then(function (text) {
-        if (text) applyPastedText(text);
-        else { showPasteHint("Naciśnij Ctrl+V"); addr.focus(); }
-      }).catch(function () {
-        showPasteHint("Naciśnij Ctrl+V");
-        addr.focus();
-      });
-      return;
+    } catch (e) {
+      try { frame.focus(); } catch (e4) {}
     }
-    showPasteHint("Naciśnij Ctrl+V");
-    addr.focus();
-  }
-
-  $("btnPaste").addEventListener("click", function (e) {
-    e.preventDefault();
-    pasteFromClipboard();
-  });
-
-  document.addEventListener("paste", function (e) {
-    var text = "";
-    try {
-      text = (e.clipboardData || window.clipboardData).getData("text/plain") || "";
-    } catch (err) {}
-    if (!text) return;
-    e.preventDefault();
-    applyPastedText(text);
-  }, true);
-
-  /* ---------- virtual keyboard types into the address bar ---------- */
-  function typeInto(text) {
-    addr.focus();
-    var start = addr.selectionStart != null ? addr.selectionStart : addr.value.length;
-    var end = addr.selectionEnd != null ? addr.selectionEnd : addr.value.length;
-    var v = addr.value || "";
-    addr.value = v.slice(0, start) + text + v.slice(end);
-    var pos = start + text.length;
-    try { addr.setSelectionRange(pos, pos); } catch (e) {}
-    addr.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   function backspace() {
-    addr.focus();
-    var start = addr.selectionStart != null ? addr.selectionStart : addr.value.length;
-    var end = addr.selectionEnd != null ? addr.selectionEnd : addr.value.length;
-    var v = addr.value || "";
-    if (start !== end) {
-      addr.value = v.slice(0, start) + v.slice(end);
-      try { addr.setSelectionRange(start, start); } catch (e) {}
-    } else if (start > 0) {
-      addr.value = v.slice(0, start - 1) + v.slice(end);
-      try { addr.setSelectionRange(start - 1, start - 1); } catch (e) {}
+    var el = document.activeElement;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+      var start = el.selectionStart != null ? el.selectionStart : el.value.length;
+      var end = el.selectionEnd != null ? el.selectionEnd : start;
+      var v = el.value || "";
+      if (start !== end) {
+        el.value = v.slice(0, start) + v.slice(end);
+        try { el.setSelectionRange(start, start); } catch (e) {}
+      } else if (start > 0) {
+        el.value = v.slice(0, start - 1) + v.slice(end);
+        try { el.setSelectionRange(start - 1, start - 1); } catch (e) {}
+      }
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      return;
     }
-    addr.dispatchEvent(new Event("input", { bubbles: true }));
-  }
-
-  function hitEnter() {
-    addr.focus();
-    $("addrForm").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    try {
+      var doc = frame.contentDocument;
+      var t = doc && doc.activeElement;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) {
+        var s = t.selectionStart != null ? t.selectionStart : t.value.length;
+        var e2 = t.selectionEnd != null ? t.selectionEnd : s;
+        var v2 = t.value || "";
+        if (s !== e2) { t.value = v2.slice(0, s) + v2.slice(e2); try { t.setSelectionRange(s, s); } catch (e3) {} }
+        else if (s > 0) { t.value = v2.slice(0, s - 1) + v2.slice(e2); try { t.setSelectionRange(s - 1, s - 1); } catch (e3) {} }
+        t.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    } catch (e) {
+      try { frame.focus(); } catch (e4) {}
+    }
   }
 
   var shift = false, alt = false, caps = false;
-
   var ROWS = [
     [
       { label:"Esc", wide:"wide", special:"esc" },
@@ -853,7 +268,6 @@
     [
       { label:"Alt  PL", wide:"wider", special:"alt" },
       { label:"", wide:"space", special:"space" },
-      { label:"Wklej", wide:"wider", special:"paste" },
       { label:"←", special:"left" },
       { label:"→", special:"right" }
     ]
@@ -908,23 +322,26 @@
   }
   renderKb();
 
+  function moveCaret(dir) {
+    var el = document.activeElement;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+      var pos = el.selectionStart != null ? el.selectionStart : el.value.length;
+      var n = dir < 0 ? Math.max(0, pos - 1) : Math.min(el.value.length, pos + 1);
+      try { el.setSelectionRange(n, n); } catch (e) {}
+    }
+  }
+
   function onKey(special, key) {
     if (special === "bksp") { backspace(); return; }
-    if (special === "enter") { hitEnter(); return; }
-    if (special === "paste") { pasteFromClipboard(); return; }
+    if (special === "enter") { typeInto("\n"); return; }
     if (special === "space") { typeInto(" "); return; }
-    if (special === "tab") { typeInto("www."); return; }
-    if (special === "esc") { addr.value = ""; addr.focus(); return; }
+    if (special === "tab") { typeInto("\t"); return; }
+    if (special === "esc") { return; }
     if (special === "shift") { shift = !shift; renderKb(); return; }
     if (special === "caps") { caps = !caps; renderKb(); return; }
     if (special === "alt") { alt = !alt; renderKb(); return; }
-    if (special === "left" || special === "right") {
-      addr.focus();
-      var pos = addr.selectionStart != null ? addr.selectionStart : addr.value.length;
-      var n = special === "left" ? Math.max(0, pos - 1) : Math.min(addr.value.length, pos + 1);
-      try { addr.setSelectionRange(n, n); } catch (e) {}
-      return;
-    }
+    if (special === "left") { moveCaret(-1); return; }
+    if (special === "right") { moveCaret(1); return; }
     if (key) {
       typeInto(letterFor(key));
       if (shift) { shift = false; renderKb(); }
@@ -946,42 +363,9 @@
   kb.addEventListener("pointercancel", keyUp);
   kb.addEventListener("pointerleave", keyUp);
 
-  addr.addEventListener("keydown", function (e) {
-    // Never block clipboard shortcuts (Ctrl/Cmd+V, C, X, A).
-    if (e.ctrlKey || e.metaKey) return;
-    if ((e.altKey) && POLISH[e.key.toLowerCase()]) {
-      e.preventDefault();
-      var ch = e.shiftKey ? POLISH[e.key.toLowerCase()].toUpperCase() : POLISH[e.key.toLowerCase()];
-      typeInto(ch);
-    }
-  });
-
-  /* ---------- optional fake cursor + trackpad (off by default so the mouse can use the page) ---------- */
   var cx = 80, cy = 80;
-  var padEnabled = false;
-  var iframeTipTimer = null;
-
-  function setPadEnabled(on) {
-    padEnabled = !!on;
-    var btn = $("tbPad");
-    btn.setAttribute("aria-pressed", padEnabled ? "true" : "false");
-    btn.textContent = padEnabled ? "Trackpad: wł." : "Trackpad: wył.";
-    btn.title = padEnabled
-      ? "Kursor z trackpada jest włączony"
-      : "Kursor z trackpada jest wyłączony — klikaj i przewijaj bezpośrednio na stronie";
-    if (!padEnabled) cursorEl.classList.remove("show");
-  }
-  $("tbPad").addEventListener("click", function () { setPadEnabled(!padEnabled); });
-
-  function showIframeTip() {
-    var tip = $("iframeTip");
-    tip.classList.add("show");
-    if (iframeTipTimer) clearTimeout(iframeTipTimer);
-    iframeTipTimer = setTimeout(function () { tip.classList.remove("show"); }, 2500);
-  }
 
   function placeCursor() {
-    if (!padEnabled) { cursorEl.classList.remove("show"); return; }
     var w = screenEl.clientWidth, h = screenEl.clientHeight;
     if (w < 2 || h < 2) return;
     cx = Math.max(0, Math.min(w - 2, cx));
@@ -997,13 +381,9 @@
   }
 
   function elementUnderCursor() {
-    // cursor already has pointer-events: none; keep it that way and also
-    // temporarily hide it from hit-testing in case a browser ignores the CSS.
-    var prev = cursorEl.style.pointerEvents;
     cursorEl.style.pointerEvents = "none";
     var p = pointFromCursor();
     var el = document.elementFromPoint(p.x, p.y);
-    cursorEl.style.pointerEvents = prev;
     return el;
   }
 
@@ -1012,7 +392,6 @@
     if (!el) return;
     if (el.tagName === "IFRAME" || el === frame) {
       try { frame.focus(); } catch (e) {}
-      showIframeTip();
       return;
     }
     if (el.matches && el.matches("input, textarea, button, a, select, [tabindex]")) {
@@ -1020,10 +399,6 @@
     }
     var p = pointFromCursor();
     var opts = { bubbles: true, cancelable: true, view: window, clientX: p.x, clientY: p.y, button: 0, buttons: 1 };
-    try { el.dispatchEvent(new PointerEvent("pointerdown", opts)); } catch (e) {}
-    try { el.dispatchEvent(new MouseEvent("mousedown", opts)); } catch (e) {}
-    try { el.dispatchEvent(new PointerEvent("pointerup", opts)); } catch (e) {}
-    try { el.dispatchEvent(new MouseEvent("mouseup", opts)); } catch (e) {}
     try { el.dispatchEvent(new MouseEvent("click", opts)); } catch (e) { try { el.click(); } catch (e2) {} }
   }
 
@@ -1031,12 +406,11 @@
     dx = dx || 0;
     var el = elementUnderCursor();
     if (el && (el === frame || el.tagName === "IFRAME")) {
-      try { frame.contentWindow.scrollBy(dx, dy); return; } catch (e) {}
-      showIframeTip();
+      try { frame.contentWindow.scrollBy(dx, dy); } catch (e) {}
       return;
     }
     var node = el;
-    while (node && node !== screenEl) {
+    while (node && node !== document.body) {
       if (node.scrollHeight - node.clientHeight > 2 || node.scrollWidth - node.clientWidth > 2) {
         node.scrollBy(dx, dy);
         return;
@@ -1051,9 +425,6 @@
   var movedDist = 0;
 
   pad.addEventListener("pointerdown", function (e) {
-    if (!padEnabled) {
-      setPadEnabled(true);
-    }
     try { pad.setPointerCapture(e.pointerId); } catch (err) {}
     pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
     pointerCount++;
@@ -1096,7 +467,6 @@
   }
   pad.addEventListener("pointerup", padUp);
   pad.addEventListener("pointercancel", padUp);
-
   pad.addEventListener("wheel", function (e) {
     e.preventDefault();
     scrollAtCursor(e.deltaY, e.deltaX);
@@ -1117,9 +487,6 @@
   function scrollEnd() { scrollLastY = null; }
   scrollStrip.addEventListener("pointerup", scrollEnd);
   scrollStrip.addEventListener("pointercancel", scrollEnd);
-
-  setPadEnabled(false);
-  window.addEventListener("resize", function () { if (padEnabled) placeCursor(); });
 })();
 </script>
 </body>

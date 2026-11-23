@@ -5,924 +5,902 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0b0b0d">
-  <title>Symulator Alarmowe SOS</title>
+  <title>Symulator zegarka</title>
   <style>
     :root {
-      --bg: #0b0b0d;
-      --red: #ff2d2d;
-      --red-deep: #b01010;
-      --green: #30d158;
-      --amber: #ffcc00;
-      --text: #f5f5f7;
-      --muted: #8e8e93;
-      --card: #16161a;
-      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --bg:#09090c; --red:#ff2d2d; --green:#30d158; --orange:#ff9f0a;
+      --pink:#ff375f; --blue:#64d2ff; --amber:#ffcc00;
+      --text:#f5f5f7; --muted:#8e8e93; --ease:cubic-bezier(.22,1,.36,1);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      min-height: 100%;
-      background: radial-gradient(ellipse at 50% 12%, #1c1c24 0%, var(--bg) 52%);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      -webkit-user-select: none; user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-tap-highlight-color: transparent;
-      overscroll-behavior: none;
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{
+      min-height:100%;background:radial-gradient(ellipse at 50% 8%,#22222c 0%,var(--bg) 55%);
+      color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+      -webkit-tap-highlight-color:transparent;overscroll-behavior:none;
     }
-    body {
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 12px 14px 36px;
+    body{min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding:10px 12px 32px}
+    .banner{
+      position:sticky;top:0;z-index:80;width:min(440px,100%);
+      padding:6px 10px;background:var(--amber);color:#1a1200;font-weight:800;font-size:11px;
+      letter-spacing:.04em;text-align:center;text-transform:uppercase;border-radius:8px;
+      box-shadow:0 0 0 2px rgba(255,204,0,.25);
     }
-    .banner {
-      position: sticky; top: 0; z-index: 80;
-      width: min(440px, 100%);
-      margin-bottom: 12px;
-      padding: 10px 14px;
-      background: var(--amber);
-      color: #1a1200;
-      font-weight: 800;
-      font-size: 13px;
-      letter-spacing: .04em;
-      text-align: center;
-      text-transform: uppercase;
-      border-radius: 10px;
-      box-shadow: 0 0 0 3px rgba(255,204,0,.25), 0 8px 24px rgba(0,0,0,.4);
+    .stage{display:flex;align-items:center;gap:10px;margin-top:12px}
+    .side-lab{width:72px;font-size:10px;line-height:1.3;color:var(--muted);text-align:center}
+    .side-lab b{display:block;color:#d0d0d6;font-size:11px;margin-bottom:2px}
+    .watch-wrap{display:flex;flex-direction:column;align-items:center}
+    .band{width:118px;background:linear-gradient(90deg,#141416,#2c2c32 42%,#1a1a1e)}
+    .band-top{height:40px;border-radius:10px 10px 0 0;-webkit-mask-image:repeating-linear-gradient(to bottom,#000 0 7px,transparent 7px 9px);mask-image:repeating-linear-gradient(to bottom,#000 0 7px,transparent 7px 9px)}
+    .band-bottom{height:48px;border-radius:0 0 10px 10px;-webkit-mask-image:repeating-linear-gradient(to bottom,transparent 0 2px,#000 2px 9px);mask-image:repeating-linear-gradient(to bottom,transparent 0 2px,#000 2px 9px)}
+    .case{
+      position:relative;width:272px;height:332px;
+      background:linear-gradient(155deg,#6a6a74 0%,#2e2e34 26%,#1a1a1e 68%,#0c0c10 100%);
+      border-radius:66px;
+      box-shadow:0 0 0 1px rgba(255,255,255,.14),0 1px 0 rgba(255,255,255,.22) inset,0 -10px 18px rgba(0,0,0,.5) inset,0 20px 44px rgba(0,0,0,.55);
     }
-    .hint { color: var(--muted); font-size: 13px; text-align: center; margin: 0 0 14px; line-height: 1.4; }
-    .watch-wrap { display: flex; flex-direction: column; align-items: center; }
-    .band {
-      width: 118px;
-      background: linear-gradient(90deg, #141416, #2c2c32 42%, #1a1a1e);
+    .bezel{position:absolute;inset:14px;border-radius:54px;background:#050506;overflow:hidden;
+      box-shadow:0 0 0 2px #0a0a0c,0 0 0 3px rgba(255,255,255,.06),inset 0 0 22px rgba(0,0,0,.85)}
+    .hold-ring{position:absolute;inset:2px;width:calc(100% - 4px);height:calc(100% - 4px);pointer-events:none;z-index:20;opacity:0;transition:opacity .25s var(--ease)}
+    .hold-ring.on{opacity:1}
+    .screen{position:absolute;inset:0;background:#000;color:#fff;overflow:hidden;overscroll-behavior:none;touch-action:none}
+    .crown,.side-btn{position:absolute;right:-11px;background:linear-gradient(90deg,#2a2a30,#6e6e76 40%,#3a3a40);
+      box-shadow:0 1px 0 rgba(255,255,255,.25),0 2px 4px rgba(0,0,0,.5),inset 0 0 0 1px rgba(0,0,0,.35)}
+    .crown{top:74px;width:15px;height:42px;border:0;padding:0;border-radius:4px;cursor:ns-resize;touch-action:none}
+    .crown::after{content:"";position:absolute;inset:3px 3px 3px 5px;border-radius:2px;background:repeating-linear-gradient(to bottom,#999 0 2px,#444 2px 3px);opacity:.7;pointer-events:none}
+    .side-btn{top:142px;width:13px;height:54px;border:0;padding:0;border-radius:3px;cursor:pointer;touch-action:none;appearance:none}
+    .side-btn.pressed{right:-8px;filter:brightness(.72)}
+    .crown:focus-visible,.side-btn:focus-visible{outline:2px solid #6ab0ff;outline-offset:2px}
+    .layer{position:absolute;inset:0;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .38s var(--ease),transform .48s var(--ease);overflow:hidden}
+    .layer.on{opacity:1;pointer-events:auto;transform:none;z-index:3}
+    .layer.slide-up{transform:translateY(110%)}
+    .layer.slide-up.on{transform:none}
+    .layer.slide-dn{transform:translateY(-110%)}
+    .layer.slide-dn.on{transform:none}
+    #layer-faces{z-index:1;opacity:1;pointer-events:auto;transform:none}
+    .faces-track{height:100%;display:flex;will-change:transform}
+    .face{flex:0 0 100%;height:100%;position:relative;padding:16px 14px 12px}
+    .face-date{font-size:11px;color:var(--red);font-weight:650}
+    .face-time{font-variant-numeric:tabular-nums;font-weight:650;letter-spacing:-2px;line-height:1}
+    .face-time.lg{font-size:58px;margin-top:6px}
+    .face-sec{font-size:18px;color:var(--muted);font-variant-numeric:tabular-nums}
+    .comps{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+    .comp{border-radius:18px;padding:8px;min-height:62px;cursor:pointer}
+    .comp .t{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.06em}
+    .comp .v{font-size:16px;font-weight:700;margin-top:4px}
+    .dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:5px;z-index:2}
+    .dots i{width:5px;height:5px;border-radius:50%;background:#3a3a40}
+    .dots i.on{background:#fff}
+    .glass{
+      background:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,.07));
+      -webkit-backdrop-filter:blur(18px) saturate(1.5);
+      backdrop-filter:blur(18px) saturate(1.5);
+      border:1px solid rgba(255,255,255,.28);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 6px 16px rgba(0,0,0,.28);
     }
-    .band-top {
-      height: 44px; border-radius: 10px 10px 0 0;
-      -webkit-mask-image: repeating-linear-gradient(to bottom, #000 0 7px, transparent 7px 9px);
-      mask-image: repeating-linear-gradient(to bottom, #000 0 7px, transparent 7px 9px);
+    .glass-dark{
+      background:linear-gradient(180deg,rgba(40,40,48,.55),rgba(16,16,20,.45));
+      -webkit-backdrop-filter:blur(20px) saturate(1.4);
+      backdrop-filter:blur(20px) saturate(1.4);
+      border:1px solid rgba(255,255,255,.16);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
     }
-    .band-bottom {
-      height: 52px; border-radius: 0 0 10px 10px;
-      -webkit-mask-image: repeating-linear-gradient(to bottom, transparent 0 2px, #000 2px 9px);
-      mask-image: repeating-linear-gradient(to bottom, transparent 0 2px, #000 2px 9px);
-    }
-    .case {
-      position: relative;
-      width: 272px; height: 328px;
-      background: linear-gradient(155deg, #5a5a62 0%, #2e2e34 26%, #1a1a1e 68%, #0c0c10 100%);
-      border-radius: 64px;
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,.14),
-        0 1px 0 rgba(255,255,255,.22) inset,
-        0 -10px 18px rgba(0,0,0,.5) inset,
-        0 20px 44px rgba(0,0,0,.55);
-    }
-    .bezel {
-      position: absolute; inset: 14px;
-      border-radius: 52px;
-      background: #050506;
-      box-shadow: 0 0 0 2px #0a0a0c, 0 0 0 3px rgba(255,255,255,.06), inset 0 0 22px rgba(0,0,0,.85);
-      overflow: hidden;
-    }
-    .hold-ring {
-      position: absolute; inset: 2px; width: calc(100% - 4px); height: calc(100% - 4px);
-      pointer-events: none; z-index: 6; opacity: 0;
-      transition: opacity .25s var(--ease);
-    }
-    .hold-ring.on { opacity: 1; }
-    .screen { position: absolute; inset: 0; background: #000; color: #fff; overflow: hidden; overscroll-behavior: none; touch-action: none; }
-    .crown, .side-btn {
-      position: absolute; right: -11px;
-      background: linear-gradient(90deg, #2a2a30, #6e6e76 40%, #3a3a40);
-      box-shadow: 0 1px 0 rgba(255,255,255,.25), 0 2px 4px rgba(0,0,0,.5), inset 0 0 0 1px rgba(0,0,0,.35);
-    }
-    .crown {
-      top: 76px; width: 14px; height: 38px; border: 0; padding: 0; border-radius: 4px; cursor: pointer;
-      touch-action: manipulation;
-    }
-    .crown::after {
-      content: ""; position: absolute; inset: 3px 3px 3px 5px; border-radius: 2px;
-      background: repeating-linear-gradient(to bottom, #999 0 2px, #444 2px 3px); opacity: .7;
-    }
-    .side-btn {
-      top: 140px; width: 13px; height: 54px; border: 0; padding: 0; border-radius: 3px;
-      cursor: pointer; touch-action: none; appearance: none; -webkit-appearance: none;
-    }
-    .side-btn.pressed { right: -8px; filter: brightness(.72); }
-    .side-btn:focus-visible, .crown:focus-visible { outline: 2px solid #6ab0ff; outline-offset: 2px; }
-    .view {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column; align-items: center;
-      padding: 16px 14px 14px; overflow: hidden; overscroll-behavior: none;
-      opacity: 0; transform: translateY(10px) scale(.97);
-      pointer-events: none;
-      transition: opacity .38s var(--ease), transform .48s var(--ease);
-    }
-    .view.active { opacity: 1; transform: none; pointer-events: auto; z-index: 2; }
-    .face-date { margin-top: 8px; font-size: 12px; color: var(--red); font-weight: 600; letter-spacing: .02em; }
-    .face-time {
-      margin-top: 16px; font-variant-numeric: tabular-nums; font-weight: 650;
-      font-size: 62px; letter-spacing: -2px; line-height: 1;
-    }
-    .face-sec { font-size: 22px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
-    .face-hint {
-      margin-top: auto; margin-bottom: 6px; width: 88px; height: 88px; border-radius: 50%;
-      background: conic-gradient(var(--red) var(--p, 0%), #1c1c1f 0);
-      display: grid; place-items: center;
-    }
-    .face-hint span {
-      width: 72px; height: 72px; border-radius: 50%; background: #000;
-      display: grid; place-items: center; font-size: 11px; color: #8a8a90;
-      text-align: center; line-height: 1.25; padding: 8px;
-    }
-    .kicker {
-      font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: .08em;
-      margin-bottom: 8px; text-align: center;
-    }
-    .slider {
-      position: relative; width: 100%; height: 50px; margin-bottom: 8px;
-      border-radius: 25px; background: #1c1c1f; overflow: hidden; touch-action: none;
-    }
-    .slider.sos { background: #3a0a0a; }
-    .slider .fill {
-      position: absolute; inset: 0 auto 0 0; width: 0; background: rgba(255,45,45,.22);
-      border-radius: 25px; pointer-events: none;
-    }
-    .slider .label {
-      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      font-size: 12.5px; font-weight: 700; pointer-events: none; transition: opacity .15s;
-      padding-left: 18px;
-    }
-    .slider.sos .label { color: #ff7a7a; }
-    .knob {
-      position: absolute; top: 3px; left: 3px; width: 44px; height: 44px; border-radius: 50%;
-      background: #ececec; box-shadow: 0 2px 6px rgba(0,0,0,.45);
-      display: flex; align-items: center; justify-content: center;
-      touch-action: none; cursor: grab; z-index: 2; will-change: left;
-    }
-    .slider.sos .knob { background: var(--red); }
-    .knob svg { pointer-events: none; }
-    .mini-link {
-      margin-top: 2px; background: none; border: 0; color: #7ab0ff; font: inherit;
-      font-size: 12px; font-weight: 650; cursor: pointer; padding: 4px;
-    }
-    .cd-label { margin-top: 10px; font-size: 11px; color: #ff8a8a; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-    .cd-num {
-      margin-top: 4px; font-size: 112px; font-weight: 700; line-height: .9; color: var(--red);
-      text-shadow: 0 0 28px rgba(255,45,45,.55);
-      animation: pulse 1s ease-in-out infinite;
-      font-variant-numeric: tabular-nums;
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.07); opacity: .84; }
-    }
-    .cd-note { font-size: 11px; color: #999; text-align: center; margin-top: 4px; line-height: 1.35; }
-    .btn { border: 0; cursor: pointer; font: inherit; font-weight: 700; touch-action: manipulation; }
-    .btn-bar { margin-top: auto; width: 100%; }
-    .btn-cancel, .btn-hang, .btn-ok, .btn-yes, .btn-no {
-      width: 100%; height: 42px; border-radius: 21px; font-size: 15px; margin-top: 8px;
-    }
-    .btn-cancel, .btn-ok, .btn-no { background: #2c2c31; color: #fff; }
-    .btn-hang { background: var(--red); color: #fff; }
-    .btn-yes { background: #1c6b3a; color: #fff; }
-    .btn:active { filter: brightness(.86); }
-    .close-x {
-      position: absolute; top: 8px; left: 10px; background: none; border: 0;
-      color: #d0d0d4; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; z-index: 3;
-    }
-    .call-dot {
-      width: 52px; height: 52px; margin-top: 10px; border-radius: 50%; background: #1c6b3a;
-      display: grid; place-items: center; animation: ring 1.2s ease-in-out infinite;
-    }
-    @keyframes ring {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(40,180,90,.5); }
-      70% { box-shadow: 0 0 0 14px rgba(40,180,90,0); }
-    }
-    .call-title { margin-top: 10px; font-size: 14px; font-weight: 700; text-align: center; line-height: 1.35; }
-    .call-timer { margin-top: 6px; font-size: 28px; font-variant-numeric: tabular-nums; color: #c8c8ce; }
-    .loc-card {
-      margin-top: 8px; width: 100%; border-radius: 12px; background: #121214;
-      border: 1px solid #2a2a30; padding: 8px 10px; font-size: 11px; line-height: 1.35; color: #c8c8ce;
-    }
-    .loc-card strong { color: #fff; display: block; font-size: 11px; margin-bottom: 2px; }
-    .sim { font-size: 10px; color: #888; text-align: center; margin-top: 4px; line-height: 1.35; }
-    .msg { margin-top: 10px; font-size: 15px; font-weight: 700; text-align: center; line-height: 1.35; }
-    .sub { margin-top: 6px; font-size: 11px; color: #999; text-align: center; line-height: 1.4; }
-    .icon {
-      margin-top: 18px; width: 58px; height: 58px; border-radius: 50%;
-      display: grid; place-items: center; font-size: 26px;
-    }
-    .icon.ok { background: #1c6b3a; }
-    .icon.warn { background: #7a5a00; }
-    .icon.off { background: #222; }
-    .icon.crash { background: #5a1010; }
-    .med-row {
-      width: 100%; display: flex; justify-content: space-between;
-      font-size: 12px; padding: 7px 0; border-bottom: 1px solid #222;
-    }
-    .med-row span:first-child { color: #888; }
-    .sms {
-      width: 100%; margin-top: 8px; background: #121214; border: 1px solid #2a2a30;
-      border-radius: 12px; padding: 8px 10px; font-size: 11px; line-height: 1.4; color: #d0d0d4;
-      text-align: left; white-space: pre-wrap;
-    }
-    .track-wrap { margin-top: 16px; width: 160px; height: 160px; position: relative; }
-    .track-wrap svg { width: 100%; height: 100%; }
-    .panel {
-      width: min(440px, 100%);
-      margin-top: 22px;
-      background: var(--card);
-      border: 1px solid #2a2a32;
-      border-radius: 16px;
-      padding: 14px 14px 16px;
-      box-shadow: 0 10px 28px rgba(0,0,0,.3);
-    }
-    .panel h2 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
-    .row {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      padding: 9px 0; border-bottom: 1px solid #26262c; font-size: 13px; line-height: 1.3;
-    }
-    .row:last-child { border-bottom: 0; }
-    .switch { position: relative; width: 44px; height: 26px; flex: 0 0 auto; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .switch i {
-      position: absolute; inset: 0; background: #3a3a42; border-radius: 13px; cursor: pointer;
-      transition: background .25s var(--ease);
-    }
-    .switch i::after {
-      content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
-      background: #fff; border-radius: 50%; transition: transform .28s var(--ease);
-    }
-    .switch input:checked + i { background: var(--green); }
-    .switch input:checked + i::after { transform: translateX(18px); }
-    .demos { display: flex; gap: 8px; margin: 12px 0 4px; }
-    .demo-btn {
-      flex: 1; height: 40px; border-radius: 12px; background: #2a2a32; color: #fff;
-      font-size: 12px; font-weight: 700;
-    }
-    .contacts { margin-top: 8px; font-size: 13px; }
-    .contacts li { margin: 4px 0 0 16px; color: #d0d0d4; }
-    .fine { margin-top: 8px; font-size: 11px; color: #8e8e93; line-height: 1.4; }
-    .view.compact { padding: 12px 12px 10px; justify-content: flex-start; }
-    .view.compact .icon { margin-top: 18px; width: 36px; height: 36px; font-size: 18px; }
-    .view.compact .msg { margin-top: 6px; font-size: 13px; }
-    .view.compact .sub, .view.compact .sim, .view.compact .cd-note { font-size: 10px; margin-top: 4px; }
-    .view.compact .slider { height: 46px; margin-bottom: 0; }
-    .view.compact .slider .knob { width: 40px; height: 40px; }
-    .view.compact .btn-bar { margin-top: 8px; }
-    .view.compact .btn-cancel, .view.compact .btn-hang,
-    .view.compact .btn-ok, .view.compact .btn-yes, .view.compact .btn-no {
-      height: 36px; font-size: 13px; margin-top: 6px;
-    }
-    .view.compact .call-dot { width: 40px; height: 40px; margin-top: 6px; }
-    .view.compact .call-timer { font-size: 24px; margin-top: 4px; }
-    .view.compact .call-title { font-size: 13px; margin-top: 6px; }
-    .view.compact .loc-card, .view.compact .sms { margin-top: 6px; padding: 6px 8px; font-size: 10px; }
-    .view.compact .cd-num { font-size: 96px; margin-top: 0; }
-    @media (max-height: 700px) {
-      .band-top, .band-bottom { height: 26px; }
-      .face-time { font-size: 56px; }
-    }
+    .orb{position:absolute;inset:-20%;border-radius:50%;background:
+      radial-gradient(circle at 35% 30%,rgba(130,220,255,.85),transparent 42%),
+      radial-gradient(circle at 70% 60%,rgba(255,90,180,.7),transparent 45%),
+      radial-gradient(circle at 40% 80%,rgba(90,120,255,.75),transparent 40%);
+      filter:blur(8px);animation:orb 10s ease-in-out infinite alternate;pointer-events:none}
+    @keyframes orb{from{transform:translate(-6%,-4%) scale(1)}to{transform:translate(8%,6%) scale(1.08)}}
+    .glass-num{position:relative;z-index:1;font-size:54px;font-weight:700;letter-spacing:-1px;
+      background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.55));
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+      filter:drop-shadow(0 2px 10px rgba(0,0,0,.35))}
+    #layer-home{background:#000}
+    .grid-space{position:absolute;inset:0;touch-action:none}
+    .app-ic{position:absolute;width:52px;height:52px;margin-left:-26px;margin-top:-26px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;cursor:pointer;will-change:transform;
+      box-shadow:0 4px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.35)}
+    .app-ic svg{pointer-events:none}
+    .app-name{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:11px;font-weight:650;
+      text-shadow:0 1px 4px #000;pointer-events:none}
+    .app-head{display:flex;align-items:center;justify-content:center;padding:10px 12px 6px;font-size:13px;font-weight:700}
+    .app-body{padding:0 12px 12px;font-size:13px;height:calc(100% - 34px);overflow:hidden}
+    .btn{border:0;cursor:pointer;font:inherit;font-weight:700;touch-action:manipulation;color:#fff}
+    .pill{height:36px;border-radius:18px;padding:0 14px}
+    .rowbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+    .cc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:22px 16px 16px}
+    .cc-btn{aspect-ratio:1;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      font-size:9px;font-weight:650;color:#fff;border:0;cursor:pointer;gap:2px}
+    .cc-btn.on{box-shadow:0 0 0 2px rgba(255,255,255,.5),inset 0 1px 0 rgba(255,255,255,.5)}
+    .cc-btn svg{pointer-events:none}
+    .n-card{margin:8px 12px;border-radius:16px;padding:10px 12px}
+    .n-card b{display:block;font-size:11px}
+    .n-card p{font-size:11px;color:#ddd;margin-top:3px;line-height:1.35}
+    .stack-list{display:flex;flex-direction:column;gap:8px;padding:16px 12px;height:100%;justify-content:center}
+    .stack-card{border-radius:20px;padding:12px 14px;min-height:72px;cursor:pointer}
+    .stack-card .t{font-size:10px;color:#c8c8ce;text-transform:uppercase;letter-spacing:.06em}
+    .stack-card .v{font-size:20px;font-weight:700;margin-top:4px}
+    .rings{width:96px;height:96px;margin:8px auto;display:block}
+    .hr-num{font-size:42px;font-weight:700;text-align:center;margin-top:8px;color:var(--pink);font-variant-numeric:tabular-nums}
+    .hr-sub{text-align:center;color:var(--muted);font-size:11px}
+    canvas.spark{display:block;margin:10px auto;width:200px;height:64px}
+    .calc{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+    .calc b{grid-column:1/-1;text-align:right;font-size:28px;font-variant-numeric:tabular-nums;padding:4px 6px 8px;min-height:40px}
+    .calc button{height:36px;border-radius:18px;border:0;font:inherit;font-weight:700;color:#fff;cursor:pointer}
+    #layer-app[data-app="light"]{background:#fff;color:#111}
+    #layer-app[data-app="light"] .app-head{color:#111}
+    .set-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:12px}
+    .switch{position:relative;width:40px;height:24px;flex:0 0 auto}
+    .switch input{opacity:0;width:0;height:0}
+    .switch i{position:absolute;inset:0;background:#3a3a42;border-radius:12px;cursor:pointer;transition:background .25s}
+    .switch i::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .28s var(--ease)}
+    .switch input:checked+i{background:var(--green)}
+    .switch input:checked+i::after{transform:translateX(16px)}
+    .demo-btn{flex:1;height:32px;border-radius:16px;background:rgba(255,255,255,.1);font-size:11px;color:#fff}
+    #layer-sos{z-index:15;background:#000}
+    .sos-view{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:16px 14px 14px;
+      opacity:0;pointer-events:none;transform:translateY(8px) scale(.97);transition:opacity .35s var(--ease),transform .45s var(--ease)}
+    .sos-view.on{opacity:1;pointer-events:auto;transform:none;z-index:2}
+    .kicker{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+    .slider{position:relative;width:100%;height:50px;margin-bottom:8px;border-radius:25px;background:#1c1c1f;overflow:hidden;touch-action:none}
+    .slider.sos{background:#3a0a0a}
+    .slider .fill{position:absolute;inset:0 auto 0 0;width:0;background:rgba(255,45,45,.22);border-radius:25px;pointer-events:none}
+    .slider .label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;pointer-events:none;padding-left:18px;transition:opacity .15s}
+    .slider.sos .label{color:#ff7a7a}
+    .knob{position:absolute;top:3px;left:3px;width:44px;height:44px;border-radius:50%;background:#ececec;box-shadow:0 2px 6px rgba(0,0,0,.45);
+      display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;z-index:2}
+    .slider.sos .knob{background:var(--red)}
+    .cd-label{margin-top:10px;font-size:11px;color:#ff8a8a;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+    .cd-num{margin-top:4px;font-size:108px;font-weight:700;line-height:.9;color:var(--red);text-shadow:0 0 28px rgba(255,45,45,.55);
+      animation:pulse 1s ease-in-out infinite;font-variant-numeric:tabular-nums}
+    @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.07);opacity:.84}}
+    .cd-note,.sim{font-size:11px;color:#999;text-align:center;margin-top:4px;line-height:1.35}
+    .btn-bar{margin-top:auto;width:100%}
+    .btn-cancel,.btn-hang,.btn-ok,.btn-yes,.btn-no{width:100%;height:40px;border-radius:20px;font-size:14px;margin-top:8px}
+    .btn-cancel,.btn-ok,.btn-no{background:#2c2c31}
+    .btn-hang{background:var(--red)}
+    .btn-yes{background:#1c6b3a}
+    .btn:active{filter:brightness(.86)}
+    .close-x{position:absolute;top:8px;left:10px;background:none;border:0;color:#d0d0d4;font:inherit;font-size:13px;font-weight:650;cursor:pointer;z-index:3}
+    .call-dot{width:48px;height:48px;margin-top:8px;border-radius:50%;background:#1c6b3a;display:grid;place-items:center;animation:ring 1.2s ease-in-out infinite}
+    @keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(40,180,90,.5)}70%{box-shadow:0 0 0 14px rgba(40,180,90,0)}}
+    .call-title{margin-top:8px;font-size:14px;font-weight:700;text-align:center;line-height:1.35}
+    .call-timer{margin-top:6px;font-size:26px;font-variant-numeric:tabular-nums;color:#c8c8ce}
+    .loc-card,.sms{margin-top:8px;width:100%;border-radius:12px;background:#121214;border:1px solid #2a2a30;padding:8px 10px;font-size:11px;line-height:1.35;color:#c8c8ce;text-align:left;white-space:pre-wrap}
+    .msg{margin-top:10px;font-size:15px;font-weight:700;text-align:center;line-height:1.35}
+    .sub{margin-top:6px;font-size:11px;color:#999;text-align:center;line-height:1.4}
+    .icon{margin-top:16px;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:22px;font-weight:700}
+    .icon.ok{background:#1c6b3a}.icon.warn{background:#7a5a00}.icon.off{background:#222}.icon.crash{background:#5a1010}
+    .med-row{width:100%;display:flex;justify-content:space-between;font-size:12px;padding:7px 0;border-bottom:1px solid #222}
+    .med-row span:first-child{color:#888}
+    .mini-link{margin-top:2px;background:none;border:0;color:#7ab0ff;font:inherit;font-size:12px;font-weight:650;cursor:pointer;padding:4px}
+    .sos-view.compact{padding:12px 12px 10px}
+    .sos-view.compact .icon{margin-top:18px;width:36px;height:36px;font-size:18px}
+    .sos-view.compact .msg{margin-top:6px;font-size:13px}
+    .sos-view.compact .cd-num{font-size:96px}
+    .hint{margin-top:10px;font-size:11px;color:var(--muted);text-align:center;line-height:1.4;max-width:360px}
+    @media (max-height:700px){.band-top,.band-bottom{height:22px}.face-time.lg{font-size:50px}}
   </style>
 </head>
 <body>
   <div class="banner">SYMULATOR – nie dzwoni naprawdę</div>
-  <p class="hint">Przytrzymaj przycisk boczny po prawej (pod koroną).<br>To tylko ćwiczenie — nikt nie jest wzywany.</p>
-  <div class="watch-wrap">
-    <div class="band band-top"></div>
-    <div class="case">
-      <button type="button" class="crown" id="crown" aria-label="Korona — wróć do tarczy"></button>
-      <button type="button" class="side-btn" id="sideBtn" aria-label="Przycisk boczny — przytrzymaj, aby otworzyć Alarmowe SOS"></button>
-      <div class="bezel">
-        <svg class="hold-ring" id="holdRing" viewBox="0 0 100 100" aria-hidden="true">
-          <rect x="3.5" y="3.5" width="93" height="93" rx="22" fill="none" stroke="rgba(255,45,45,0.18)" stroke-width="2.2"/>
-          <rect id="holdArc" x="3.5" y="3.5" width="93" height="93" rx="22" fill="none" stroke="#ff2d2d" stroke-width="2.4" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" stroke-linecap="round"/>
-        </svg>
-        <div class="screen" id="screen" data-state="face">
-          <div class="view active" id="view-face" data-view="face">
-            <div class="face-date" id="faceDate"></div>
-            <div class="face-time" id="faceTime">--:--</div>
-            <div class="face-sec" id="faceSec">--</div>
-            <div class="face-hint" id="faceRing"><span>Przytrzymaj przycisk boczny</span></div>
-          </div>
-          <div class="view" id="view-sliders" data-view="sliders">
-            <div class="kicker">Przesuń, aby wybrać</div>
-            <div class="slider" id="slPower" data-action="power">
-              <div class="fill"></div>
-              <div class="label">Wyłącz</div>
-              <div class="knob" role="slider" aria-label="Wyłącz"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="stage">
+    <div class="side-lab"><b>Przesuń</b>w górę: sterowanie<br>w dół: powiadomienia<br>w bok: tarcze</div>
+    <div class="watch-wrap">
+      <div class="band band-top"></div>
+      <div class="case">
+        <button type="button" class="crown" id="crown" aria-label="Korona — przewiń stos lub siatkę, kliknij, aby wrócić"></button>
+        <button type="button" class="side-btn" id="sideBtn" aria-label="Przycisk boczny — przytrzymaj, aby otworzyć Alarmowe SOS"></button>
+        <div class="bezel">
+          <svg class="hold-ring" id="holdRing" viewBox="0 0 100 100" aria-hidden="true">
+            <rect x="3.5" y="3.5" width="93" height="93" rx="22" fill="none" stroke="rgba(255,45,45,0.18)" stroke-width="2.2"/>
+            <rect id="holdArc" x="3.5" y="3.5" width="93" height="93" rx="22" fill="none" stroke="#ff2d2d" stroke-width="2.4" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" stroke-linecap="round"/>
+          </svg>
+          <div class="screen" id="screen">
+
+            <div class="layer on" id="layer-faces">
+              <div class="faces-track" id="facesTrack">
+                <div class="face" data-face="0">
+                  <div class="face-date" id="d0">—</div>
+                  <div class="face-time lg" id="t0">--:--</div>
+                  <div class="face-sec" id="s0">--</div>
+                  <div class="comps">
+                    <div class="comp glass-dark" data-open="activity"><div class="t">Aktywność</div><div class="v" id="cAct">●●●</div></div>
+                    <div class="comp glass-dark" data-open="weather"><div class="t">Pogoda</div><div class="v" id="cWea">1°</div></div>
+                    <div class="comp glass-dark" data-open="hr"><div class="t">Tętno</div><div class="v" id="cHr">72</div></div>
+                    <div class="comp glass-dark" data-open="timer"><div class="t">Minutnik</div><div class="v" id="cTmr">0:00</div></div>
+                  </div>
+                </div>
+                <div class="face" data-face="1" style="display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden">
+                  <div class="orb"></div>
+                  <div class="face-date" id="d1" style="position:relative;z-index:1;color:#fff">—</div>
+                  <div class="glass-num" id="t1">--:--</div>
+                  <div class="comp glass" data-open="weather" style="position:relative;z-index:1;margin-top:18px;min-height:0;padding:8px 14px">
+                    <div class="t">Łapsze Niżne</div><div class="v" id="cWea2">1° · śnieg</div>
+                  </div>
+                </div>
+                <div class="face" data-face="2">
+                  <div class="face-date" id="d2">—</div>
+                  <div class="face-time" id="t2" style="font-size:36px;margin-top:4px">--:--</div>
+                  <div class="comp glass-dark" data-open="activity" style="margin-top:10px"><div class="t">Pierścienie</div><div class="v" id="cAct2">Ruch 420 / 500 kcal</div></div>
+                  <div class="comp glass-dark" data-open="hr" style="margin-top:8px"><div class="t">Tętno</div><div class="v" id="cHr2">72 ud./min</div></div>
+                  <div class="comp glass-dark" data-open="alarm" style="margin-top:8px"><div class="t">Alarm</div><div class="v" id="cAlm">Wyłączony</div></div>
+                </div>
+              </div>
+              <div class="dots" id="faceDots"><i class="on"></i><i></i><i></i></div>
             </div>
-            <div class="slider" id="slMed" data-action="medical">
-              <div class="fill"></div>
-              <div class="label">Karta medyczna</div>
-              <div class="knob" role="slider" aria-label="Karta medyczna"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+            <div class="layer" id="layer-home">
+              <div class="grid-space" id="gridSpace"></div>
+              <div class="app-name" id="gridName"></div>
             </div>
-            <div class="slider sos" id="slSos" data-action="sos">
-              <div class="fill"></div>
-              <div class="label">Połączenie alarmowe</div>
-              <div class="knob" role="slider" aria-label="Połączenie alarmowe"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+            <div class="layer" id="layer-app">
+              <div class="app-head" id="appHead">Aplikacja</div>
+              <div class="app-body" id="appBody"></div>
             </div>
-            <button type="button" class="mini-link" id="btnTrack">Ślad (kompas)</button>
-          </div>
-          <div class="view" id="view-countdown" data-view="countdown">
-            <div class="cd-label">Alarmowe SOS</div>
-            <div class="cd-num" id="cdNum">5</div>
-            <div class="cd-note" id="cdNote">Puść przycisk boczny, aby anulować</div>
-          </div>
-          <div class="view compact" id="view-call" class="view compact" data-view="call">
-            <div class="call-dot" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M7.5 3.5c.5-.5 1.3-.6 1.9-.2l2 1.4c.6.4.8 1.2.5 1.9L11 9.2c2.2 3.2 4.4 5 7.4 6.8l2.4-1.1c.7-.3 1.5 0 1.9.6l1.5 2.1c.5.7.3 1.6-.3 2.1l-1.7 1.4c-.6.5-1.4.7-2.2.5C12.4 20.2 4.6 13.2 3.2 5.8c-.2-.8 0-1.6.5-2.2L7.5 3.5z"/></svg>
+
+            <div class="layer slide-up" id="layer-cc">
+              <div class="cc-grid">
+                <button class="cc-btn glass" type="button" data-cc="light"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="3.2" stroke="#fff" stroke-width="1.6"/><path d="M9 1.5v2M9 14.5v2M1.5 9h2M14.5 9h2M3.4 3.4l1.4 1.4M13.2 13.2l1.4 1.4M3.4 14.6l1.4-1.4M13.2 4.8l1.4-1.4" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>Latarka</button>
+                <button class="cc-btn glass" type="button" data-cc="silent"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 11V8a5 5 0 0110 0v3l1.5 2H2.5L4 11z" stroke="#fff" stroke-width="1.5"/><path d="M7 15h4" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>Cichy</button>
+                <button class="cc-btn glass" type="button" data-cc="theater"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="4" width="14" height="10" rx="2" stroke="#fff" stroke-width="1.5"/><path d="M2 8h14" stroke="#fff" stroke-width="1.2"/></svg>Teatr</button>
+                <button class="cc-btn glass" type="button" data-cc="air"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9h12M9 3l8 6-8 6" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Samolot</button>
+                <button class="cc-btn glass" type="button" data-cc="ping"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="6" y="2.5" width="6" height="13" rx="1.4" stroke="#fff" stroke-width="1.5"/></svg>Ping</button>
+                <button class="cc-btn glass" type="button" data-cc="settings"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.2" stroke="#fff" stroke-width="1.5"/><path d="M9 2.5v2M9 13.5v2M2.5 9h2M13.5 9h2M4.2 4.2l1.4 1.4M12.4 12.4l1.4 1.4M4.2 13.8l1.4-1.4M12.4 5.6l1.4-1.4" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/></svg>Ustawienia</button>
+              </div>
             </div>
-            <div class="call-title" id="callTitle">Łączę z 112<br>(SYMULACJA)</div>
-            <div class="call-timer" id="callTimer">00:00</div>
-            <div class="loc-card" id="callLoc"></div>
-            <div class="sim" id="callRecWrap" hidden>
-              <span id="callRecText"></span>
-              <button type="button" class="btn btn-cancel" id="btnStopRec" style="margin-top:8px;height:36px;font-size:13px">Zatrzymaj nagrany komunikat</button>
+
+            <div class="layer slide-dn" id="layer-notif">
+              <div style="padding-top:10px">
+                <div class="n-card glass-dark"><b>Pogoda</b><p>W Łapszach Niżnych 1°C, możliwe opady śniegu.</p></div>
+                <div class="n-card glass-dark"><b>Aktywność</b><p>Jeszcze 80 kcal do celu ruchu.</p></div>
+                <div class="n-card glass-dark"><b>Wiadomość · Anna Kowalska</b><p>Cześć, jesteś już w domu?</p></div>
+              </div>
             </div>
-            <div class="sim">To nie jest prawdziwe połączenie. W rzeczywistości poczekaj na dyspozytora, zanim się rozłączysz.</div>
-            <div class="btn-bar"><button type="button" class="btn btn-hang" id="btnHang">Zakończ</button></div>
-          </div>
-          <div class="view compact" id="view-asksms" class="view compact" data-view="asksms">
-            <div class="msg">Wysłać wiadomość tekstową do kontaktów alarmowych?</div>
-            <div class="sub">Po połączeniu zegarek pyta, czy wysłać SMS z położeniem. Stuknij Nie, aby anulować.</div>
-            <div class="sms" id="askSmsBody"></div>
-            <div class="btn-bar">
-              <button type="button" class="btn btn-yes" id="btnSmsYes">Tak</button>
-              <button type="button" class="btn btn-no" id="btnSmsNo">Nie</button>
+
+            <div class="layer" id="layer-stack">
+              <div class="stack-list" id="stackList"></div>
             </div>
-          </div>
-          <div class="view compact" id="view-sharing" class="view compact" data-view="sharing">
-            <div class="icon ok" aria-hidden="true">✓</div>
-            <div class="msg">Wysłano SMS i udostępniono położenie (symulacja)</div>
-            <div class="sub">Kontakty otrzymują uaktualnienia przy zmianie położenia. Co 4 godziny zegarek przypomina o udostępnianiu.</div>
-            <div class="loc-card" id="shareLoc"></div>
-            <div class="btn-bar">
-              <button type="button" class="btn btn-hang" id="btnStopShare">Przestań udostępniać</button>
-              <button type="button" class="btn btn-ok" id="btnShareOk">OK</button>
+            <div class="layer" id="layer-sos">
+              <div class="sos-view" id="sos-sliders">
+                <div class="kicker">Przesuń, aby wybrać</div>
+                <div class="slider" id="slPower" data-action="power"><div class="fill"></div><div class="label">Wyłącz</div><div class="knob" role="slider" aria-label="Wyłącz"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+                <div class="slider" id="slMed" data-action="medical"><div class="fill"></div><div class="label">Karta medyczna</div><div class="knob" role="slider" aria-label="Karta medyczna"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+                <div class="slider sos" id="slSos" data-action="sos"><div class="fill"></div><div class="label">Połączenie alarmowe</div><div class="knob" role="slider" aria-label="Połączenie alarmowe"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+                <button type="button" class="mini-link" id="btnTrack">Ślad (kompas)</button>
+              </div>
+              <div class="sos-view" id="sos-countdown">
+                <div class="cd-label">Alarmowe SOS</div>
+                <div class="cd-num" id="cdNum">5</div>
+                <div class="cd-note">Puść przycisk boczny, aby anulować</div>
+              </div>
+              <div class="sos-view compact" id="sos-call">
+                <div class="call-dot" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M7.5 3.5c.5-.5 1.3-.6 1.9-.2l2 1.4c.6.4.8 1.2.5 1.9L11 9.2c2.2 3.2 4.4 5 7.4 6.8l2.4-1.1c.7-.3 1.5 0 1.9.6l1.5 2.1c.5.7.3 1.6-.3 2.1l-1.7 1.4c-.6.5-1.4.7-2.2.5C12.4 20.2 4.6 13.2 3.2 5.8c-.2-.8 0-1.6.5-2.2L7.5 3.5z"/></svg></div>
+                <div class="call-title" id="callTitle">Łączę z 112<br>(SYMULACJA)</div>
+                <div class="call-timer" id="callTimer">00:00</div>
+                <div class="loc-card" id="callLoc"></div>
+                <div class="sim" id="callRecWrap" hidden><span id="callRecText"></span>
+                  <button type="button" class="btn btn-cancel" id="btnStopRec" style="margin-top:8px;height:32px;font-size:12px">Zatrzymaj nagrany komunikat</button>
+                </div>
+                <div class="sim">To nie jest prawdziwe połączenie.</div>
+                <div class="btn-bar"><button type="button" class="btn btn-hang" id="btnHang">Zakończ</button></div>
+              </div>
+              <div class="sos-view compact" id="sos-asksms">
+                <div class="msg">Wysłać wiadomość tekstową do kontaktów alarmowych?</div>
+                <div class="sub">Stuknij Nie, aby anulować wysyłanie.</div>
+                <div class="sms" id="askSmsBody"></div>
+                <div class="btn-bar"><button type="button" class="btn btn-yes" id="btnSmsYes">Tak</button><button type="button" class="btn btn-no" id="btnSmsNo">Nie</button></div>
+              </div>
+              <div class="sos-view compact" id="sos-sharing">
+                <div class="icon ok">✓</div>
+                <div class="msg">Wysłano SMS i udostępniono położenie (symulacja)</div>
+                <div class="sub">Co 4 godziny zegarek przypomina o udostępnianiu.</div>
+                <div class="loc-card" id="shareLoc"></div>
+                <div class="btn-bar"><button type="button" class="btn btn-hang" id="btnStopShare">Przestań udostępniać</button><button type="button" class="btn btn-ok" id="btnShareOk">OK</button></div>
+              </div>
+              <div class="sos-view compact" id="sos-cancelled">
+                <div class="icon off">✓</div>
+                <div class="msg">Anulowano wysyłanie wiadomości</div>
+                <div class="sub">Kontakty nie zostały powiadomione (symulacja).</div>
+                <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnCancelOk">OK</button></div>
+              </div>
+              <div class="sos-view compact" id="sos-medical">
+                <div class="kicker">Karta medyczna</div>
+                <div class="msg" style="margin-top:2px">Przykładowe dane</div>
+                <div class="med-row" style="margin-top:10px"><span>Imię</span><span>Jan Nowak</span></div>
+                <div class="med-row"><span>Grupa krwi</span><span>—</span></div>
+                <div class="med-row"><span>Alergie</span><span>brak danych</span></div>
+                <div class="sub">To tylko demonstracja.</div>
+                <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnMedClose">Zamknij</button></div>
+              </div>
+              <div class="sos-view" id="sos-power">
+                <div class="icon off">⏻</div>
+                <div class="msg">Wyłączono (symulacja)</div>
+                <div class="sub">Naciśnij przycisk boczny, aby włączyć</div>
+              </div>
+              <div class="sos-view compact" id="sos-track">
+                <div class="kicker">Ślad</div>
+                <div class="msg">Powrót trasą (symulacja)</div>
+                <svg viewBox="0 0 160 160" width="130" height="130" style="margin-top:8px">
+                  <circle cx="80" cy="80" r="70" fill="none" stroke="#1c1c22" stroke-width="8"/>
+                  <circle cx="80" cy="80" r="70" fill="none" stroke="#3a6cff" stroke-width="3" stroke-dasharray="2 10"/>
+                  <path d="M80 18 L84 28 L76 28 Z" fill="#ff3b30"/>
+                  <path d="M40 110 C52 70, 70 58, 88 52 S130 55, 118 88 S90 125, 70 120" fill="none" stroke="#30d158" stroke-width="3" stroke-linecap="round"/>
+                  <circle cx="70" cy="120" r="5" fill="#fff"/>
+                </svg>
+                <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnTrackClose">Zamknij</button></div>
+              </div>
+              <div class="sos-view compact" id="sos-fall">
+                <button type="button" class="close-x" id="btnFallClose">Zamknij</button>
+                <div class="icon warn">!</div>
+                <div class="msg">Wygląda na to, że doszło do niebezpiecznego upadku</div>
+                <div class="sub" id="fallWaitNote">Jeśli nie ma ruchu ok. minutę, zacznie odliczanie.</div>
+                <div class="slider sos" id="slFallSos" data-action="fallsos" style="margin-top:10px"><div class="fill"></div><div class="label">Połączenie alarmowe</div><div class="knob" role="slider" aria-label="Połączenie alarmowe"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+                <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnImOk">Nic mi nie jest</button><button type="button" class="btn btn-no" id="btnNoFall">To nie był upadek</button></div>
+              </div>
+              <div class="sos-view compact" id="sos-fallcd">
+                <div class="cd-label">Wykrywanie upadków</div>
+                <div class="cd-num" id="fallCdNum">30</div>
+                <div class="cd-note" id="fallCdNote">Odliczanie — sygnał narasta. Anuluj, aby przerwać.</div>
+                <div class="btn-bar"><button type="button" class="btn btn-cancel" id="btnFallCancel">Anuluj</button></div>
+              </div>
+              <div class="sos-view compact" id="sos-crash">
+                <button type="button" class="close-x" id="btnCrashClose">Zamknij</button>
+                <div class="icon crash">!</div>
+                <div class="msg">Wykryto poważny wypadek samochodowy</div>
+                <div class="sub" id="crashWaitNote">Alert ok. 10 s, potem odliczanie.</div>
+                <div class="slider sos" id="slCrashSos" data-action="crashsos" style="margin-top:10px"><div class="fill"></div><div class="label">Połączenie alarmowe</div><div class="knob" role="slider" aria-label="Połączenie alarmowe"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+                <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnCrashOk">Nic mi nie jest</button></div>
+              </div>
+              <div class="sos-view compact" id="sos-crashcd">
+                <div class="cd-label">Wykrywanie wypadków</div>
+                <div class="cd-num" id="crashCdNum">30</div>
+                <div class="cd-note" id="crashCdNote">Odliczanie — głośny alarm. Anuluj, aby przerwać.</div>
+                <div class="btn-bar"><button type="button" class="btn btn-cancel" id="btnCrashCancel">Anuluj</button></div>
+              </div>
             </div>
-          </div>
-          <div class="view compact" id="view-cancelled" class="view compact" data-view="cancelled">
-            <div class="icon off" aria-hidden="true">✓</div>
-            <div class="msg">Anulowano wysyłanie wiadomości</div>
-            <div class="sub">Kontakty alarmowe nie zostały powiadomione (symulacja).</div>
-            <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnCancelOk">OK</button></div>
-          </div>
-          <div class="view compact" id="view-medical" class="view compact" data-view="medical">
-            <div class="kicker">Karta medyczna</div>
-            <div class="msg" style="margin-top:2px;font-size:14px">Przykładowe dane</div>
-            <div class="med-row" style="margin-top:12px"><span>Imię</span><span>Jan Nowak</span></div>
-            <div class="med-row"><span>Grupa krwi</span><span>—</span></div>
-            <div class="med-row"><span>Alergie</span><span>brak danych</span></div>
-            <div class="med-row"><span>Leki</span><span>brak danych</span></div>
-            <div class="sub">To tylko demonstracja.</div>
-            <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnMedClose">Zamknij</button></div>
-          </div>
-          <div class="view" id="view-power" data-view="power">
-            <div class="icon off" aria-hidden="true">⏻</div>
-            <div class="msg">Wyłączono (symulacja)</div>
-            <div class="sub">Naciśnij przycisk boczny, aby włączyć</div>
-          </div>
-          <div class="view" id="view-track" data-view="track">
-            <div class="kicker">Ślad</div>
-            <div class="msg" style="margin-top:4px">Powrót trasą (symulacja)</div>
-            <div class="track-wrap" aria-hidden="true">
-              <svg viewBox="0 0 160 160">
-                <circle cx="80" cy="80" r="70" fill="none" stroke="#1c1c22" stroke-width="8"/>
-                <circle cx="80" cy="80" r="70" fill="none" stroke="#3a6cff" stroke-width="3" stroke-dasharray="2 10"/>
-                <path d="M80 18 L84 28 L76 28 Z" fill="#ff3b30"/>
-                <path d="M40 110 C52 70, 70 58, 88 52 S130 55, 118 88 S90 125, 70 120" fill="none" stroke="#30d158" stroke-width="3" stroke-linecap="round"/>
-                <circle cx="70" cy="120" r="5" fill="#fff"/>
-              </svg>
-            </div>
-            <div class="sub">Na nowszych zegarkach Ślad bywa dostępny z przycisku bocznego.</div>
-            <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnTrackClose">Zamknij</button></div>
-          </div>
-          <div class="view compact" id="view-fall" class="view compact" data-view="fall">
-            <button type="button" class="close-x" id="btnFallClose">Zamknij</button>
-            <div class="icon warn" aria-hidden="true">!</div>
-            <div class="msg">Wygląda na to, że doszło do niebezpiecznego upadku</div>
-            <div class="sub" id="fallWaitNote">Zegarek stuknął w nadgarstek. Jeśli nie ma ruchu ok. minutę, zacznie odliczanie.</div>
-            <div class="slider sos" id="slFallSos" data-action="fallsos" style="margin-top:12px">
-              <div class="fill"></div>
-              <div class="label">Połączenie alarmowe</div>
-              <div class="knob" role="slider" aria-label="Połączenie alarmowe"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-            </div>
-            <div class="btn-bar">
-              <button type="button" class="btn btn-ok" id="btnImOk">Nic mi nie jest</button>
-              <button type="button" class="btn btn-no" id="btnNoFall">To nie był upadek</button>
-            </div>
-          </div>
-          <div class="view compact" id="view-fallcd" class="view compact" data-view="fallcd">
-            <div class="cd-label">Wykrywanie upadków</div>
-            <div class="cd-num" id="fallCdNum">30</div>
-            <div class="cd-note" id="fallCdNote">Odliczanie 30 s — sygnał narasta. Stuknij Anuluj, aby nie wzywać służb.</div>
-            <div class="btn-bar"><button type="button" class="btn btn-cancel" id="btnFallCancel">Anuluj</button></div>
-          </div>
-          <div class="view compact" id="view-crash" class="view compact" data-view="crash">
-            <button type="button" class="close-x" id="btnCrashClose">Zamknij</button>
-            <div class="icon crash" aria-hidden="true">!</div>
-            <div class="msg">Wykryto poważny wypadek samochodowy</div>
-            <div class="sub" id="crashWaitNote">Alert ok. 10 s. Jeśli nie zareagujesz, zacznie się 30-sekundowe odliczanie.</div>
-            <div class="slider sos" id="slCrashSos" data-action="crashsos" style="margin-top:12px">
-              <div class="fill"></div>
-              <div class="label">Połączenie alarmowe</div>
-              <div class="knob" role="slider" aria-label="Połączenie alarmowe"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-            </div>
-            <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnCrashOk">Nic mi nie jest</button></div>
-          </div>
-          <div class="view compact" id="view-crashcd" class="view compact" data-view="crashcd">
-            <div class="cd-label">Wykrywanie wypadków</div>
-            <div class="cd-num" id="crashCdNum">30</div>
-            <div class="cd-note" id="crashCdNote">Odliczanie 30 s — głośny alarm i stuknięcia. Anuluj, aby przerwać.</div>
-            <div class="btn-bar"><button type="button" class="btn btn-cancel" id="btnCrashCancel">Anuluj</button></div>
           </div>
         </div>
       </div>
+      <div class="band band-bottom"></div>
     </div>
-    <div class="band band-bottom"></div>
+    <div class="side-lab"><b>Korona</b>przewiń: stos / siatka<br>klik: początek<br><b style="margin-top:8px">Przycisk boczny</b>przytrzymaj: Alarmowe SOS</div>
   </div>
+  <p class="hint">Symulator interfejsu inspirowany watchOS 27 (Liquid Glass, dynamiczna siatka aplikacji). Żadne logo nie pochodzi z Apple — to oryginalny rysunek CSS/SVG. Nikt nie jest wzywany.</p>
+<script>
+(function(){
+  const LOC="52,2297° N, 21,0122° E (wyłącznie symulacja)";
+  const CONTACTS="Anna Kowalska, Marek Wiśniewski";
+  const APPS=[
+    {id:'timer',name:'Minutnik',col:'#ff9f0a',svg:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="12" r="7" stroke="#fff" stroke-width="1.8"/><path d="M11 12V8M8 2.5h6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>'},
+    {id:'stopwatch',name:'Stoper',col:'#ffd60a',svg:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="12" r="7" stroke="#111" stroke-width="1.8"/><path d="M11 12l3 2M9 3h4" stroke="#111" stroke-width="1.8" stroke-linecap="round"/></svg>'},
+    {id:'alarm',name:'Alarm',col:'#ff453a',svg:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="12" r="6.5" stroke="#fff" stroke-width="1.8"/><path d="M11 12V9M4 6l2 2M18 6l-2 2" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>'},
+    {id:'calc',name:'Kalkulator',col:'#636366',svg:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="5" y="3.5" width="12" height="15" rx="2" stroke="#fff" stroke-width="1.6"/><path d="M7.5 8h7M8 12h2M12 12h2M8 15h2M12 15h2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>'},
+    {id:'weather',name:'Pogoda',col:'#64d2ff',svg:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="9" cy="9" r="3.2" fill="#fff"/><path d="M7 16h9a3 3 0 000-6 4.5 4.5 0 00-8.2-1.5A3.5 3.5 0 007 16z" fill="#fff"/></svg>'},
+    {id:'activity',name:'Aktywność',col:'#1c1c1e',svg:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="#ff2d55" stroke-width="2" stroke-dasharray="38 14" transform="rotate(-90 11 11)"/><circle cx="11" cy="11" r="5.4" stroke="#30d158" stroke-width="2" stroke-dasharray="24 12" transform="rotate(-90 11 11)"/><circle cx="11" cy="11" r="2.8" stroke="#64d2ff" stroke-width="2" stroke-dasharray="12 6" transform="rotate(-90 11 11)"/></svg>'},
+    {id:'hr',name:'Tętno',col:'#ff375f',svg:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M2 11h4l2-5 3 10 2-5h7" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'},
+    {id:'light',name:'Latarka',col:'#ffd60a',svg:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="4" stroke="#111" stroke-width="1.8"/><path d="M11 3v2M11 17v2M3 11h2M17 11h2M5.2 5.2l1.4 1.4M15.4 15.4l1.4 1.4M5.2 16.8l1.4-1.4M15.4 6.6l1.4-1.4" stroke="#111" stroke-width="1.5" stroke-linecap="round"/></svg>'},
+    {id:'settings',name:'Ustawienia',col:'#3a3a3c',svg:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="2.4" stroke="#fff" stroke-width="1.6"/><path d="M11 3.2v2.2M11 16.6v2.2M3.2 11h2.2M16.6 11h2.2M5.4 5.4l1.6 1.6M15 15l1.6 1.6M5.4 16.6l1.6-1.6M15 7l1.6-1.6" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>'},
+    {id:'track',name:'Ślad',col:'#0a84ff',svg:'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="1.6"/><path d="M11 4v7l4 3" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>'}
+  ];
 
-  <section class="panel" aria-label="Ustawienia symulatora">
-    <h2>Ustawienia (symulacja)</h2>
-    <label class="row">Przytrzymaj przycisk boczny, aby wybrać numer
-      <span class="switch"><input type="checkbox" id="optAuto" checked><i></i></span>
-    </label>
-    <label class="row">Szybkie tempo demonstracji
-      <span class="switch"><input type="checkbox" id="optDemo" checked><i></i></span>
-    </label>
-    <p class="fine" id="demoFine">W szybkim tempie minutowe oczekiwanie i 30 s odliczania są skrócone. Wyłącz, aby użyć czasów jak na zegarku.</p>
-    <div class="demos">
-      <button type="button" class="btn demo-btn" id="btnFallDemo">Wykrycie upadku</button>
-      <button type="button" class="btn demo-btn" id="btnCrashDemo">Wykrycie wypadku</button>
-    </div>
-    <div class="contacts">
-      <strong>Kontakty alarmowe (demo)</strong>
-      <ul>
-        <li>Anna Kowalska</li>
-        <li>Marek Wiśniewski</li>
-      </ul>
-      <p class="fine" style="margin-top:10px"><strong>Podgląd SMS, który zostałby wysłany</strong></p>
-      <div class="sms" id="smsPreview"></div>
-    </div>
-  </section>
+  const screen=document.getElementById('screen');
+  const layers={faces:document.getElementById('layer-faces'),home:document.getElementById('layer-home'),app:document.getElementById('layer-app'),cc:document.getElementById('layer-cc'),notif:document.getElementById('layer-notif'),stack:document.getElementById('layer-stack'),sos:document.getElementById('layer-sos')};
+  const sideBtn=document.getElementById('sideBtn');
+  const crown=document.getElementById('crown');
+  const holdRing=document.getElementById('holdRing');
+  const holdArc=document.getElementById('holdArc');
 
-  <script>
-  (function () {
-    const LOC = "52,2297° N, 21,0122° E (Warszawa, wyłącznie symulacja)";
-    const CONTACTS = "Anna Kowalska, Marek Wiśniewski";
-    const views = {};
-    document.querySelectorAll(".view").forEach(function (v) { views[v.dataset.view] = v; });
-    const screen = document.getElementById("screen");
-    const sideBtn = document.getElementById("sideBtn");
-    const holdRing = document.getElementById("holdRing");
-    const holdArc = document.getElementById("holdArc");
-    const optAuto = document.getElementById("optAuto");
-    const optDemo = document.getElementById("optDemo");
+  let ui='face', face=0, faceDrag=null, holding=false, holdStart=0, holdRaf=0, powered=true;
+  let audioCtx=null, timers=[], callReason='sos', callSec=0, recOn=false, sharing=false;
+  let gridX=0, gridY=0, gridDrag=null, usage={};
+  let stackI=0, hr=72, hrDir=1, tmr=null, tmrLeft=0, sw=0, swOn=false, swInt=0, alarmOn=false, alarmH=7, alarmM=0;
+  let silent=false, theater=false, air=false;
+  let calc='0', calcOp=null, calcAcc=null, calcFresh=true;
+  const opt={auto:true, demo:true};
 
-    let state = "face";
-    let holding = false;
-    let holdStart = 0;
-    let holdRaf = 0;
-    let timers = [];
-    let audioCtx = null;
-    let callReason = "sos";
-    let callSec = 0;
-    let recOn = false;
-    let recTimer = 0;
-    let sharing = false;
+  const SLIDER_MS=800, COUNT_SOS=5;
+  function demoOn(){return opt.demo}
+  function fallWaitMs(){return demoOn()?8000:60000}
+  function longCount(){return demoOn()?8:30}
+  function crashAlertMs(){return demoOn()?5000:10000}
 
-    const SLIDER_MS = 800;
-    const COUNT_SOS = 5;
+  function initAudio(){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!audioCtx)audioCtx=new AC();if(audioCtx.state==='suspended')audioCtx.resume()}
+  function beep(vol,freqs,gap,dur){if(!audioCtx)return;const now=audioCtx.currentTime;(freqs||[880,1175]).forEach(function(freq,i){const t=now+i*(gap||0.16);const osc=audioCtx.createOscillator(),g=audioCtx.createGain();osc.type='sine';osc.frequency.value=freq;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(0.02,vol||0.2),t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.14));osc.connect(g);g.connect(audioCtx.destination);osc.start(t);osc.stop(t+(dur||0.15))})}
+  function vibrate(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
+  function later(fn,ms){const id=setTimeout(fn,ms);timers.push(id);return id}
+  function every(fn,ms){const id=setInterval(fn,ms);timers.push(id);return id}
+  function clearTimers(){timers.forEach(function(id){clearTimeout(id);clearInterval(id)});timers=[]}
 
-    function demoOn() { return optDemo.checked; }
-    function fallWaitMs() { return demoOn() ? 8000 : 60000; }
-    function longCount() { return demoOn() ? 8 : 30; }
-    function crashAlertMs() { return demoOn() ? 5000 : 10000; }
+  function showLayer(name){
+    ui=name;
+    Object.keys(layers).forEach(function(k){layers[k].classList.toggle('on',k===name)});
+    screen.scrollTop=0;
+    if(name!=='app') layers.app.removeAttribute('data-app');
+  }
+  function goFace(){
+    if(!powered) return;
+    clearTimers(); holding=false; sideBtn.classList.remove('pressed'); setRing(0); recOn=false;
+    showSos(null); showLayer('face');
+  }
+  function goHome(){
+    if(!powered) return;
+    if(ui==='sos' && sosState==='power') return;
+    if(ui==='sos'){clearTimers();showSos(null)}
+    showLayer('home'); layoutGrid();
+  }
 
-    function smsText(reason) {
-      var base;
-      if (reason === "fall") {
-        base = "SYMULACJA — to nie jest prawdziwy SMS.\nZegarek wykrył niebezpieczny upadek i wezwał służby ratunkowe (112).\nPołożenie: " + LOC + "\nOdbiorcy: " + CONTACTS;
-      } else if (reason === "crash") {
-        base = "SYMULACJA — to nie jest prawdziwy SMS.\nZegarek wykrył poważny wypadek samochodowy i wezwał służby ratunkowe (112).\nPołożenie: " + LOC + "\nOdbiorcy: " + CONTACTS;
-      } else {
-        base = "SYMULACJA — to nie jest prawdziwy SMS.\nJan Nowak wezwał służby ratunkowe (112).\nPołożenie: " + LOC + "\nOdbiorcy: " + CONTACTS;
-      }
-      return base;
-    }
-    function refreshSmsPreview() {
-      document.getElementById("smsPreview").textContent = smsText(callReason);
-    }
-    refreshSmsPreview();
+  function pad(n){return String(n).padStart(2,'0')}
+  function updateClock(){
+    const now=new Date();
+    const hh=pad(now.getHours()), mm=pad(now.getMinutes()), ss=pad(now.getSeconds());
+    const d=now.toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'});
+    const D=d.charAt(0).toUpperCase()+d.slice(1);
+    ['d0','d1','d2'].forEach(function(id){const el=document.getElementById(id);if(el)el.textContent=D});
+    ['t0','t1','t2'].forEach(function(id){const el=document.getElementById(id);if(el)el.textContent=hh+':'+mm});
+    document.getElementById('s0').textContent=ss;
+    hr+=hrDir*((Math.random()*0.6)+0.1);
+    if(hr>86)hrDir=-1; if(hr<62)hrDir=1;
+    const hri=Math.round(hr);
+    document.getElementById('cHr').textContent=hri;
+    document.getElementById('cHr2').textContent=hri+' ud./min';
+    document.getElementById('cAct').textContent='84%';
+    document.getElementById('cAct2').textContent='Ruch 420 / 500 kcal';
+    document.getElementById('cWea').textContent='1°';
+    document.getElementById('cWea2').textContent='1° · śnieg';
+    document.getElementById('cAlm').textContent=alarmOn?('Włączony · '+pad(alarmH)+':'+pad(alarmM)):'Wyłączony';
+    if(tmr&&tmrLeft>0) document.getElementById('cTmr').textContent=fmtMs(tmrLeft);
+    if(swOn) sw+=250;
+    if(alarmOn && now.getHours()===alarmH && now.getSeconds()===0 && now.getMinutes()===alarmM) pulseAlarm();
+  }
+  function fmtMs(ms){const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+pad(s%60)}
+  updateClock(); setInterval(updateClock,250);
 
-    function initAudio() {
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      if (!audioCtx) audioCtx = new AC();
-      if (audioCtx.state === "suspended") audioCtx.resume();
-    }
-    function beep(vol, freqs, gap, dur) {
-      if (!audioCtx) return;
-      var now = audioCtx.currentTime;
-      (freqs || [880, 1175]).forEach(function (freq, i) {
-        var t = now + i * (gap || 0.16);
-        var osc = audioCtx.createOscillator();
-        var g = audioCtx.createGain();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(Math.max(0.02, vol || 0.2), t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.14));
-        osc.connect(g); g.connect(audioCtx.destination);
-        osc.start(t); osc.stop(t + (dur || 0.15));
-      });
-    }
-    function vibrate(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+  function setFace(i,anim){
+    face=(i+3)%3;
+    document.getElementById('facesTrack').style.transition=anim?'transform .45s var(--ease)':'none';
+    document.getElementById('facesTrack').style.transform='translateX('+(-face*100)+'%)';
+    document.querySelectorAll('#faceDots i').forEach(function(el,n){el.classList.toggle('on',n===face)});
+  }
+  setFace(0,false);
 
-    function later(fn, ms) {
-      var id = setTimeout(fn, ms);
-      timers.push(id);
-      return id;
-    }
-    function every(fn, ms) {
-      var id = setInterval(fn, ms);
-      timers.push(id);
-      return id;
-    }
-    function clearTimers() {
-      timers.forEach(function (id) { clearTimeout(id); clearInterval(id); });
-      timers = [];
-      if (recTimer) { clearInterval(recTimer); recTimer = 0; }
-    }
-
-    function show(name) {
-      state = name;
-      screen.dataset.state = name;
-      screen.scrollTop = 0; screen.scrollLeft = 0;
-      Object.keys(views).forEach(function (k) {
-        views[k].classList.toggle("active", k === name);
-        views[k].scrollTop = 0; views[k].scrollLeft = 0;
-      });
-    }
-    screen.addEventListener("scroll", function () { screen.scrollTop = 0; screen.scrollLeft = 0; });
-
-    function setRing(p) {
-      var v = Math.max(0, Math.min(1, p));
-      holdArc.style.strokeDashoffset = String(100 - v * 100);
-      holdRing.classList.toggle("on", v > 0.02 && (holding || v < 0.99));
-      if (!holding && v === 0) holdRing.classList.remove("on");
-    }
-
-    function updateClock() {
-      var now = new Date();
-      document.getElementById("faceTime").textContent =
-        String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
-      document.getElementById("faceSec").textContent = String(now.getSeconds()).padStart(2, "0");
-      var d = now.toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" });
-      document.getElementById("faceDate").textContent = d.charAt(0).toUpperCase() + d.slice(1);
-      document.getElementById("faceRing").style.setProperty("--p", (now.getSeconds() / 60 * 100) + "%");
-    }
-    updateClock();
-    setInterval(updateClock, 250);
-
-    function resetSliders(root) {
-      (root || document).querySelectorAll(".slider").forEach(function (sl) {
-        var knob = sl.querySelector(".knob");
-        var label = sl.querySelector(".label");
-        var fill = sl.querySelector(".fill");
-        knob.style.left = "3px";
-        label.style.opacity = "1";
-        if (fill) fill.style.width = "0px";
-        if (typeof sl._resetSlider === "function") sl._resetSlider();
-      });
-    }
-
-    function goFace() {
-      clearTimers();
-      holding = false;
-      sideBtn.classList.remove("pressed");
-      setRing(0);
-      recOn = false;
-      resetSliders();
-      show("face");
-    }
-
-    function showSliders() {
-      if (state === "power") return;
-      resetSliders();
-      show("sliders");
-    }
-
-    function startSosCountdown() {
-      if (state === "countdown" || state === "call") return;
-      clearTimers();
-      show("countdown");
-      var left = COUNT_SOS;
-      document.getElementById("cdNum").textContent = String(left);
-      document.getElementById("cdNote").textContent = "Puść przycisk boczny, aby anulować";
-      beep(0.22, [880, 1175]);
-      vibrate([180, 70, 180]);
-      every(function () {
-        if (state !== "countdown") return;
-        left -= 1;
-        if (left <= 0) { clearTimers(); startCall("sos"); return; }
-        document.getElementById("cdNum").textContent = String(left);
-        beep(0.22 + (COUNT_SOS - left) * 0.03, [880, 1175]);
-        vibrate([180, 70, 180]);
-      }, 1000);
-    }
-
-    function locHtml() {
-      return "<strong>Położenie (symulacja)</strong>" + LOC + "<br>Udostępniane służbom ratunkowym w tej demonstracji nie jest prawdziwe.";
-    }
-
-    function startCall(reason) {
-      clearTimers();
-      holding = false;
-      sideBtn.classList.remove("pressed");
-      setRing(0);
-      callReason = reason || "sos";
-      refreshSmsPreview();
-      show("call");
-      callSec = 0;
-      document.getElementById("callTimer").textContent = "00:00";
-      document.getElementById("callTitle").innerHTML = "Łączę z 112<br>(SYMULACJA)";
-      document.getElementById("callLoc").innerHTML = locHtml();
-      var recWrap = document.getElementById("callRecWrap");
-      var recText = document.getElementById("callRecText");
-      recOn = (callReason === "fall" || callReason === "crash");
-      recWrap.hidden = !recOn;
-      if (callReason === "fall") {
-        recText.textContent = "Nagrany komunikat (symulacja): zegarek wykrył niebezpieczny upadek. Położenie: " + LOC + ".";
-      } else if (callReason === "crash") {
-        recText.textContent = "Nagrany komunikat (symulacja): urządzenie wykryło poważny wypadek samochodowy i brak reakcji. Położenie: " + LOC + ".";
-      }
-      vibrate([400]);
-      later(function () {
-        if (state === "call") document.getElementById("callTitle").innerHTML = "Połączono z 112<br>(SYMULACJA)";
-      }, 1800);
-      every(function () {
-        callSec += 1;
-        var m = String(Math.floor(callSec / 60)).padStart(2, "0");
-        var s = String(callSec % 60).padStart(2, "0");
-        document.getElementById("callTimer").textContent = m + ":" + s;
-        if (recOn && callSec % 5 === 1) beep(callSec < 6 ? 0.28 : 0.1, [520, 640], 0.2, 0.18);
-      }, 1000);
-    }
-
-    function hangUp() {
-      clearTimers();
-      recOn = false;
-      document.getElementById("askSmsBody").textContent = smsText(callReason);
-      show("asksms");
-    }
-
-    function confirmSms(yes) {
-      if (yes) {
-        sharing = true;
-        document.getElementById("shareLoc").innerHTML = locHtml() + "<br>SMS wysłany do: " + CONTACTS + ".";
-        show("sharing");
-      } else {
-        sharing = false;
-        show("cancelled");
-      }
-    }
-
-    function startFall() {
-      initAudio();
-      clearTimers();
-      resetSliders(document.getElementById("view-fall"));
-      show("fall");
-      callReason = "fall";
-      refreshSmsPreview();
-      beep(0.24, [700, 980]);
-      vibrate([120, 60, 120, 60, 200]);
-      var wait = fallWaitMs();
-      document.getElementById("fallWaitNote").textContent = demoOn()
-        ? "Brak ruchu: odliczanie startuje za " + Math.round(wait / 1000) + " s (w rzeczywistości ok. 1 min)."
-        : "Jeśli nie ma ruchu przez ok. minutę, zegarek zacznie 30-sekundowe odliczanie.";
-      later(function () {
-        if (state !== "fall") return;
-        startLongCountdown("fall");
-      }, wait);
-    }
-
-    function startCrash() {
-      initAudio();
-      clearTimers();
-      resetSliders(document.getElementById("view-crash"));
-      show("crash");
-      callReason = "crash";
-      refreshSmsPreview();
-      beep(0.26, [640, 900]);
-      vibrate([200, 80, 200]);
-      var wait = crashAlertMs();
-      document.getElementById("crashWaitNote").textContent = demoOn()
-        ? "Alert " + Math.round(wait / 1000) + " s (w rzeczywistości 10 s), potem odliczanie."
-        : "Alert ok. 10 s. Jeśli nie zareagujesz, zacznie się 30-sekundowe odliczanie.";
-      later(function () {
-        if (state !== "crash") return;
-        startLongCountdown("crash");
-      }, wait);
-    }
-
-    function startLongCountdown(kind) {
-      clearTimers();
-      var left = longCount();
-      var view = kind === "crash" ? "crashcd" : "fallcd";
-      var num = document.getElementById(kind === "crash" ? "crashCdNum" : "fallCdNum");
-      var note = document.getElementById(kind === "crash" ? "crashCdNote" : "fallCdNote");
-      show(view);
-      num.textContent = String(left);
-      note.textContent = demoOn()
-        ? "Demo: " + left + " s (w rzeczywistości 30 s). Sygnał narasta. Anuluj, aby przerwać."
-        : "Odliczanie 30 s — sygnał narasta. Anuluj, aby nie wzywać służb.";
-      var tick = function (n) {
-        var vol = 0.16 + (longCount() - n) / longCount() * 0.22;
-        beep(vol, [780, 1100, 780], 0.12, 0.11);
-        vibrate([80, 40, 80, 40, 160]);
-      };
-      tick(left);
-      every(function () {
-        left -= 1;
-        if (left <= 0) { startCall(kind); return; }
-        num.textContent = String(left);
-        tick(left);
-      }, 1000);
-    }
-
-    function holdTarget() {
-      return optAuto.checked ? (SLIDER_MS + 1000) : SLIDER_MS;
-    }
-    function onHoldFrame(now) {
-      if (!holding) return;
-      var elapsed = now - holdStart;
-      if (state === "face" || state === "sliders") {
-        setRing(elapsed / holdTarget());
-        if (state === "face" && elapsed >= SLIDER_MS) showSliders();
-        if (optAuto.checked && (state === "sliders" || state === "face") && elapsed >= holdTarget()) {
-          startSosCountdown();
-          setRing(1);
-          return;
-        }
-      }
-      holdRaf = requestAnimationFrame(onHoldFrame);
-    }
-    function onSideDown(e) {
-      if (e && e.preventDefault) e.preventDefault();
-      initAudio();
-      if (state === "power") { goFace(); return; }
-      if (state !== "face" && state !== "sliders") return;
-      holding = true;
-      sideBtn.classList.add("pressed");
-      holdStart = performance.now();
-      cancelAnimationFrame(holdRaf);
-      holdRaf = requestAnimationFrame(onHoldFrame);
-    }
-    function onSideUp() {
-      if (!holding) { sideBtn.classList.remove("pressed"); return; }
-      holding = false;
-      sideBtn.classList.remove("pressed");
-      cancelAnimationFrame(holdRaf);
-      setRing(0);
-      if (state === "countdown") {
-        clearTimers();
-        showSliders();
-      }
-    }
-
-    sideBtn.addEventListener("pointerdown", onSideDown);
-    window.addEventListener("pointerup", onSideUp);
-    window.addEventListener("pointercancel", onSideUp);
-    document.getElementById("crown").addEventListener("click", function () {
-      if (state === "call" || state === "power") return;
-      goFace();
+  (function(){
+    const el=layers.faces;
+    let x0,y0,t0,mode;
+    el.addEventListener('pointerdown',function(e){
+      if(ui!=='face') return;
+      x0=e.clientX;y0=e.clientY;t0=Date.now();mode=null;faceDrag={x:e.clientX};
+      try{el.setPointerCapture(e.pointerId)}catch(err){}
     });
-    document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
-
-    function setupSlider(root, action) {
-      var knob = root.querySelector(".knob");
-      var label = root.querySelector(".label");
-      var fill = root.querySelector(".fill");
-      var dragging = false, startX = 0, startL = 3, max = 0, lastX = 0, lastT = 0, vx = 0, done = false, raf = 0;
-      root._resetSlider = function () {
-        done = false; dragging = false; cancelAnimationFrame(raf);
-      };
-
-      function bounds() { max = Math.max(40, root.clientWidth - knob.offsetWidth - 3); }
-      function apply(x) {
-        x = Math.max(3, Math.min(max, x));
-        knob.style.left = x + "px";
-        label.style.opacity = String(1 - Math.min(1, (x - 3) / (max * 0.65)));
-        if (fill) fill.style.width = (x + 22) + "px";
-        return x;
+    el.addEventListener('pointermove',function(e){
+      if(!faceDrag||ui!=='face') return;
+      const dx=e.clientX-x0, dy=e.clientY-y0;
+      if(!mode && Math.hypot(dx,dy)>16){
+        mode=Math.abs(dx)>Math.abs(dy)?'h':(dy<0?'up':'dn');
       }
-      function releaseCap() {
-        try { if (knob.releasePointerCapture && knob.hasPointerCapture) {
-          /* best-effort; ignore if none */
-        } } catch (e) {}
+      if(mode==='h'){
+        const w=el.clientWidth;
+        document.getElementById('facesTrack').style.transition='none';
+        document.getElementById('facesTrack').style.transform='translateX('+((-face*w+dx)/w*100)+'%)';
       }
-      function complete() {
-        if (done) return;
-        done = true; dragging = false;
-        apply(max);
-        releaseCap();
-        if (action === "sos" || action === "fallsos" || action === "crashsos") startCall(action === "sos" ? "sos" : action === "fallsos" ? "fall" : "crash");
-        else if (action === "medical") { resetSliders(); show("medical"); }
-        else if (action === "power") { resetSliders(); show("power"); }
-      }
-      function springBack(from, vel) {
-        var x = from, v = vel, last = performance.now();
-        function step(now) {
-          var dt = Math.min(32, now - last) / 16.67; last = now;
-          if (x >= max - 2) { complete(); return; }
-          v *= Math.pow(0.9, dt);
-          var pull = (3 - x) * 0.18;
-          v += pull * dt;
-          x += v * dt * 16;
-          if (x <= 3.2 && Math.abs(v) < 0.4) { apply(3); return; }
-          apply(x);
-          raf = requestAnimationFrame(step);
-        }
-        cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(step);
-      }
-      function endDrag() {
-        if (!dragging) return;
-        dragging = false;
-        if (done) return;
-        var x = parseFloat(knob.style.left) || 3;
-        if (x >= max * 0.78) complete();
-        else springBack(x, vx);
-      }
-      function down(e) {
-        e.preventDefault(); e.stopPropagation();
-        initAudio();
-        bounds();
-        dragging = true; done = false;
-        cancelAnimationFrame(raf);
-        startX = e.clientX; startL = parseFloat(knob.style.left) || 3;
-        lastX = e.clientX; lastT = performance.now(); vx = 0;
-        try { knob.setPointerCapture(e.pointerId); } catch (err) {}
-      }
-      function move(e) {
-        if (!dragging) return;
-        var now = performance.now();
-        var x = apply(startL + (e.clientX - startX));
-        var dt = now - lastT;
-        if (dt > 0) vx = (e.clientX - lastX) / dt * 16.67;
-        lastX = e.clientX; lastT = now;
-        if (x >= max - 1) complete();
-      }
-      knob.addEventListener("pointerdown", down);
-      knob.addEventListener("pointermove", move);
-      root.addEventListener("pointerdown", function (e) {
-        if (e.target === knob) return;
-        down(e);
-        startL = 3;
-      });
-      root.addEventListener("pointermove", function (e) {
-        if (e.target === knob) return;
-        move(e);
-      });
-      window.addEventListener("pointerup", endDrag);
-      window.addEventListener("pointercancel", endDrag);
+    });
+    function end(e){
+      if(!faceDrag||ui!=='face'){faceDrag=null;return}
+      const dx=(e.clientX||x0)-x0, dy=(e.clientY||y0)-y0;
+      faceDrag=null;
+      if(mode==='h'){ if(dx<-40) setFace(face+1,true); else if(dx>40) setFace(face-1,true); else setFace(face,true); }
+      else if(mode==='up'){ initAudio(); showLayer('cc'); }
+      else if(mode==='dn'){ showLayer('notif'); }
+      else if(Math.hypot(dx,dy)<10 && Date.now()-t0<400){
+        const t=e.target.closest('[data-open]');
+        if(t) openApp(t.getAttribute('data-open'));
+      } else setFace(face,true);
     }
-
-    setupSlider(document.getElementById("slPower"), "power");
-    setupSlider(document.getElementById("slMed"), "medical");
-    setupSlider(document.getElementById("slSos"), "sos");
-    setupSlider(document.getElementById("slFallSos"), "fallsos");
-    setupSlider(document.getElementById("slCrashSos"), "crashsos");
-
-    document.getElementById("btnHang").addEventListener("click", hangUp);
-    document.getElementById("btnSmsYes").addEventListener("click", function () { confirmSms(true); });
-    document.getElementById("btnSmsNo").addEventListener("click", function () { confirmSms(false); });
-    document.getElementById("btnShareOk").addEventListener("click", goFace);
-    document.getElementById("btnStopShare").addEventListener("click", function () {
-      sharing = false; goFace();
-    });
-    document.getElementById("btnCancelOk").addEventListener("click", goFace);
-    document.getElementById("btnMedClose").addEventListener("click", showSliders);
-    document.getElementById("btnTrack").addEventListener("click", function () { show("track"); });
-    document.getElementById("btnTrackClose").addEventListener("click", showSliders);
-    document.getElementById("btnImOk").addEventListener("click", goFace);
-    document.getElementById("btnNoFall").addEventListener("click", goFace);
-    document.getElementById("btnFallClose").addEventListener("click", goFace);
-    document.getElementById("btnFallCancel").addEventListener("click", goFace);
-    document.getElementById("btnCrashOk").addEventListener("click", goFace);
-    document.getElementById("btnCrashClose").addEventListener("click", goFace);
-    document.getElementById("btnCrashCancel").addEventListener("click", goFace);
-    document.getElementById("btnFallDemo").addEventListener("click", startFall);
-    document.getElementById("btnCrashDemo").addEventListener("click", startCrash);
-    document.getElementById("btnStopRec").addEventListener("click", function () {
-      recOn = false;
-      document.getElementById("callRecWrap").hidden = true;
-    });
+    el.addEventListener('pointerup',end);
+    el.addEventListener('pointercancel',end);
   })();
-  </script>
+  const gridSpace=document.getElementById('gridSpace');
+  const gridName=document.getElementById('gridName');
+  const icons=[];
+  function hexPos(){
+    const order=APPS.slice().sort(function(a,b){return (usage[b.id]||0)-(usage[a.id]||0)});
+    const rows=[[],[],[],[]];
+    const pattern=[3,4,3,4];
+    let k=0;
+    pattern.forEach(function(n,r){for(let i=0;i<n&&k<order.length;i++) rows[r].push(order[k++])});
+    const pts=[];
+    rows.forEach(function(row,r){
+      const y=(r-1.5)*58;
+      row.forEach(function(app,i){
+        const x=(i-(row.length-1)/2)*58;
+        pts.push({app:app,x:x,y:y});
+      });
+    });
+    return pts;
+  }
+  function layoutGrid(){
+    const pts=hexPos();
+    if(!icons.length){
+      pts.forEach(function(p){
+        const d=document.createElement('button');
+        d.type='button'; d.className='app-ic'; d.dataset.id=p.app.id;
+        d.style.background=p.app.col; d.innerHTML=p.app.svg; d.setAttribute('aria-label',p.app.name);
+        gridSpace.appendChild(d); icons.push(d);
+        d.addEventListener('pointerup',function(e){
+          if(gridDrag&&gridDrag.moved) return;
+          openApp(p.app.id);
+        });
+      });
+    }
+    const cx=gridSpace.clientWidth/2, cy=gridSpace.clientHeight/2-6;
+    let best=null,bestD=1e9;
+    pts.forEach(function(p,i){
+      const x=cx+p.x+gridX, y=cy+p.y+gridY;
+      const dist=Math.hypot(x-cx,y-cy);
+      const sc=Math.max(0.52, 1.22-dist/130);
+      const ic=icons[i];
+      ic.style.left=x+'px'; ic.style.top=y+'px';
+      ic.style.transform='scale('+sc+')';
+      ic.style.zIndex=String(Math.round(sc*20));
+      ic.style.opacity=String(Math.max(0.4,1-dist/240));
+      ic.dataset.name=p.app.name; ic.dataset.id=p.app.id;
+      if(dist<bestD){bestD=dist;best=p.app.name}
+    });
+    gridName.textContent=best||'';
+  }
+  (function(){
+    gridSpace.addEventListener('pointerdown',function(e){
+      gridDrag={x:e.clientX,y:e.clientY,ox:gridX,oy:gridY,moved:false};
+      try{gridSpace.setPointerCapture(e.pointerId)}catch(err){}
+    });
+    gridSpace.addEventListener('pointermove',function(e){
+      if(!gridDrag) return;
+      const dx=e.clientX-gridDrag.x, dy=e.clientY-gridDrag.y;
+      if(Math.hypot(dx,dy)>8) gridDrag.moved=true;
+      gridX=gridDrag.ox+dx; gridY=gridDrag.oy+dy;
+      const lim=90;
+      gridX=Math.max(-lim,Math.min(lim,gridX));
+      gridY=Math.max(-lim,Math.min(lim,gridY));
+      layoutGrid();
+    });
+    function end(){gridDrag=null}
+    gridSpace.addEventListener('pointerup',end);
+    gridSpace.addEventListener('pointercancel',end);
+  })();
+
+  function bump(id){usage[id]=(usage[id]||0)+1}
+  function openApp(id){
+    if(id==='track'){ initAudio(); showLayer('sos'); showSos('track'); return; }
+    bump(id);
+    layers.app.setAttribute('data-app',id);
+    document.getElementById('appHead').textContent=({timer:'Minutnik',stopwatch:'Stoper',alarm:'Alarm',calc:'Kalkulator',weather:'Pogoda',activity:'Aktywność',hr:'Tętno',light:'Latarka',settings:'Ustawienia'})[id]||id;
+    renderApp(id);
+    showLayer('app');
+  }
+  function renderApp(id){
+    const b=document.getElementById('appBody');
+    if(id==='timer'){
+      b.innerHTML='<div style="text-align:center;font-size:40px;font-weight:700;font-variant-numeric:tabular-nums" id="tmrV">'+fmtMs(tmrLeft||0)+'</div><div class="rowbtns"><button class="btn pill glass-dark" data-a="plus1">+1 min</button><button class="btn pill glass-dark" data-a="plus5">+5 min</button></div><div class="rowbtns"><button class="btn pill" style="background:#30d158;color:#000" data-a="start">Start</button><button class="btn pill glass-dark" data-a="reset">Zeruj</button></div>';
+      b.onclick=function(e){
+        const a=e.target.getAttribute('data-a'); if(!a)return;
+        if(a==='plus1') tmrLeft+=60000;
+        if(a==='plus5') tmrLeft+=300000;
+        if(a==='reset'){clearInterval(tmr);tmr=null;tmrLeft=0}
+        if(a==='start'){ if(tmr){clearInterval(tmr);tmr=null} else if(tmrLeft>0){ tmr=setInterval(function(){ tmrLeft-=250; if(tmrLeft<=0){tmrLeft=0;clearInterval(tmr);tmr=null;initAudio();beep(.25,[880,1175,880]);} const el=document.getElementById('tmrV'); if(el) el.textContent=fmtMs(tmrLeft); },250);} }
+        const el=document.getElementById('tmrV'); if(el) el.textContent=fmtMs(tmrLeft);
+      };
+    } else if(id==='stopwatch'){
+      b.innerHTML='<div style="text-align:center;font-size:36px;font-weight:700;font-variant-numeric:tabular-nums" id="swV">0:00.0</div><div class="rowbtns"><button class="btn pill" style="background:#30d158;color:#000" data-a="go" id="swGo">Start</button><button class="btn pill glass-dark" data-a="zero">Zeruj</button></div>';
+      function paint(){const el=document.getElementById('swV'); if(!el)return; const t=sw; const m=Math.floor(t/60000), s=Math.floor((t%60000)/1000), d=Math.floor((t%1000)/100); el.textContent=m+':'+pad(s)+'.'+d}
+      paint();
+      if(swInt) clearInterval(swInt);
+      swInt=setInterval(paint,100);
+      b.onclick=function(e){
+        const a=e.target.getAttribute('data-a'); if(!a)return;
+        if(a==='go'){ swOn=!swOn; e.target.textContent=swOn?'Stop':'Start'; }
+        if(a==='zero'){ swOn=false; sw=0; const g=document.getElementById('swGo'); if(g)g.textContent='Start'; paint(); }
+      };
+    } else if(id==='alarm'){
+      b.innerHTML='<div class="rowbtns"><button class="btn pill glass-dark" data-a="h-">-</button><span style="font-size:28px;font-weight:700;min-width:90px;text-align:center" id="alV">'+pad(alarmH)+':'+pad(alarmM)+'</span><button class="btn pill glass-dark" data-a="h+">+</button></div><div class="rowbtns"><button class="btn pill glass-dark" data-a="m-">- min</button><button class="btn pill glass-dark" data-a="m+">+ min</button></div><div class="rowbtns"><button class="btn pill" id="alOn" style="background:'+(alarmOn?'#30d158':'#3a3a40')+'" data-a="tog">'+(alarmOn?'Włączony':'Wyłączony')+'</button></div><p class="sub">Alarm tylko w tej sesji (symulacja).</p>';
+      b.onclick=function(e){
+        const a=e.target.getAttribute('data-a'); if(!a)return;
+        if(a==='h+') alarmH=(alarmH+1)%24; if(a==='h-') alarmH=(alarmH+23)%24;
+        if(a==='m+') alarmM=(alarmM+5)%60; if(a==='m-') alarmM=(alarmM+55)%60;
+        if(a==='tog') alarmOn=!alarmOn;
+        document.getElementById('alV').textContent=pad(alarmH)+':'+pad(alarmM);
+        const t=document.getElementById('alOn'); t.textContent=alarmOn?'Włączony':'Wyłączony'; t.style.background=alarmOn?'#30d158':'#3a3a40';
+      };
+    } else if(id==='calc'){
+      const keys=['7','8','9','/','4','5','6','*','1','2','3','-','0','.','=','+'];
+      b.innerHTML='<div class="calc"><b id="cv">'+calc+'</b>'+keys.map(function(k){return '<button class="glass-dark" data-k="'+k+'">'+k+'</button>'}).join('')+'<button class="glass-dark" data-k="C" style="grid-column:1/-1">C</button></div>';
+      b.onclick=function(e){
+        const k=e.target.getAttribute('data-k'); if(!k)return;
+        function show(){document.getElementById('cv').textContent=calc}
+        if(k==='C'){calc='0';calcOp=null;calcAcc=null;calcFresh=true;show();return}
+        if('0123456789.'.indexOf(k)>=0){ if(calcFresh){calc=(k==='.'?'0.':k);calcFresh=false} else { if(k==='.'&&calc.indexOf('.')>=0)return; calc=(calc==='0'&&k!=='.')?k:calc+k } show(); return; }
+        const n=parseFloat(calc);
+        if(k==='='){ if(calcOp&&calcAcc!=null){ calc=String(run(calcAcc,calcOp,n)); calcOp=null; calcAcc=null; calcFresh=true;} show(); return; }
+        if(calcOp&&calcAcc!=null&&!calcFresh){ calcAcc=run(calcAcc,calcOp,n); calc=String(calcAcc); }
+        else calcAcc=n;
+        calcOp=k; calcFresh=true; show();
+      };
+    } else if(id==='weather'){
+      b.innerHTML='<div style="text-align:center"><div style="color:#9cf;letter-spacing:.08em;font-size:10px;text-transform:uppercase">Łapsze Niżne</div><div style="font-size:52px;font-weight:700;margin:4px 0">1°</div><div>Zachmurzenie duże · śnieg</div><div class="sub">Odczuwalna −3° · wiatr 18 km/h<br>Jutro 3° · przejaśnienia<br>Dane przykładowe (symulacja)</div></div>';
+      b.onclick=null;
+    } else if(id==='activity'){
+      b.innerHTML='<svg class="rings" viewBox="0 0 96 96">'+
+        ring(40,'#ff2d55',0.84)+ring(30,'#30d158',0.62)+ring(20,'#64d2ff',0.75)+
+        '</svg><div class="sub">Ruch 420 / 500 kcal<br>Ćwiczenie 18 / 30 min<br>Postawa 9 / 12 godz.<br>Dane przykładowe</div>';
+      b.onclick=null;
+    } else if(id==='hr'){
+      b.innerHTML='<div class="hr-num" id="hrLive">'+Math.round(hr)+'</div><div class="hr-sub">ud./min · przykładowy odczyt</div><canvas class="spark" id="hrCv" width="200" height="64"></canvas>';
+      b.onclick=null;
+      drawHr();
+    } else if(id==='light'){
+      b.innerHTML='<p class="sub" style="color:#333">Ekran świeci na biało. Korona wraca do tarczy.</p>';
+      b.onclick=null;
+    } else if(id==='settings'){
+      b.innerHTML='<div class="set-row">Przytrzymaj przycisk boczny, aby wybrać numer<span class="switch"><input type="checkbox" id="optAuto"'+(opt.auto?' checked':'')+'><i></i></span></div>'+
+        '<div class="set-row">Szybkie tempo demonstracji<span class="switch"><input type="checkbox" id="optDemo"'+(opt.demo?' checked':'')+'><i></i></span></div>'+
+        '<div class="rowbtns" style="margin-top:12px"><button class="btn demo-btn" id="btnFallDemo">Wykrycie upadku</button><button class="btn demo-btn" id="btnCrashDemo">Wykrycie wypadku</button></div>'+
+        '<p class="sub">Kontakty demo: Anna Kowalska, Marek Wiśniewski. To symulator watchOS 27 — nikt nie jest wzywany.</p>';
+      b.onclick=null;
+      b.querySelector('#optAuto').onchange=function(){opt.auto=this.checked};
+      b.querySelector('#optDemo').onchange=function(){opt.demo=this.checked};
+      b.querySelector('#btnFallDemo').onclick=function(){startFall()};
+      b.querySelector('#btnCrashDemo').onclick=function(){startCrash()};
+    }
+  }
+  function run(a,op,b){ if(op==='+')return a+b; if(op==='-')return a-b; if(op==='*')return a*b; if(op==='/')return b?a/b:0; return b; }
+  function ring(r,c,p){const C=2*Math.PI*r,f=C*p;return '<circle cx="48" cy="48" r="'+r+'" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="7"/><circle cx="48" cy="48" r="'+r+'" fill="none" stroke="'+c+'" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+f+' '+(C-f)+'" transform="rotate(-90 48 48)"/>'}
+  const hrHist=[];
+  function drawHr(){
+    const cv=document.getElementById('hrCv'); if(!cv)return;
+    const ctx=cv.getContext('2d'); const w=cv.width,h=cv.height;
+    hrHist.push(hr); if(hrHist.length>40) hrHist.shift();
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='#ff375f'; ctx.lineWidth=2; ctx.beginPath();
+    hrHist.forEach(function(v,i){const x=i/(40-1)*w, y=h-(v-55)/40*h; if(i)ctx.lineTo(x,y); else ctx.moveTo(x,y)});
+    ctx.stroke();
+    const n=document.getElementById('hrLive'); if(n)n.textContent=String(Math.round(hr));
+  }
+  setInterval(function(){ if(ui==='app'&&layers.app.getAttribute('data-app')==='hr') drawHr(); },250);
+  function pulseAlarm(){ initAudio(); beep(.28,[880,1040,880],.15,.16); vibrate([200,80,200]); }
+
+  document.getElementById('layer-cc').addEventListener('click',function(e){
+    const btn=e.target.closest('[data-cc]'); if(!btn)return;
+    const k=btn.getAttribute('data-cc');
+    initAudio();
+    if(k==='light'){ openApp('light'); return; }
+    if(k==='settings'){ openApp('settings'); return; }
+    if(k==='silent'){ silent=!silent; btn.classList.toggle('on',silent); }
+    if(k==='theater'){ theater=!theater; btn.classList.toggle('on',theater); }
+    if(k==='air'){ air=!air; btn.classList.toggle('on',air); }
+    if(k==='ping'){ beep(.2,[1200,800],.12,.1); vibrate([80,40,80]); }
+  });
+
+  function renderStack(){
+    const cards=[
+      {t:'Pogoda · Łapsze Niżne',v:'1° · śnieg',open:'weather'},
+      {t:'Aktywność',v:'Ruch 84%',open:'activity'},
+      {t:'Tętno',v:Math.round(hr)+' ud./min',open:'hr'},
+      {t:'Minutnik',v:fmtMs(tmrLeft||0),open:'timer'}
+    ];
+    const c=cards[stackI%cards.length];
+    document.getElementById('stackList').innerHTML='<div class="stack-card glass" data-open="'+c.open+'"><div class="t">'+c.t+'</div><div class="v">'+c.v+'</div></div><div class="sub">Przewiń koroną, aby zmienić kartę. Kliknij koronę, aby zamknąć.</div>';
+    document.getElementById('stackList').onclick=function(e){const t=e.target.closest('[data-open]'); if(t) openApp(t.getAttribute('data-open'));};
+  }
+
+  (function(){
+    let y0=0, moved=0, down=false;
+    crown.addEventListener('pointerdown',function(e){e.preventDefault(); initAudio(); down=true; y0=e.clientY; moved=0; try{crown.setPointerCapture(e.pointerId)}catch(err){}});
+    crown.addEventListener('pointermove',function(e){ if(!down)return; const dy=y0-e.clientY; if(Math.abs(e.clientY-y0)>2){ moved+=Math.abs(e.clientY-y0); y0=e.clientY; crownDelta(dy);} });
+    crown.addEventListener('pointerup',function(){ down=false; if(moved<8) crownClick(); });
+    crown.addEventListener('pointercancel',function(){down=false});
+    screen.addEventListener('wheel',function(e){ e.preventDefault(); initAudio(); crownDelta(-e.deltaY); },{passive:false});
+  })();
+  function crownDelta(dy){
+    if(!powered) return;
+    if(ui==='sos') return;
+    if(ui==='face' || ui==='stack'){
+      if(ui==='face' && dy>4){ showLayer('stack'); renderStack(); }
+      else if(ui==='stack'){
+        if(dy<-8 && stackI===0){ showLayer('face'); return; }
+        if(Math.abs(dy)>10){ stackI=Math.max(0, stackI+(dy>0?1:-1)); renderStack(); }
+      }
+    } else if(ui==='home'){
+      gridY=Math.max(-90,Math.min(90,gridY+dy*0.4));
+      layoutGrid();
+    } else if(ui==='app'){
+      const body=document.getElementById('appBody');
+      body.scrollTop-=dy;
+    }
+  }
+  function crownClick(){
+    if(!powered) return;
+    if(ui==='sos' && sosState==='power') return;
+    if(ui==='face') goHome();
+    else goFace();
+  }
+  let sosState=null;
+  const sosViews={};
+  document.querySelectorAll('.sos-view').forEach(function(v){sosViews[v.id.replace('sos-','')]=v});
+  function showSos(name){
+    sosState=name;
+    Object.keys(sosViews).forEach(function(k){sosViews[k].classList.toggle('on',k===name)});
+    if(!name){ layers.sos.classList.remove('on'); if(ui==='sos') ui='face'; }
+  }
+  function smsText(reason){
+    if(reason==='fall') return 'SYMULACJA — to nie jest prawdziwy SMS.\nZegarek wykrył niebezpieczny upadek i wezwał służby ratunkowe (112).\nPołożenie: '+LOC+'\nOdbiorcy: '+CONTACTS;
+    if(reason==='crash') return 'SYMULACJA — to nie jest prawdziwy SMS.\nZegarek wykrył poważny wypadek samochodowy i wezwał służby ratunkowe (112).\nPołożenie: '+LOC+'\nOdbiorcy: '+CONTACTS;
+    return 'SYMULACJA — to nie jest prawdziwy SMS.\nJan Nowak wezwał służby ratunkowe (112).\nPołożenie: '+LOC+'\nOdbiorcy: '+CONTACTS;
+  }
+  function locHtml(){return '<strong style="color:#fff">Położenie (symulacja)</strong><br>'+LOC}
+  function setRing(p){const v=Math.max(0,Math.min(1,p)); holdArc.style.strokeDashoffset=String(100-v*100); holdRing.classList.toggle('on',v>0.02&&(holding||v<0.99)); if(!holding&&v===0) holdRing.classList.remove('on')}
+  function resetSliders(root){
+    (root||document).querySelectorAll('.slider').forEach(function(sl){
+      const knob=sl.querySelector('.knob'), label=sl.querySelector('.label'), fill=sl.querySelector('.fill');
+      knob.style.left='3px'; label.style.opacity='1'; if(fill) fill.style.width='0px';
+      if(typeof sl._resetSlider==='function') sl._resetSlider();
+    });
+  }
+  function openSliders(){ resetSliders(); showLayer('sos'); showSos('sliders'); }
+  function startSosCountdown(){
+    if(sosState==='countdown'||sosState==='call') return;
+    clearTimers(); showLayer('sos'); showSos('countdown');
+    let left=COUNT_SOS; document.getElementById('cdNum').textContent=String(left);
+    beep(0.22,[880,1175]); vibrate([180,70,180]);
+    every(function(){
+      if(sosState!=='countdown') return;
+      left-=1; if(left<=0){clearTimers(); startCall('sos'); return;}
+      document.getElementById('cdNum').textContent=String(left);
+      beep(0.22+(COUNT_SOS-left)*0.03,[880,1175]); vibrate([180,70,180]);
+    },1000);
+  }
+  function startCall(reason){
+    clearTimers(); holding=false; sideBtn.classList.remove('pressed'); setRing(0);
+    callReason=reason||'sos'; showLayer('sos'); showSos('call');
+    callSec=0; document.getElementById('callTimer').textContent='00:00';
+    document.getElementById('callTitle').innerHTML='Łączę z 112<br>(SYMULACJA)';
+    document.getElementById('callLoc').innerHTML=locHtml();
+    recOn=(callReason==='fall'||callReason==='crash');
+    document.getElementById('callRecWrap').hidden=!recOn;
+    document.getElementById('callRecText').textContent=callReason==='fall'
+      ?('Nagrany komunikat (symulacja): zegarek wykryl niebezpieczny upadek. Położenie: '+LOC+'.')
+      :('Nagrany komunikat (symulacja): urzadzenie wykrylo powazny wypadek samochodowy. Położenie: '+LOC+'.');
+    vibrate([400]);
+    later(function(){ if(sosState==='call') document.getElementById('callTitle').innerHTML='Połączono z 112<br>(SYMULACJA)'; },1800);
+    every(function(){
+      callSec+=1;
+      document.getElementById('callTimer').textContent=pad(Math.floor(callSec/60))+':'+pad(callSec%60);
+      if(recOn&&callSec%5===1) beep(callSec<6?0.28:0.1,[520,640],0.2,0.18);
+    },1000);
+  }
+  function hangUp(){ clearTimers(); recOn=false; document.getElementById('askSmsBody').textContent=smsText(callReason); showSos('asksms'); }
+  function confirmSms(yes){
+    if(yes){ sharing=true; document.getElementById('shareLoc').innerHTML=locHtml()+'<br>SMS wysłany do: '+CONTACTS+'.'; showSos('sharing'); }
+    else { sharing=false; showSos('cancelled'); }
+  }
+  function startFall(){
+    initAudio(); clearTimers(); resetSliders(document.getElementById('sos-fall'));
+    showLayer('sos'); showSos('fall'); callReason='fall';
+    beep(0.24,[700,980]); vibrate([120,60,120,60,200]);
+    const wait=fallWaitMs();
+    document.getElementById('fallWaitNote').textContent=demoOn()?('Brak ruchu: odliczanie za '+Math.round(wait/1000)+' s (w rzeczywistości ok. 1 min).'):'Jeśli nie ma ruchu przez ok. minutę, zacznie się 30-sekundowe odliczanie.';
+    later(function(){ if(sosState==='fall') startLongCountdown('fall'); }, wait);
+  }
+  function startCrash(){
+    initAudio(); clearTimers(); resetSliders(document.getElementById('sos-crash'));
+    showLayer('sos'); showSos('crash'); callReason='crash';
+    beep(0.26,[640,900]); vibrate([200,80,200]);
+    const wait=crashAlertMs();
+    document.getElementById('crashWaitNote').textContent=demoOn()?('Alert '+Math.round(wait/1000)+' s (w rzeczywistości 10 s), potem odliczanie.'):'Alert ok. 10 s. Jeśli nie zareagujesz, zacznie się 30-sekundowe odliczanie.';
+    later(function(){ if(sosState==='crash') startLongCountdown('crash'); }, wait);
+  }
+  function startLongCountdown(kind){
+    clearTimers(); let left=longCount();
+    const view=kind==='crash'?'crashcd':'fallcd';
+    const num=document.getElementById(kind==='crash'?'crashCdNum':'fallCdNum');
+    const note=document.getElementById(kind==='crash'?'crashCdNote':'fallCdNote');
+    showSos(view); num.textContent=String(left);
+    note.textContent=demoOn()?('Demo: '+left+' s (w rzeczywistości 30 s). Anuluj, aby przerwać.'):'Odliczanie 30 s — sygnał narasta. Anuluj, aby nie wzywać służb.';
+    function tick(n){ const vol=0.16+(longCount()-n)/longCount()*0.22; beep(vol,[780,1100,780],0.12,0.11); vibrate([80,40,80,40,160]); }
+    tick(left);
+    every(function(){ left-=1; if(left<=0){ startCall(kind); return;} num.textContent=String(left); tick(left); },1000);
+  }
+
+  function holdTarget(){ return opt.auto?(SLIDER_MS+1000):SLIDER_MS; }
+  function onHoldFrame(now){
+    if(!holding) return;
+    const elapsed=now-holdStart;
+    if(ui!=='sos' || sosState==='sliders' || !sosState){
+      setRing(elapsed/holdTarget());
+      if((ui!=='sos'||!sosState) && elapsed>=SLIDER_MS) openSliders();
+      if(opt.auto && (sosState==='sliders'||!sosState) && elapsed>=holdTarget()){ startSosCountdown(); setRing(1); return; }
+    }
+    holdRaf=requestAnimationFrame(onHoldFrame);
+  }
+  function onSideDown(e){
+    if(e&&e.preventDefault) e.preventDefault();
+    initAudio();
+    if(!powered || sosState==='power'){ powered=true; goFace(); return; }
+    if(sosState==='countdown'||sosState==='call') return;
+    holding=true; sideBtn.classList.add('pressed'); holdStart=performance.now();
+    cancelAnimationFrame(holdRaf); holdRaf=requestAnimationFrame(onHoldFrame);
+  }
+  function onSideUp(){
+    if(!holding){ sideBtn.classList.remove('pressed'); return; }
+    holding=false; sideBtn.classList.remove('pressed'); cancelAnimationFrame(holdRaf); setRing(0);
+    if(sosState==='countdown'){ clearTimers(); openSliders(); }
+    else if(powered && ui!=='sos'){ openSliders(); }
+  }
+  sideBtn.addEventListener('pointerdown',onSideDown);
+  window.addEventListener('pointerup',onSideUp);
+  window.addEventListener('pointercancel',onSideUp);
+
+  function setupSlider(root, action){
+    const knob=root.querySelector('.knob'), label=root.querySelector('.label'), fill=root.querySelector('.fill');
+    let dragging=false,startX=0,startL=3,max=0,lastX=0,lastT=0,vx=0,done=false,raf=0;
+    root._resetSlider=function(){done=false;dragging=false;cancelAnimationFrame(raf)};
+    function bounds(){max=Math.max(40,root.clientWidth-knob.offsetWidth-3)}
+    function apply(x){x=Math.max(3,Math.min(max,x)); knob.style.left=x+'px'; label.style.opacity=String(1-Math.min(1,(x-3)/(max*0.65))); if(fill) fill.style.width=(x+22)+'px'; return x}
+    function complete(){
+      if(done) return; done=true; dragging=false; apply(max);
+      if(action==='sos'||action==='fallsos'||action==='crashsos') startCall(action==='sos'?'sos':action==='fallsos'?'fall':'crash');
+      else if(action==='medical'){ resetSliders(); showSos('medical'); }
+      else if(action==='power'){ resetSliders(); powered=false; showSos('power'); }
+    }
+    function springBack(from,vel){
+      let x=from,v=vel,last=performance.now();
+      function step(now){const dt=Math.min(32,now-last)/16.67; last=now; if(x>=max-2){complete();return} v*=Math.pow(0.9,dt); v+=(3-x)*0.18*dt; x+=v*dt*16; if(x<=3.2&&Math.abs(v)<0.4){apply(3);return} apply(x); raf=requestAnimationFrame(step)}
+      cancelAnimationFrame(raf); raf=requestAnimationFrame(step);
+    }
+    function endDrag(){ if(!dragging) return; dragging=false; if(done) return; const x=parseFloat(knob.style.left)||3; if(x>=max*0.78) complete(); else springBack(x,vx); }
+    function down(e){ e.preventDefault(); e.stopPropagation(); initAudio(); bounds(); dragging=true; done=false; cancelAnimationFrame(raf); startX=e.clientX; startL=parseFloat(knob.style.left)||3; lastX=e.clientX; lastT=performance.now(); vx=0; try{knob.setPointerCapture(e.pointerId)}catch(err){} }
+    function move(e){ if(!dragging) return; const now=performance.now(); const x=apply(startL+(e.clientX-startX)); const dt=now-lastT; if(dt>0) vx=(e.clientX-lastX)/dt*16.67; lastX=e.clientX; lastT=now; if(x>=max-1) complete(); }
+    knob.addEventListener('pointerdown',down);
+    knob.addEventListener('pointermove',move);
+    root.addEventListener('pointerdown',function(e){ if(e.target===knob) return; down(e); startL=3; });
+    root.addEventListener('pointermove',function(e){ if(e.target===knob) return; move(e); });
+    window.addEventListener('pointerup',endDrag);
+    window.addEventListener('pointercancel',endDrag);
+  }
+  setupSlider(document.getElementById('slPower'),'power');
+  setupSlider(document.getElementById('slMed'),'medical');
+  setupSlider(document.getElementById('slSos'),'sos');
+  setupSlider(document.getElementById('slFallSos'),'fallsos');
+  setupSlider(document.getElementById('slCrashSos'),'crashsos');
+
+  document.getElementById('btnHang').onclick=hangUp;
+  document.getElementById('btnSmsYes').onclick=function(){confirmSms(true)};
+  document.getElementById('btnSmsNo').onclick=function(){confirmSms(false)};
+  document.getElementById('btnShareOk').onclick=goFace;
+  document.getElementById('btnStopShare').onclick=function(){sharing=false;goFace()};
+  document.getElementById('btnCancelOk').onclick=goFace;
+  document.getElementById('btnMedClose').onclick=openSliders;
+  document.getElementById('btnTrack').onclick=function(){showSos('track')};
+  document.getElementById('btnTrackClose').onclick=openSliders;
+  document.getElementById('btnImOk').onclick=goFace;
+  document.getElementById('btnNoFall').onclick=goFace;
+  document.getElementById('btnFallClose').onclick=goFace;
+  document.getElementById('btnFallCancel').onclick=goFace;
+  document.getElementById('btnCrashOk').onclick=goFace;
+  document.getElementById('btnCrashClose').onclick=goFace;
+  document.getElementById('btnCrashCancel').onclick=goFace;
+  document.getElementById('btnStopRec').onclick=function(){recOn=false;document.getElementById('callRecWrap').hidden=true};
+
+  function swipeClose(el, dir){
+    let y0=null;
+    el.addEventListener('pointerdown',function(e){y0=e.clientY; try{el.setPointerCapture(e.pointerId)}catch(err){}});
+    el.addEventListener('pointerup',function(e){ if(y0==null)return; const dy=e.clientY-y0; y0=null; if(dir==='cc'&&dy>40) goFace(); if(dir==='notif'&&dy<-40) goFace(); });
+  }
+  swipeClose(layers.cc,'cc');
+  swipeClose(layers.notif,'notif');
+
+  document.addEventListener('contextmenu',function(e){e.preventDefault()});
+  layoutGrid();
+})();
+</script>
 </body>
 </html>

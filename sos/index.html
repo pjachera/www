@@ -5,27 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0b0b0d">
-  <title>Symulator SOS</title>
+  <title>Symulator Alarmowe SOS</title>
   <style>
     :root {
       --bg: #0b0b0d;
-      --case: #1a1a1e;
-      --case-hi: #4a4a50;
-      --case-mid: #2c2c32;
-      --red: #ff2a2a;
-      --red-dim: #9a1010;
+      --red: #ff2d2d;
+      --red-deep: #b01010;
+      --green: #30d158;
       --amber: #ffcc00;
-      --text: #f4f4f6;
-      --muted: #9a9aa3;
+      --text: #f5f5f7;
+      --muted: #8e8e93;
+      --card: #16161a;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       min-height: 100%;
-      background: radial-gradient(ellipse at 50% 20%, #1a1a22 0%, var(--bg) 55%);
+      background: radial-gradient(ellipse at 50% 12%, #1c1c24 0%, var(--bg) 52%);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      -webkit-user-select: none;
-      user-select: none;
+      -webkit-user-select: none; user-select: none;
       -webkit-touch-callout: none;
       -webkit-tap-highlight-color: transparent;
       overscroll-behavior: none;
@@ -35,765 +34,859 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 12px 12px 28px;
+      padding: 12px 14px 36px;
     }
     .banner {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      width: min(420px, 100%);
-      margin-bottom: 14px;
+      position: sticky; top: 0; z-index: 80;
+      width: min(440px, 100%);
+      margin-bottom: 12px;
       padding: 10px 14px;
       background: var(--amber);
       color: #1a1200;
       font-weight: 800;
       font-size: 13px;
-      letter-spacing: 0.04em;
+      letter-spacing: .04em;
       text-align: center;
-      border-radius: 10px;
-      box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.25), 0 8px 24px rgba(0,0,0,.4);
       text-transform: uppercase;
+      border-radius: 10px;
+      box-shadow: 0 0 0 3px rgba(255,204,0,.25), 0 8px 24px rgba(0,0,0,.4);
     }
-    .hint {
-      margin: 8px 0 16px;
-      color: var(--muted);
-      font-size: 13px;
-      text-align: center;
-    }
-    .watch-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+    .hint { color: var(--muted); font-size: 13px; text-align: center; margin: 0 0 14px; line-height: 1.4; }
+    .watch-wrap { display: flex; flex-direction: column; align-items: center; }
     .band {
       width: 118px;
-      background: linear-gradient(90deg, #151518, #2a2a30 40%, #1c1c20);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+      background: linear-gradient(90deg, #141416, #2c2c32 42%, #1a1a1e);
     }
     .band-top {
-      height: 46px;
-      border-radius: 10px 10px 0 0;
-      mask-image: repeating-linear-gradient(to bottom, #000 0 7px, transparent 7px 9px);
+      height: 44px; border-radius: 10px 10px 0 0;
       -webkit-mask-image: repeating-linear-gradient(to bottom, #000 0 7px, transparent 7px 9px);
+      mask-image: repeating-linear-gradient(to bottom, #000 0 7px, transparent 7px 9px);
     }
     .band-bottom {
-      height: 56px;
-      border-radius: 0 0 10px 10px;
-      mask-image: repeating-linear-gradient(to bottom, transparent 0 2px, #000 2px 9px);
+      height: 52px; border-radius: 0 0 10px 10px;
       -webkit-mask-image: repeating-linear-gradient(to bottom, transparent 0 2px, #000 2px 9px);
+      mask-image: repeating-linear-gradient(to bottom, transparent 0 2px, #000 2px 9px);
     }
     .case {
       position: relative;
-      width: 268px;
-      height: 322px;
-      background:
-        linear-gradient(160deg, var(--case-hi) 0%, var(--case-mid) 28%, var(--case) 70%, #0e0e12 100%);
-      border-radius: 62px;
+      width: 272px; height: 328px;
+      background: linear-gradient(155deg, #5a5a62 0%, #2e2e34 26%, #1a1a1e 68%, #0c0c10 100%);
+      border-radius: 64px;
       box-shadow:
-        0 0 0 1px rgba(255,255,255,0.12),
-        0 1px 0 rgba(255,255,255,0.2) inset,
-        0 -8px 16px rgba(0,0,0,0.5) inset,
-        0 18px 40px rgba(0,0,0,0.55);
+        0 0 0 1px rgba(255,255,255,.14),
+        0 1px 0 rgba(255,255,255,.22) inset,
+        0 -10px 18px rgba(0,0,0,.5) inset,
+        0 20px 44px rgba(0,0,0,.55);
     }
     .bezel {
-      position: absolute;
-      inset: 14px;
-      border-radius: 50px;
+      position: absolute; inset: 14px;
+      border-radius: 52px;
       background: #050506;
-      box-shadow:
-        0 0 0 2px #0a0a0c,
-        0 0 0 3px rgba(255,255,255,0.06),
-        inset 0 0 20px rgba(0,0,0,0.8);
+      box-shadow: 0 0 0 2px #0a0a0c, 0 0 0 3px rgba(255,255,255,.06), inset 0 0 22px rgba(0,0,0,.85);
       overflow: hidden;
     }
-    .screen {
-      position: absolute;
-      inset: 0;
-      background: #000;
-      color: #fff;
-      overflow: hidden;
+    .hold-ring {
+      position: absolute; inset: 2px; width: calc(100% - 4px); height: calc(100% - 4px);
+      pointer-events: none; z-index: 6; opacity: 0;
+      transition: opacity .25s var(--ease);
     }
+    .hold-ring.on { opacity: 1; }
+    .screen { position: absolute; inset: 0; background: #000; color: #fff; overflow: hidden; overscroll-behavior: none; touch-action: none; }
     .crown, .side-btn {
-      position: absolute;
-      right: -11px;
-      background: linear-gradient(90deg, #2a2a30, #6a6a72 40%, #3a3a40);
-      box-shadow:
-        0 1px 0 rgba(255,255,255,0.25),
-        0 2px 4px rgba(0,0,0,0.5),
-        inset 0 0 0 1px rgba(0,0,0,0.35);
+      position: absolute; right: -11px;
+      background: linear-gradient(90deg, #2a2a30, #6e6e76 40%, #3a3a40);
+      box-shadow: 0 1px 0 rgba(255,255,255,.25), 0 2px 4px rgba(0,0,0,.5), inset 0 0 0 1px rgba(0,0,0,.35);
     }
     .crown {
-      top: 78px;
-      width: 14px;
-      height: 36px;
-      border-radius: 4px;
-      pointer-events: none;
+      top: 76px; width: 14px; height: 38px; border: 0; padding: 0; border-radius: 4px; cursor: pointer;
+      touch-action: manipulation;
     }
     .crown::after {
-      content: "";
-      position: absolute;
-      inset: 3px 3px 3px 5px;
-      border-radius: 2px;
-      background: repeating-linear-gradient(to bottom, #888 0 2px, #444 2px 3px);
-      opacity: 0.7;
+      content: ""; position: absolute; inset: 3px 3px 3px 5px; border-radius: 2px;
+      background: repeating-linear-gradient(to bottom, #999 0 2px, #444 2px 3px); opacity: .7;
     }
     .side-btn {
-      top: 140px;
-      width: 12px;
-      height: 52px;
-      border: 0;
-      padding: 0;
-      border-radius: 3px;
-      cursor: pointer;
-      touch-action: none;
-      appearance: none;
-      -webkit-appearance: none;
+      top: 140px; width: 13px; height: 54px; border: 0; padding: 0; border-radius: 3px;
+      cursor: pointer; touch-action: none; appearance: none; -webkit-appearance: none;
     }
-    .side-btn.pressed {
-      right: -8px;
-      filter: brightness(0.75);
-    }
-    .side-btn:focus-visible {
-      outline: 2px solid #6ab0ff;
-      outline-offset: 2px;
-    }
+    .side-btn.pressed { right: -8px; filter: brightness(.72); }
+    .side-btn:focus-visible, .crown:focus-visible { outline: 2px solid #6ab0ff; outline-offset: 2px; }
     .view {
-      position: absolute;
-      inset: 0;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      padding: 18px 16px 16px;
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 16px 14px 14px; overflow: hidden; overscroll-behavior: none;
+      opacity: 0; transform: translateY(10px) scale(.97);
+      pointer-events: none;
+      transition: opacity .38s var(--ease), transform .48s var(--ease);
     }
-    .view.active { display: flex; }
-    /* Face */
-    .face-date {
-      margin-top: 10px;
-      font-size: 12px;
-      color: var(--red);
-      font-weight: 600;
-      letter-spacing: 0.02em;
-    }
+    .view.active { opacity: 1; transform: none; pointer-events: auto; z-index: 2; }
+    .face-date { margin-top: 8px; font-size: 12px; color: var(--red); font-weight: 600; letter-spacing: .02em; }
     .face-time {
-      margin-top: 18px;
-      font-variant-numeric: tabular-nums;
-      font-weight: 650;
-      font-size: 62px;
-      letter-spacing: -2px;
-      line-height: 1;
+      margin-top: 16px; font-variant-numeric: tabular-nums; font-weight: 650;
+      font-size: 62px; letter-spacing: -2px; line-height: 1;
     }
-    .face-sec {
-      font-size: 22px;
-      color: var(--muted);
-      font-weight: 500;
-      margin-top: 2px;
-      font-variant-numeric: tabular-nums;
-    }
-    .face-ring {
-      margin-top: auto;
-      margin-bottom: 8px;
-      width: 86px;
-      height: 86px;
-      border-radius: 50%;
+    .face-sec { font-size: 22px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .face-hint {
+      margin-top: auto; margin-bottom: 6px; width: 88px; height: 88px; border-radius: 50%;
       background: conic-gradient(var(--red) var(--p, 0%), #1c1c1f 0);
-      display: grid;
-      place-items: center;
+      display: grid; place-items: center;
     }
-    .face-ring span {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      background: #000;
-      display: grid;
-      place-items: center;
-      font-size: 11px;
-      color: #888;
-      text-align: center;
-      line-height: 1.25;
-      padding: 8px;
+    .face-hint span {
+      width: 72px; height: 72px; border-radius: 50%; background: #000;
+      display: grid; place-items: center; font-size: 11px; color: #8a8a90;
+      text-align: center; line-height: 1.25; padding: 8px;
     }
-    /* Sliders */
-    .sliders-title {
-      font-size: 11px;
-      color: #aaa;
-      margin-bottom: 14px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+    .kicker {
+      font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: 8px; text-align: center;
     }
     .slider {
-      position: relative;
-      width: 100%;
-      height: 54px;
-      margin-bottom: 10px;
-      border-radius: 27px;
-      background: #1c1c1f;
-      overflow: hidden;
-      touch-action: none;
+      position: relative; width: 100%; height: 50px; margin-bottom: 8px;
+      border-radius: 25px; background: #1c1c1f; overflow: hidden; touch-action: none;
     }
     .slider.sos { background: #3a0a0a; }
-    .slider .label {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: 650;
-      pointer-events: none;
-      transition: opacity 0.15s;
+    .slider .fill {
+      position: absolute; inset: 0 auto 0 0; width: 0; background: rgba(255,45,45,.22);
+      border-radius: 25px; pointer-events: none;
     }
-    .slider.sos .label { color: #ff6b6b; }
+    .slider .label {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 12.5px; font-weight: 700; pointer-events: none; transition: opacity .15s;
+      padding-left: 18px;
+    }
+    .slider.sos .label { color: #ff7a7a; }
     .knob {
-      position: absolute;
-      top: 4px;
-      left: 4px;
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      background: #ececec;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      touch-action: none;
-      cursor: grab;
-      z-index: 2;
+      position: absolute; top: 3px; left: 3px; width: 44px; height: 44px; border-radius: 50%;
+      background: #ececec; box-shadow: 0 2px 6px rgba(0,0,0,.45);
+      display: flex; align-items: center; justify-content: center;
+      touch-action: none; cursor: grab; z-index: 2; will-change: left;
     }
     .slider.sos .knob { background: var(--red); }
     .knob svg { pointer-events: none; }
-    /* Countdown */
-    .cd-label {
-      margin-top: 16px;
-      font-size: 12px;
-      color: #ff8a8a;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+    .mini-link {
+      margin-top: 2px; background: none; border: 0; color: #7ab0ff; font: inherit;
+      font-size: 12px; font-weight: 650; cursor: pointer; padding: 4px;
     }
+    .cd-label { margin-top: 10px; font-size: 11px; color: #ff8a8a; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
     .cd-num {
-      margin-top: 10px;
-      font-size: 128px;
-      font-weight: 700;
-      line-height: 0.9;
-      color: var(--red);
-      text-shadow: 0 0 28px rgba(255,42,42,0.55);
+      margin-top: 4px; font-size: 112px; font-weight: 700; line-height: .9; color: var(--red);
+      text-shadow: 0 0 28px rgba(255,45,45,.55);
       animation: pulse 1s ease-in-out infinite;
       font-variant-numeric: tabular-nums;
     }
     @keyframes pulse {
       0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.06); opacity: 0.85; }
+      50% { transform: scale(1.07); opacity: .84; }
     }
-    .btn {
-      border: 0;
-      cursor: pointer;
-      font: inherit;
-      font-weight: 700;
-      touch-action: manipulation;
+    .cd-note { font-size: 11px; color: #999; text-align: center; margin-top: 4px; line-height: 1.35; }
+    .btn { border: 0; cursor: pointer; font: inherit; font-weight: 700; touch-action: manipulation; }
+    .btn-bar { margin-top: auto; width: 100%; }
+    .btn-cancel, .btn-hang, .btn-ok, .btn-yes, .btn-no {
+      width: 100%; height: 42px; border-radius: 21px; font-size: 15px; margin-top: 8px;
     }
-    .btn-cancel, .btn-hang, .btn-ok, .btn-ok-alt {
-      margin-top: auto;
-      width: 100%;
-      height: 44px;
-      border-radius: 22px;
-      font-size: 16px;
+    .btn-cancel, .btn-ok, .btn-no { background: #2c2c31; color: #fff; }
+    .btn-hang { background: var(--red); color: #fff; }
+    .btn-yes { background: #1c6b3a; color: #fff; }
+    .btn:active { filter: brightness(.86); }
+    .close-x {
+      position: absolute; top: 8px; left: 10px; background: none; border: 0;
+      color: #d0d0d4; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; z-index: 3;
     }
-    .btn-cancel, .btn-ok {
-      background: #2a2a2e;
-      color: #fff;
-    }
-    .btn-hang {
-      background: var(--red);
-      color: #fff;
-    }
-    .btn-ok-alt {
-      background: #1c6b3a;
-      color: #fff;
-      margin-top: 8px;
-    }
-    .btn:active { filter: brightness(0.85); }
-    /* Call */
     .call-dot {
-      width: 54px;
-      height: 54px;
-      margin-top: 18px;
-      border-radius: 50%;
-      background: #1c6b3a;
-      display: grid;
-      place-items: center;
-      animation: ring 1.2s ease-in-out infinite;
+      width: 52px; height: 52px; margin-top: 10px; border-radius: 50%; background: #1c6b3a;
+      display: grid; place-items: center; animation: ring 1.2s ease-in-out infinite;
     }
     @keyframes ring {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(40,180,90,0.5); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(40,180,90,.5); }
       70% { box-shadow: 0 0 0 14px rgba(40,180,90,0); }
     }
-    .call-title {
-      margin-top: 16px;
-      font-size: 15px;
-      font-weight: 700;
-      text-align: center;
-      line-height: 1.35;
+    .call-title { margin-top: 10px; font-size: 14px; font-weight: 700; text-align: center; line-height: 1.35; }
+    .call-timer { margin-top: 6px; font-size: 28px; font-variant-numeric: tabular-nums; color: #c8c8ce; }
+    .loc-card {
+      margin-top: 8px; width: 100%; border-radius: 12px; background: #121214;
+      border: 1px solid #2a2a30; padding: 8px 10px; font-size: 11px; line-height: 1.35; color: #c8c8ce;
     }
-    .call-timer {
-      margin-top: 8px;
-      font-size: 28px;
-      font-variant-numeric: tabular-nums;
-      color: #b8b8be;
+    .loc-card strong { color: #fff; display: block; font-size: 11px; margin-bottom: 2px; }
+    .sim { font-size: 10px; color: #888; text-align: center; margin-top: 4px; line-height: 1.35; }
+    .msg { margin-top: 10px; font-size: 15px; font-weight: 700; text-align: center; line-height: 1.35; }
+    .sub { margin-top: 6px; font-size: 11px; color: #999; text-align: center; line-height: 1.4; }
+    .icon {
+      margin-top: 18px; width: 58px; height: 58px; border-radius: 50%;
+      display: grid; place-items: center; font-size: 26px;
     }
-    .sim-note {
-      margin-top: 8px;
-      font-size: 11px;
-      color: #888;
-      text-align: center;
-    }
-    /* Notified / medical / power / fall */
-    .big-icon {
-      margin-top: 28px;
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-size: 30px;
-    }
-    .big-icon.ok { background: #1c6b3a; }
-    .big-icon.warn { background: #7a5a00; }
-    .big-icon.off { background: #222; }
-    .msg {
-      margin-top: 16px;
-      font-size: 16px;
-      font-weight: 700;
-      text-align: center;
-      line-height: 1.35;
-      padding: 0 4px;
-    }
-    .sub {
-      margin-top: 8px;
-      font-size: 12px;
-      color: #999;
-      text-align: center;
-      line-height: 1.4;
-    }
+    .icon.ok { background: #1c6b3a; }
+    .icon.warn { background: #7a5a00; }
+    .icon.off { background: #222; }
+    .icon.crash { background: #5a1010; }
     .med-row {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      padding: 8px 0;
-      border-bottom: 1px solid #222;
+      width: 100%; display: flex; justify-content: space-between;
+      font-size: 12px; padding: 7px 0; border-bottom: 1px solid #222;
     }
     .med-row span:first-child { color: #888; }
-    .fall-btns { width: 100%; margin-top: auto; }
-    .fall-cd {
-      margin-top: 10px;
-      font-size: 48px;
-      font-weight: 700;
-      color: var(--red);
-      font-variant-numeric: tabular-nums;
+    .sms {
+      width: 100%; margin-top: 8px; background: #121214; border: 1px solid #2a2a30;
+      border-radius: 12px; padding: 8px 10px; font-size: 11px; line-height: 1.4; color: #d0d0d4;
+      text-align: left; white-space: pre-wrap;
     }
-    .fall-btn-page {
-      margin-top: 18px;
-      width: min(268px, 100%);
-      height: 48px;
-      border-radius: 24px;
-      background: #2a2a32;
-      color: #fff;
-      font-size: 15px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    .track-wrap { margin-top: 16px; width: 160px; height: 160px; position: relative; }
+    .track-wrap svg { width: 100%; height: 100%; }
+    .panel {
+      width: min(440px, 100%);
+      margin-top: 22px;
+      background: var(--card);
+      border: 1px solid #2a2a32;
+      border-radius: 16px;
+      padding: 14px 14px 16px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.3);
     }
-    .fall-btn-page:active { filter: brightness(0.85); }
+    .panel h2 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+    .row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 9px 0; border-bottom: 1px solid #26262c; font-size: 13px; line-height: 1.3;
+    }
+    .row:last-child { border-bottom: 0; }
+    .switch { position: relative; width: 44px; height: 26px; flex: 0 0 auto; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch i {
+      position: absolute; inset: 0; background: #3a3a42; border-radius: 13px; cursor: pointer;
+      transition: background .25s var(--ease);
+    }
+    .switch i::after {
+      content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+      background: #fff; border-radius: 50%; transition: transform .28s var(--ease);
+    }
+    .switch input:checked + i { background: var(--green); }
+    .switch input:checked + i::after { transform: translateX(18px); }
+    .demos { display: flex; gap: 8px; margin: 12px 0 4px; }
+    .demo-btn {
+      flex: 1; height: 40px; border-radius: 12px; background: #2a2a32; color: #fff;
+      font-size: 12px; font-weight: 700;
+    }
+    .contacts { margin-top: 8px; font-size: 13px; }
+    .contacts li { margin: 4px 0 0 16px; color: #d0d0d4; }
+    .fine { margin-top: 8px; font-size: 11px; color: #8e8e93; line-height: 1.4; }
+    .view.compact { padding: 12px 12px 10px; justify-content: flex-start; }
+    .view.compact .icon { margin-top: 18px; width: 36px; height: 36px; font-size: 18px; }
+    .view.compact .msg { margin-top: 6px; font-size: 13px; }
+    .view.compact .sub, .view.compact .sim, .view.compact .cd-note { font-size: 10px; margin-top: 4px; }
+    .view.compact .slider { height: 46px; margin-bottom: 0; }
+    .view.compact .slider .knob { width: 40px; height: 40px; }
+    .view.compact .btn-bar { margin-top: 8px; }
+    .view.compact .btn-cancel, .view.compact .btn-hang,
+    .view.compact .btn-ok, .view.compact .btn-yes, .view.compact .btn-no {
+      height: 36px; font-size: 13px; margin-top: 6px;
+    }
+    .view.compact .call-dot { width: 40px; height: 40px; margin-top: 6px; }
+    .view.compact .call-timer { font-size: 24px; margin-top: 4px; }
+    .view.compact .call-title { font-size: 13px; margin-top: 6px; }
+    .view.compact .loc-card, .view.compact .sms { margin-top: 6px; padding: 6px 8px; font-size: 10px; }
+    .view.compact .cd-num { font-size: 96px; margin-top: 0; }
     @media (max-height: 700px) {
-      .band-top, .band-bottom { height: 28px; }
+      .band-top, .band-bottom { height: 26px; }
       .face-time { font-size: 56px; }
     }
   </style>
 </head>
 <body>
   <div class="banner">SYMULATOR – nie dzwoni naprawdę</div>
-  <p class="hint">Przytrzymaj przycisk boczny po prawej stronie zegarka</p>
+  <p class="hint">Przytrzymaj przycisk boczny po prawej (pod koroną).<br>To tylko ćwiczenie — nikt nie jest wzywany.</p>
   <div class="watch-wrap">
     <div class="band band-top"></div>
     <div class="case">
-      <div class="crown" aria-hidden="true"></div>
-      <button type="button" class="side-btn" id="sideBtn" aria-label="Przycisk boczny — przytrzymaj, aby otworzyć SOS"></button>
+      <button type="button" class="crown" id="crown" aria-label="Korona — wróć do tarczy"></button>
+      <button type="button" class="side-btn" id="sideBtn" aria-label="Przycisk boczny — przytrzymaj, aby otworzyć Alarmowe SOS"></button>
       <div class="bezel">
-        <div class="screen" id="screen">
-          <div class="view active" id="view-face">
+        <svg class="hold-ring" id="holdRing" viewBox="0 0 100 100" aria-hidden="true">
+          <rect x="3.5" y="3.5" width="93" height="93" rx="22" fill="none" stroke="rgba(255,45,45,0.18)" stroke-width="2.2"/>
+          <rect id="holdArc" x="3.5" y="3.5" width="93" height="93" rx="22" fill="none" stroke="#ff2d2d" stroke-width="2.4" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" stroke-linecap="round"/>
+        </svg>
+        <div class="screen" id="screen" data-state="face">
+          <div class="view active" id="view-face" data-view="face">
             <div class="face-date" id="faceDate"></div>
             <div class="face-time" id="faceTime">--:--</div>
             <div class="face-sec" id="faceSec">--</div>
-            <div class="face-ring" id="faceRing"><span>Przytrzymaj przycisk boczny</span></div>
+            <div class="face-hint" id="faceRing"><span>Przytrzymaj przycisk boczny</span></div>
           </div>
-          <div class="view" id="view-sliders">
-            <div class="sliders-title">Przesuń, aby wybrać</div>
+          <div class="view" id="view-sliders" data-view="sliders">
+            <div class="kicker">Przesuń, aby wybrać</div>
             <div class="slider" id="slPower" data-action="power">
+              <div class="fill"></div>
               <div class="label">Wyłącz</div>
-              <div class="knob" role="slider" aria-label="Wyłącz">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path d="M7 4.2L11 9L7 13.8" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
+              <div class="knob" role="slider" aria-label="Wyłącz"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
             </div>
             <div class="slider" id="slMed" data-action="medical">
-              <div class="label">ID medyczne</div>
-              <div class="knob" role="slider" aria-label="ID medyczne">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path d="M7 4.2L11 9L7 13.8" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
+              <div class="fill"></div>
+              <div class="label">Karta medyczna</div>
+              <div class="knob" role="slider" aria-label="Karta medyczna"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
             </div>
             <div class="slider sos" id="slSos" data-action="sos">
-              <div class="label">SOS</div>
-              <div class="knob" role="slider" aria-label="SOS">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path d="M7 4.2L11 9L7 13.8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
+              <div class="fill"></div>
+              <div class="label">Połączenie alarmowe</div>
+              <div class="knob" role="slider" aria-label="Połączenie alarmowe"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
             </div>
+            <button type="button" class="mini-link" id="btnTrack">Ślad (kompas)</button>
           </div>
-          <div class="view" id="view-countdown">
-            <div class="cd-label">SOS</div>
+          <div class="view" id="view-countdown" data-view="countdown">
+            <div class="cd-label">Alarmowe SOS</div>
             <div class="cd-num" id="cdNum">5</div>
-            <div class="sim-note">Odliczanie (symulacja)</div>
-            <button type="button" class="btn btn-cancel" id="btnCancel">Anuluj</button>
+            <div class="cd-note" id="cdNote">Puść przycisk boczny, aby anulować</div>
           </div>
-          <div class="view" id="view-call">
+          <div class="view compact" id="view-call" class="view compact" data-view="call">
             <div class="call-dot" aria-hidden="true">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff">
-                <path d="M7.5 3.5c.5-.5 1.3-.6 1.9-.2l2 1.4c.6.4.8 1.2.5 1.9L11 9.2c2.2 3.2 4.4 5 7.4 6.8l2.4-1.1c.7-.3 1.5 0 1.9.6l1.5 2.1c.5.7.3 1.6-.3 2.1l-1.7 1.4c-.6.5-1.4.7-2.2.5C12.4 20.2 4.6 13.2 3.2 5.8c-.2-.8 0-1.6.5-2.2L7.5 3.5z"/>
-              </svg>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M7.5 3.5c.5-.5 1.3-.6 1.9-.2l2 1.4c.6.4.8 1.2.5 1.9L11 9.2c2.2 3.2 4.4 5 7.4 6.8l2.4-1.1c.7-.3 1.5 0 1.9.6l1.5 2.1c.5.7.3 1.6-.3 2.1l-1.7 1.4c-.6.5-1.4.7-2.2.5C12.4 20.2 4.6 13.2 3.2 5.8c-.2-.8 0-1.6.5-2.2L7.5 3.5z"/></svg>
             </div>
-            <div class="call-title">Dzwonię: 112<br>(SYMULACJA)</div>
+            <div class="call-title" id="callTitle">Łączę z 112<br>(SYMULACJA)</div>
             <div class="call-timer" id="callTimer">00:00</div>
-            <div class="sim-note">To nie jest prawdziwe połączenie</div>
-            <button type="button" class="btn btn-hang" id="btnHang">Zakończ</button>
+            <div class="loc-card" id="callLoc"></div>
+            <div class="sim" id="callRecWrap" hidden>
+              <span id="callRecText"></span>
+              <button type="button" class="btn btn-cancel" id="btnStopRec" style="margin-top:8px;height:36px;font-size:13px">Zatrzymaj nagrany komunikat</button>
+            </div>
+            <div class="sim">To nie jest prawdziwe połączenie. W rzeczywistości poczekaj na dyspozytora, zanim się rozłączysz.</div>
+            <div class="btn-bar"><button type="button" class="btn btn-hang" id="btnHang">Zakończ</button></div>
           </div>
-          <div class="view" id="view-notified">
-            <div class="big-icon ok" aria-hidden="true">✓</div>
-            <div class="msg">Powiadomiono kontakty alarmowe (symulacja)</div>
-            <div class="sub">Nikt nie został naprawdę powiadomiony.</div>
-            <button type="button" class="btn btn-ok" id="btnNotifiedOk">OK</button>
+          <div class="view compact" id="view-asksms" class="view compact" data-view="asksms">
+            <div class="msg">Wysłać wiadomość tekstową do kontaktów alarmowych?</div>
+            <div class="sub">Po połączeniu zegarek pyta, czy wysłać SMS z położeniem. Stuknij Nie, aby anulować.</div>
+            <div class="sms" id="askSmsBody"></div>
+            <div class="btn-bar">
+              <button type="button" class="btn btn-yes" id="btnSmsYes">Tak</button>
+              <button type="button" class="btn btn-no" id="btnSmsNo">Nie</button>
+            </div>
           </div>
-          <div class="view" id="view-medical">
-            <div class="sliders-title">ID medyczne</div>
-            <div class="msg" style="margin-top:4px;font-size:15px">Przykładowe dane</div>
-            <div class="med-row" style="margin-top:16px"><span>Imię</span><span>Jan Nowak</span></div>
+          <div class="view compact" id="view-sharing" class="view compact" data-view="sharing">
+            <div class="icon ok" aria-hidden="true">✓</div>
+            <div class="msg">Wysłano SMS i udostępniono położenie (symulacja)</div>
+            <div class="sub">Kontakty otrzymują uaktualnienia przy zmianie położenia. Co 4 godziny zegarek przypomina o udostępnianiu.</div>
+            <div class="loc-card" id="shareLoc"></div>
+            <div class="btn-bar">
+              <button type="button" class="btn btn-hang" id="btnStopShare">Przestań udostępniać</button>
+              <button type="button" class="btn btn-ok" id="btnShareOk">OK</button>
+            </div>
+          </div>
+          <div class="view compact" id="view-cancelled" class="view compact" data-view="cancelled">
+            <div class="icon off" aria-hidden="true">✓</div>
+            <div class="msg">Anulowano wysyłanie wiadomości</div>
+            <div class="sub">Kontakty alarmowe nie zostały powiadomione (symulacja).</div>
+            <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnCancelOk">OK</button></div>
+          </div>
+          <div class="view compact" id="view-medical" class="view compact" data-view="medical">
+            <div class="kicker">Karta medyczna</div>
+            <div class="msg" style="margin-top:2px;font-size:14px">Przykładowe dane</div>
+            <div class="med-row" style="margin-top:12px"><span>Imię</span><span>Jan Nowak</span></div>
             <div class="med-row"><span>Grupa krwi</span><span>—</span></div>
             <div class="med-row"><span>Alergie</span><span>brak danych</span></div>
             <div class="med-row"><span>Leki</span><span>brak danych</span></div>
             <div class="sub">To tylko demonstracja.</div>
-            <button type="button" class="btn btn-ok" id="btnMedClose">Zamknij</button>
+            <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnMedClose">Zamknij</button></div>
           </div>
-          <div class="view" id="view-power">
-            <div class="big-icon off" aria-hidden="true">⏻</div>
+          <div class="view" id="view-power" data-view="power">
+            <div class="icon off" aria-hidden="true">⏻</div>
             <div class="msg">Wyłączono (symulacja)</div>
             <div class="sub">Naciśnij przycisk boczny, aby włączyć</div>
           </div>
-          <div class="view" id="view-fall">
-            <div class="big-icon warn" aria-hidden="true">!</div>
-            <div class="msg">Wygląda na to, że upadłeś</div>
-            <div class="sub">Wezwę pomoc, jeśli nie odpowiesz (symulacja)</div>
-            <div class="fall-cd" id="fallCd">8</div>
-            <div class="fall-btns">
-              <button type="button" class="btn btn-ok" id="btnImOk">Nic mi nie jest</button>
-              <button type="button" class="btn btn-hang" id="btnFallSos" style="margin-top:8px">SOS</button>
+          <div class="view" id="view-track" data-view="track">
+            <div class="kicker">Ślad</div>
+            <div class="msg" style="margin-top:4px">Powrót trasą (symulacja)</div>
+            <div class="track-wrap" aria-hidden="true">
+              <svg viewBox="0 0 160 160">
+                <circle cx="80" cy="80" r="70" fill="none" stroke="#1c1c22" stroke-width="8"/>
+                <circle cx="80" cy="80" r="70" fill="none" stroke="#3a6cff" stroke-width="3" stroke-dasharray="2 10"/>
+                <path d="M80 18 L84 28 L76 28 Z" fill="#ff3b30"/>
+                <path d="M40 110 C52 70, 70 58, 88 52 S130 55, 118 88 S90 125, 70 120" fill="none" stroke="#30d158" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="70" cy="120" r="5" fill="#fff"/>
+              </svg>
             </div>
+            <div class="sub">Na nowszych zegarkach Ślad bywa dostępny z przycisku bocznego.</div>
+            <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnTrackClose">Zamknij</button></div>
+          </div>
+          <div class="view compact" id="view-fall" class="view compact" data-view="fall">
+            <button type="button" class="close-x" id="btnFallClose">Zamknij</button>
+            <div class="icon warn" aria-hidden="true">!</div>
+            <div class="msg">Wygląda na to, że doszło do niebezpiecznego upadku</div>
+            <div class="sub" id="fallWaitNote">Zegarek stuknął w nadgarstek. Jeśli nie ma ruchu ok. minutę, zacznie odliczanie.</div>
+            <div class="slider sos" id="slFallSos" data-action="fallsos" style="margin-top:12px">
+              <div class="fill"></div>
+              <div class="label">Połączenie alarmowe</div>
+              <div class="knob" role="slider" aria-label="Połączenie alarmowe"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="btn-bar">
+              <button type="button" class="btn btn-ok" id="btnImOk">Nic mi nie jest</button>
+              <button type="button" class="btn btn-no" id="btnNoFall">To nie był upadek</button>
+            </div>
+          </div>
+          <div class="view compact" id="view-fallcd" class="view compact" data-view="fallcd">
+            <div class="cd-label">Wykrywanie upadków</div>
+            <div class="cd-num" id="fallCdNum">30</div>
+            <div class="cd-note" id="fallCdNote">Odliczanie 30 s — sygnał narasta. Stuknij Anuluj, aby nie wzywać służb.</div>
+            <div class="btn-bar"><button type="button" class="btn btn-cancel" id="btnFallCancel">Anuluj</button></div>
+          </div>
+          <div class="view compact" id="view-crash" class="view compact" data-view="crash">
+            <button type="button" class="close-x" id="btnCrashClose">Zamknij</button>
+            <div class="icon crash" aria-hidden="true">!</div>
+            <div class="msg">Wykryto poważny wypadek samochodowy</div>
+            <div class="sub" id="crashWaitNote">Alert ok. 10 s. Jeśli nie zareagujesz, zacznie się 30-sekundowe odliczanie.</div>
+            <div class="slider sos" id="slCrashSos" data-action="crashsos" style="margin-top:12px">
+              <div class="fill"></div>
+              <div class="label">Połączenie alarmowe</div>
+              <div class="knob" role="slider" aria-label="Połączenie alarmowe"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M7 4.2L11 9L7 13.8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="btn-bar"><button type="button" class="btn btn-ok" id="btnCrashOk">Nic mi nie jest</button></div>
+          </div>
+          <div class="view compact" id="view-crashcd" class="view compact" data-view="crashcd">
+            <div class="cd-label">Wykrywanie wypadków</div>
+            <div class="cd-num" id="crashCdNum">30</div>
+            <div class="cd-note" id="crashCdNote">Odliczanie 30 s — głośny alarm i stuknięcia. Anuluj, aby przerwać.</div>
+            <div class="btn-bar"><button type="button" class="btn btn-cancel" id="btnCrashCancel">Anuluj</button></div>
           </div>
         </div>
       </div>
     </div>
     <div class="band band-bottom"></div>
   </div>
-  <button type="button" class="btn fall-btn-page" id="btnFallDemo">Wykrycie upadku</button>
+
+  <section class="panel" aria-label="Ustawienia symulatora">
+    <h2>Ustawienia (symulacja)</h2>
+    <label class="row">Przytrzymaj przycisk boczny, aby wybrać numer
+      <span class="switch"><input type="checkbox" id="optAuto" checked><i></i></span>
+    </label>
+    <label class="row">Szybkie tempo demonstracji
+      <span class="switch"><input type="checkbox" id="optDemo" checked><i></i></span>
+    </label>
+    <p class="fine" id="demoFine">W szybkim tempie minutowe oczekiwanie i 30 s odliczania są skrócone. Wyłącz, aby użyć czasów jak na zegarku.</p>
+    <div class="demos">
+      <button type="button" class="btn demo-btn" id="btnFallDemo">Wykrycie upadku</button>
+      <button type="button" class="btn demo-btn" id="btnCrashDemo">Wykrycie wypadku</button>
+    </div>
+    <div class="contacts">
+      <strong>Kontakty alarmowe (demo)</strong>
+      <ul>
+        <li>Anna Kowalska</li>
+        <li>Marek Wiśniewski</li>
+      </ul>
+      <p class="fine" style="margin-top:10px"><strong>Podgląd SMS, który zostałby wysłany</strong></p>
+      <div class="sms" id="smsPreview"></div>
+    </div>
+  </section>
 
   <script>
   (function () {
-    const views = {
-      face: document.getElementById("view-face"),
-      sliders: document.getElementById("view-sliders"),
-      countdown: document.getElementById("view-countdown"),
-      call: document.getElementById("view-call"),
-      notified: document.getElementById("view-notified"),
-      medical: document.getElementById("view-medical"),
-      power: document.getElementById("view-power"),
-      fall: document.getElementById("view-fall")
-    };
+    const LOC = "52,2297° N, 21,0122° E (Warszawa, wyłącznie symulacja)";
+    const CONTACTS = "Anna Kowalska, Marek Wiśniewski";
+    const views = {};
+    document.querySelectorAll(".view").forEach(function (v) { views[v.dataset.view] = v; });
+    const screen = document.getElementById("screen");
     const sideBtn = document.getElementById("sideBtn");
-    const faceDate = document.getElementById("faceDate");
-    const faceTime = document.getElementById("faceTime");
-    const faceSec = document.getElementById("faceSec");
-    const faceRing = document.getElementById("faceRing");
-    const cdNum = document.getElementById("cdNum");
-    const callTimer = document.getElementById("callTimer");
-    const fallCd = document.getElementById("fallCd");
+    const holdRing = document.getElementById("holdRing");
+    const holdArc = document.getElementById("holdArc");
+    const optAuto = document.getElementById("optAuto");
+    const optDemo = document.getElementById("optDemo");
 
-    let current = "face";
+    let state = "face";
     let holding = false;
-    let holdT1 = 0, holdT2 = 0;
-    let cdTimer = 0, cdLeft = 5;
-    let callT = 0, callSec = 0;
-    let fallTimer = 0, fallLeft = 8;
-    let notifiedT = 0;
+    let holdStart = 0;
+    let holdRaf = 0;
+    let timers = [];
     let audioCtx = null;
+    let callReason = "sos";
+    let callSec = 0;
+    let recOn = false;
+    let recTimer = 0;
+    let sharing = false;
+
+    const SLIDER_MS = 800;
+    const COUNT_SOS = 5;
+
+    function demoOn() { return optDemo.checked; }
+    function fallWaitMs() { return demoOn() ? 8000 : 60000; }
+    function longCount() { return demoOn() ? 8 : 30; }
+    function crashAlertMs() { return demoOn() ? 5000 : 10000; }
+
+    function smsText(reason) {
+      var base;
+      if (reason === "fall") {
+        base = "SYMULACJA — to nie jest prawdziwy SMS.\nZegarek wykrył niebezpieczny upadek i wezwał służby ratunkowe (112).\nPołożenie: " + LOC + "\nOdbiorcy: " + CONTACTS;
+      } else if (reason === "crash") {
+        base = "SYMULACJA — to nie jest prawdziwy SMS.\nZegarek wykrył poważny wypadek samochodowy i wezwał służby ratunkowe (112).\nPołożenie: " + LOC + "\nOdbiorcy: " + CONTACTS;
+      } else {
+        base = "SYMULACJA — to nie jest prawdziwy SMS.\nJan Nowak wezwał służby ratunkowe (112).\nPołożenie: " + LOC + "\nOdbiorcy: " + CONTACTS;
+      }
+      return base;
+    }
+    function refreshSmsPreview() {
+      document.getElementById("smsPreview").textContent = smsText(callReason);
+    }
+    refreshSmsPreview();
 
     function initAudio() {
-      const AC = window.AudioContext || window.webkitAudioContext;
+      var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
       if (!audioCtx) audioCtx = new AC();
       if (audioCtx.state === "suspended") audioCtx.resume();
     }
-
-    function beep() {
+    function beep(vol, freqs, gap, dur) {
       if (!audioCtx) return;
-      const now = audioCtx.currentTime;
-      const tones = [880, 1175];
-      tones.forEach(function (freq, i) {
-        const t = now + i * 0.16;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+      var now = audioCtx.currentTime;
+      (freqs || [880, 1175]).forEach(function (freq, i) {
+        var t = now + i * (gap || 0.16);
+        var osc = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
         osc.type = "sine";
         osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.0001, t);
-        gain.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(t);
-        osc.stop(t + 0.15);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(Math.max(0.02, vol || 0.2), t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.14));
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(t); osc.stop(t + (dur || 0.15));
       });
     }
+    function vibrate(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
 
-    function vibrate(pattern) {
-      try {
-        if (navigator.vibrate) navigator.vibrate(pattern);
-      } catch (e) {}
+    function later(fn, ms) {
+      var id = setTimeout(fn, ms);
+      timers.push(id);
+      return id;
+    }
+    function every(fn, ms) {
+      var id = setInterval(fn, ms);
+      timers.push(id);
+      return id;
+    }
+    function clearTimers() {
+      timers.forEach(function (id) { clearTimeout(id); clearInterval(id); });
+      timers = [];
+      if (recTimer) { clearInterval(recTimer); recTimer = 0; }
     }
 
     function show(name) {
-      current = name;
+      state = name;
+      screen.dataset.state = name;
+      screen.scrollTop = 0; screen.scrollLeft = 0;
       Object.keys(views).forEach(function (k) {
         views[k].classList.toggle("active", k === name);
+        views[k].scrollTop = 0; views[k].scrollLeft = 0;
       });
     }
+    screen.addEventListener("scroll", function () { screen.scrollTop = 0; screen.scrollLeft = 0; });
 
-    function clearAllTimers() {
-      clearTimeout(holdT1); clearTimeout(holdT2);
-      clearInterval(cdTimer); clearInterval(callT);
-      clearInterval(fallTimer); clearTimeout(notifiedT);
-      holdT1 = holdT2 = cdTimer = callT = fallTimer = notifiedT = 0;
+    function setRing(p) {
+      var v = Math.max(0, Math.min(1, p));
+      holdArc.style.strokeDashoffset = String(100 - v * 100);
+      holdRing.classList.toggle("on", v > 0.02 && (holding || v < 0.99));
+      if (!holding && v === 0) holdRing.classList.remove("on");
     }
 
     function updateClock() {
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2, "0");
-      const mm = String(now.getMinutes()).padStart(2, "0");
-      const ss = String(now.getSeconds()).padStart(2, "0");
-      faceTime.textContent = hh + ":" + mm;
-      faceSec.textContent = ss;
-      const d = now.toLocaleDateString("pl-PL", {
-        weekday: "long",
-        day: "numeric",
-        month: "long"
-      });
-      faceDate.textContent = d.charAt(0).toUpperCase() + d.slice(1);
-      faceRing.style.setProperty("--p", (now.getSeconds() / 60 * 100) + "%");
+      var now = new Date();
+      document.getElementById("faceTime").textContent =
+        String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+      document.getElementById("faceSec").textContent = String(now.getSeconds()).padStart(2, "0");
+      var d = now.toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" });
+      document.getElementById("faceDate").textContent = d.charAt(0).toUpperCase() + d.slice(1);
+      document.getElementById("faceRing").style.setProperty("--p", (now.getSeconds() / 60 * 100) + "%");
     }
     updateClock();
     setInterval(updateClock, 250);
 
-    function resetSliders() {
-      document.querySelectorAll(".slider").forEach(function (sl) {
-        const knob = sl.querySelector(".knob");
-        const label = sl.querySelector(".label");
-        knob.style.left = "4px";
+    function resetSliders(root) {
+      (root || document).querySelectorAll(".slider").forEach(function (sl) {
+        var knob = sl.querySelector(".knob");
+        var label = sl.querySelector(".label");
+        var fill = sl.querySelector(".fill");
+        knob.style.left = "3px";
         label.style.opacity = "1";
+        if (fill) fill.style.width = "0px";
+        if (typeof sl._resetSlider === "function") sl._resetSlider();
       });
     }
 
     function goFace() {
-      clearAllTimers();
+      clearTimers();
       holding = false;
       sideBtn.classList.remove("pressed");
+      setRing(0);
+      recOn = false;
       resetSliders();
       show("face");
     }
 
     function showSliders() {
-      if (current === "power") return;
+      if (state === "power") return;
       resetSliders();
       show("sliders");
     }
 
-    function startCountdown() {
-      if (current === "countdown" || current === "call") return;
-      clearTimeout(holdT1); clearTimeout(holdT2);
-      clearInterval(fallTimer);
+    function startSosCountdown() {
+      if (state === "countdown" || state === "call") return;
+      clearTimers();
       show("countdown");
-      cdLeft = 5;
-      cdNum.textContent = String(cdLeft);
-      beep();
+      var left = COUNT_SOS;
+      document.getElementById("cdNum").textContent = String(left);
+      document.getElementById("cdNote").textContent = "Puść przycisk boczny, aby anulować";
+      beep(0.22, [880, 1175]);
       vibrate([180, 70, 180]);
-      clearInterval(cdTimer);
-      cdTimer = setInterval(function () {
-        cdLeft -= 1;
-        if (cdLeft <= 0) {
-          clearInterval(cdTimer);
-          startCall();
-          return;
-        }
-        cdNum.textContent = String(cdLeft);
-        beep();
+      every(function () {
+        if (state !== "countdown") return;
+        left -= 1;
+        if (left <= 0) { clearTimers(); startCall("sos"); return; }
+        document.getElementById("cdNum").textContent = String(left);
+        beep(0.22 + (COUNT_SOS - left) * 0.03, [880, 1175]);
         vibrate([180, 70, 180]);
       }, 1000);
     }
 
-    function startCall() {
-      clearAllTimers();
+    function locHtml() {
+      return "<strong>Położenie (symulacja)</strong>" + LOC + "<br>Udostępniane służbom ratunkowym w tej demonstracji nie jest prawdziwe.";
+    }
+
+    function startCall(reason) {
+      clearTimers();
+      holding = false;
+      sideBtn.classList.remove("pressed");
+      setRing(0);
+      callReason = reason || "sos";
+      refreshSmsPreview();
       show("call");
       callSec = 0;
-      callTimer.textContent = "00:00";
+      document.getElementById("callTimer").textContent = "00:00";
+      document.getElementById("callTitle").innerHTML = "Łączę z 112<br>(SYMULACJA)";
+      document.getElementById("callLoc").innerHTML = locHtml();
+      var recWrap = document.getElementById("callRecWrap");
+      var recText = document.getElementById("callRecText");
+      recOn = (callReason === "fall" || callReason === "crash");
+      recWrap.hidden = !recOn;
+      if (callReason === "fall") {
+        recText.textContent = "Nagrany komunikat (symulacja): zegarek wykrył niebezpieczny upadek. Położenie: " + LOC + ".";
+      } else if (callReason === "crash") {
+        recText.textContent = "Nagrany komunikat (symulacja): urządzenie wykryło poważny wypadek samochodowy i brak reakcji. Położenie: " + LOC + ".";
+      }
       vibrate([400]);
-      callT = setInterval(function () {
+      later(function () {
+        if (state === "call") document.getElementById("callTitle").innerHTML = "Połączono z 112<br>(SYMULACJA)";
+      }, 1800);
+      every(function () {
         callSec += 1;
-        const m = String(Math.floor(callSec / 60)).padStart(2, "0");
-        const s = String(callSec % 60).padStart(2, "0");
-        callTimer.textContent = m + ":" + s;
+        var m = String(Math.floor(callSec / 60)).padStart(2, "0");
+        var s = String(callSec % 60).padStart(2, "0");
+        document.getElementById("callTimer").textContent = m + ":" + s;
+        if (recOn && callSec % 5 === 1) beep(callSec < 6 ? 0.28 : 0.1, [520, 640], 0.2, 0.18);
       }, 1000);
     }
 
     function hangUp() {
-      clearAllTimers();
-      show("notified");
-      notifiedT = setTimeout(goFace, 3500);
+      clearTimers();
+      recOn = false;
+      document.getElementById("askSmsBody").textContent = smsText(callReason);
+      show("asksms");
+    }
+
+    function confirmSms(yes) {
+      if (yes) {
+        sharing = true;
+        document.getElementById("shareLoc").innerHTML = locHtml() + "<br>SMS wysłany do: " + CONTACTS + ".";
+        show("sharing");
+      } else {
+        sharing = false;
+        show("cancelled");
+      }
     }
 
     function startFall() {
       initAudio();
-      clearAllTimers();
+      clearTimers();
+      resetSliders(document.getElementById("view-fall"));
       show("fall");
-      fallLeft = 8;
-      fallCd.textContent = String(fallLeft);
+      callReason = "fall";
+      refreshSmsPreview();
+      beep(0.24, [700, 980]);
+      vibrate([120, 60, 120, 60, 200]);
+      var wait = fallWaitMs();
+      document.getElementById("fallWaitNote").textContent = demoOn()
+        ? "Brak ruchu: odliczanie startuje za " + Math.round(wait / 1000) + " s (w rzeczywistości ok. 1 min)."
+        : "Jeśli nie ma ruchu przez ok. minutę, zegarek zacznie 30-sekundowe odliczanie.";
+      later(function () {
+        if (state !== "fall") return;
+        startLongCountdown("fall");
+      }, wait);
+    }
+
+    function startCrash() {
+      initAudio();
+      clearTimers();
+      resetSliders(document.getElementById("view-crash"));
+      show("crash");
+      callReason = "crash";
+      refreshSmsPreview();
+      beep(0.26, [640, 900]);
       vibrate([200, 80, 200]);
-      fallTimer = setInterval(function () {
-        fallLeft -= 1;
-        if (fallLeft <= 0) {
-          clearInterval(fallTimer);
-          startCountdown();
-          return;
-        }
-        fallCd.textContent = String(fallLeft);
-        if (fallLeft <= 5) {
-          beep();
-          vibrate([120]);
-        }
+      var wait = crashAlertMs();
+      document.getElementById("crashWaitNote").textContent = demoOn()
+        ? "Alert " + Math.round(wait / 1000) + " s (w rzeczywistości 10 s), potem odliczanie."
+        : "Alert ok. 10 s. Jeśli nie zareagujesz, zacznie się 30-sekundowe odliczanie.";
+      later(function () {
+        if (state !== "crash") return;
+        startLongCountdown("crash");
+      }, wait);
+    }
+
+    function startLongCountdown(kind) {
+      clearTimers();
+      var left = longCount();
+      var view = kind === "crash" ? "crashcd" : "fallcd";
+      var num = document.getElementById(kind === "crash" ? "crashCdNum" : "fallCdNum");
+      var note = document.getElementById(kind === "crash" ? "crashCdNote" : "fallCdNote");
+      show(view);
+      num.textContent = String(left);
+      note.textContent = demoOn()
+        ? "Demo: " + left + " s (w rzeczywistości 30 s). Sygnał narasta. Anuluj, aby przerwać."
+        : "Odliczanie 30 s — sygnał narasta. Anuluj, aby nie wzywać służb.";
+      var tick = function (n) {
+        var vol = 0.16 + (longCount() - n) / longCount() * 0.22;
+        beep(vol, [780, 1100, 780], 0.12, 0.11);
+        vibrate([80, 40, 80, 40, 160]);
+      };
+      tick(left);
+      every(function () {
+        left -= 1;
+        if (left <= 0) { startCall(kind); return; }
+        num.textContent = String(left);
+        tick(left);
       }, 1000);
     }
 
+    function holdTarget() {
+      return optAuto.checked ? (SLIDER_MS + 1000) : SLIDER_MS;
+    }
+    function onHoldFrame(now) {
+      if (!holding) return;
+      var elapsed = now - holdStart;
+      if (state === "face" || state === "sliders") {
+        setRing(elapsed / holdTarget());
+        if (state === "face" && elapsed >= SLIDER_MS) showSliders();
+        if (optAuto.checked && (state === "sliders" || state === "face") && elapsed >= holdTarget()) {
+          startSosCountdown();
+          setRing(1);
+          return;
+        }
+      }
+      holdRaf = requestAnimationFrame(onHoldFrame);
+    }
     function onSideDown(e) {
       if (e && e.preventDefault) e.preventDefault();
       initAudio();
-      if (current === "power") {
-        goFace();
-        return;
-      }
-      if (current !== "face" && current !== "sliders") return;
+      if (state === "power") { goFace(); return; }
+      if (state !== "face" && state !== "sliders") return;
       holding = true;
       sideBtn.classList.add("pressed");
-      clearTimeout(holdT1); clearTimeout(holdT2);
-      if (current === "face") {
-        holdT1 = setTimeout(function () {
-          if (!holding) return;
-          showSliders();
-          holdT2 = setTimeout(function () {
-            if (holding) startCountdown();
-          }, 1000);
-        }, 1000);
-      } else {
-        holdT2 = setTimeout(function () {
-          if (holding) startCountdown();
-        }, 1000);
-      }
+      holdStart = performance.now();
+      cancelAnimationFrame(holdRaf);
+      holdRaf = requestAnimationFrame(onHoldFrame);
     }
-
     function onSideUp() {
+      if (!holding) { sideBtn.classList.remove("pressed"); return; }
       holding = false;
       sideBtn.classList.remove("pressed");
-      clearTimeout(holdT1);
-      clearTimeout(holdT2);
+      cancelAnimationFrame(holdRaf);
+      setRing(0);
+      if (state === "countdown") {
+        clearTimers();
+        showSliders();
+      }
     }
 
     sideBtn.addEventListener("pointerdown", onSideDown);
     window.addEventListener("pointerup", onSideUp);
     window.addEventListener("pointercancel", onSideUp);
-    sideBtn.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    document.getElementById("crown").addEventListener("click", function () {
+      if (state === "call" || state === "power") return;
+      goFace();
+    });
     document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
 
     function setupSlider(root, action) {
-      const knob = root.querySelector(".knob");
-      const label = root.querySelector(".label");
-      let dragging = false, startX = 0, startL = 4, max = 0, done = false;
+      var knob = root.querySelector(".knob");
+      var label = root.querySelector(".label");
+      var fill = root.querySelector(".fill");
+      var dragging = false, startX = 0, startL = 3, max = 0, lastX = 0, lastT = 0, vx = 0, done = false, raf = 0;
+      root._resetSlider = function () {
+        done = false; dragging = false; cancelAnimationFrame(raf);
+      };
 
-      function bounds() {
-        max = root.clientWidth - knob.offsetWidth - 4;
-      }
-      function setX(x) {
-        x = Math.max(4, Math.min(max, x));
+      function bounds() { max = Math.max(40, root.clientWidth - knob.offsetWidth - 3); }
+      function apply(x) {
+        x = Math.max(3, Math.min(max, x));
         knob.style.left = x + "px";
-        label.style.opacity = String(1 - Math.min(1, (x - 4) / (max * 0.7)));
+        label.style.opacity = String(1 - Math.min(1, (x - 3) / (max * 0.65)));
+        if (fill) fill.style.width = (x + 22) + "px";
         return x;
       }
-      function finishIfNeeded(x) {
+      function releaseCap() {
+        try { if (knob.releasePointerCapture && knob.hasPointerCapture) {
+          /* best-effort; ignore if none */
+        } } catch (e) {}
+      }
+      function complete() {
         if (done) return;
-        if (x >= max - 2) {
-          done = true;
-          dragging = false;
-          try { knob.releasePointerCapture && knob.releasePointerCapture(knob._pid); } catch (e) {}
-          if (action === "sos") startCountdown();
-          else if (action === "medical") { resetSliders(); show("medical"); }
-          else if (action === "power") { resetSliders(); show("power"); }
+        done = true; dragging = false;
+        apply(max);
+        releaseCap();
+        if (action === "sos" || action === "fallsos" || action === "crashsos") startCall(action === "sos" ? "sos" : action === "fallsos" ? "fall" : "crash");
+        else if (action === "medical") { resetSliders(); show("medical"); }
+        else if (action === "power") { resetSliders(); show("power"); }
+      }
+      function springBack(from, vel) {
+        var x = from, v = vel, last = performance.now();
+        function step(now) {
+          var dt = Math.min(32, now - last) / 16.67; last = now;
+          if (x >= max - 2) { complete(); return; }
+          v *= Math.pow(0.9, dt);
+          var pull = (3 - x) * 0.18;
+          v += pull * dt;
+          x += v * dt * 16;
+          if (x <= 3.2 && Math.abs(v) < 0.4) { apply(3); return; }
+          apply(x);
+          raf = requestAnimationFrame(step);
         }
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(step);
       }
       function endDrag() {
         if (!dragging) return;
         dragging = false;
-        if (!done) {
-          knob.style.left = "4px";
-          label.style.opacity = "1";
-        }
+        if (done) return;
+        var x = parseFloat(knob.style.left) || 3;
+        if (x >= max * 0.78) complete();
+        else springBack(x, vx);
       }
-      knob.addEventListener("pointerdown", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
+      function down(e) {
+        e.preventDefault(); e.stopPropagation();
         initAudio();
-        if (current !== "sliders") return;
         bounds();
-        dragging = true;
-        done = false;
-        startX = e.clientX;
-        startL = parseFloat(knob.style.left) || 4;
-        knob._pid = e.pointerId;
+        dragging = true; done = false;
+        cancelAnimationFrame(raf);
+        startX = e.clientX; startL = parseFloat(knob.style.left) || 3;
+        lastX = e.clientX; lastT = performance.now(); vx = 0;
         try { knob.setPointerCapture(e.pointerId); } catch (err) {}
-      });
-      knob.addEventListener("pointermove", function (e) {
+      }
+      function move(e) {
         if (!dragging) return;
-        finishIfNeeded(setX(startL + (e.clientX - startX)));
-      });
+        var now = performance.now();
+        var x = apply(startL + (e.clientX - startX));
+        var dt = now - lastT;
+        if (dt > 0) vx = (e.clientX - lastX) / dt * 16.67;
+        lastX = e.clientX; lastT = now;
+        if (x >= max - 1) complete();
+      }
+      knob.addEventListener("pointerdown", down);
+      knob.addEventListener("pointermove", move);
       root.addEventListener("pointerdown", function (e) {
         if (e.target === knob) return;
-        e.preventDefault();
-        initAudio();
-        if (current !== "sliders") return;
-        bounds();
-        dragging = true;
-        done = false;
-        startX = e.clientX;
-        startL = 4;
-        setX(4 + 1);
-        try { knob.setPointerCapture(e.pointerId); } catch (err) {}
+        down(e);
+        startL = 3;
       });
       root.addEventListener("pointermove", function (e) {
-        if (!dragging || e.target === knob) return;
-        finishIfNeeded(setX(startL + (e.clientX - startX)));
+        if (e.target === knob) return;
+        move(e);
       });
       window.addEventListener("pointerup", endDrag);
       window.addEventListener("pointercancel", endDrag);
@@ -802,25 +895,33 @@
     setupSlider(document.getElementById("slPower"), "power");
     setupSlider(document.getElementById("slMed"), "medical");
     setupSlider(document.getElementById("slSos"), "sos");
+    setupSlider(document.getElementById("slFallSos"), "fallsos");
+    setupSlider(document.getElementById("slCrashSos"), "crashsos");
 
-    document.getElementById("btnCancel").addEventListener("click", function () {
-      initAudio();
-      goFace();
+    document.getElementById("btnHang").addEventListener("click", hangUp);
+    document.getElementById("btnSmsYes").addEventListener("click", function () { confirmSms(true); });
+    document.getElementById("btnSmsNo").addEventListener("click", function () { confirmSms(false); });
+    document.getElementById("btnShareOk").addEventListener("click", goFace);
+    document.getElementById("btnStopShare").addEventListener("click", function () {
+      sharing = false; goFace();
     });
-    document.getElementById("btnHang").addEventListener("click", function () {
-      initAudio();
-      hangUp();
-    });
-    document.getElementById("btnNotifiedOk").addEventListener("click", goFace);
-    document.getElementById("btnMedClose").addEventListener("click", function () {
-      showSliders();
-    });
+    document.getElementById("btnCancelOk").addEventListener("click", goFace);
+    document.getElementById("btnMedClose").addEventListener("click", showSliders);
+    document.getElementById("btnTrack").addEventListener("click", function () { show("track"); });
+    document.getElementById("btnTrackClose").addEventListener("click", showSliders);
     document.getElementById("btnImOk").addEventListener("click", goFace);
-    document.getElementById("btnFallSos").addEventListener("click", function () {
-      initAudio();
-      startCountdown();
-    });
+    document.getElementById("btnNoFall").addEventListener("click", goFace);
+    document.getElementById("btnFallClose").addEventListener("click", goFace);
+    document.getElementById("btnFallCancel").addEventListener("click", goFace);
+    document.getElementById("btnCrashOk").addEventListener("click", goFace);
+    document.getElementById("btnCrashClose").addEventListener("click", goFace);
+    document.getElementById("btnCrashCancel").addEventListener("click", goFace);
     document.getElementById("btnFallDemo").addEventListener("click", startFall);
+    document.getElementById("btnCrashDemo").addEventListener("click", startCrash);
+    document.getElementById("btnStopRec").addEventListener("click", function () {
+      recOn = false;
+      document.getElementById("callRecWrap").hidden = true;
+    });
   })();
   </script>
 </body>

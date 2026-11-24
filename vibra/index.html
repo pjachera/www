@@ -1,0 +1,28 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wibro-mówca</title>
+<style>body{font-family:-apple-system,system-ui,sans-serif;background:#111;color:#eee;margin:0;padding:20px;text-align:center}
+textarea{width:100%;box-sizing:border-box;height:120px;font-size:20px;border-radius:14px;border:0;padding:12px;background:#222;color:#fff}
+button{margin-top:14px;width:100%;font-size:24px;padding:18px;border:0;border-radius:16px;background:#0a84ff;color:#fff;font-weight:700}
+#flash{width:90px;height:90px;border-radius:50%;background:#333;margin:22px auto;transition:background .05s}#flash.on{background:#ffd60a}
+#morse{font-family:monospace;font-size:22px;word-break:break-all;min-height:30px}small{color:#888}
+#sp{speed:1}</style></head><body>
+<h1>📳 Wibro-mówca</h1>
+<textarea id="t" placeholder="Wpisz tekst...">SOS</textarea>
+<label><small>Szybkość: </small><input type="range" id="s" min="40" max="200" value="90"></label>
+<button id="go">▶ Mów wibracjami</button>
+<div id="flash"></div><div id="morse"></div>
+<p><small>Mówi alfabetem Morse'a. Android: prawdziwe wibracje. iPhone (iOS 18+): puknięcia haptyczne (wyłącz tryb cichy i włącz „Haptyka systemowa” w Ustawienia → Dźwięki i haptyka). Ekran też miga.</small></p>
+<label id="hl" style="position:absolute;left:-9999px"><input type="checkbox" switch id="hs"></label>
+<script>
+const M={a:'.-',b:'-...',c:'-.-.',d:'-..',e:'.',f:'..-.',g:'--.',h:'....',i:'..',j:'.---',k:'-.-',l:'.-..',m:'--',n:'-.',o:'---',p:'.--.',q:'--.-',r:'.-.',s:'...',t:'-',u:'..-',v:'...-',w:'.--',x:'-..-',y:'-.--',z:'--..',
+'0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.','.':'.-.-.-',',':'--..--','?':'..--..','!':'-.-.--'};
+const PL={'ą':'a','ć':'c','ę':'e','ł':'l','ń':'n','ó':'o','ś':'s','ź':'z','ż':'z'};
+const hl=document.getElementById('hl'),fl=document.getElementById('flash'),mo=document.getElementById('morse');
+const canV=!!navigator.vibrate;let run=0;
+function tick(){if(canV)return;hl.click();}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function on(ms){fl.classList.add('on');if(canV){navigator.vibrate(ms);await sleep(ms);}else{const e=Date.now()+ms;do{tick();await sleep(35);}while(Date.now()<e);}fl.classList.remove('on');}
+document.getElementById('go').onclick=async()=>{const id=++run;tick();
+const u=+document.getElementById('s').value;const txt=document.getElementById('t').value.toLowerCase();mo.textContent='';
+for(const ch0 of txt){if(id!==run)return;const ch=PL[ch0]||ch0;if(ch===' '){mo.textContent+=' / ';await sleep(u*7);continue;}
+const c=M[ch];if(!c)continue;for(const s of c){if(id!==run)return;mo.textContent+=s;await on(s==='.'?u:u*3);await sleep(u);}mo.textContent+=' ';await sleep(u*2);}};
+</script></body></html>
